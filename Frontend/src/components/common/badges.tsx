@@ -46,7 +46,7 @@ export function CriticalityBadge({ value }: { value: Criticality }) {
 
 export function RiskScore({ score, size = 'sm', label }: { score: number; size?: 'sm' | 'lg'; label?: string }) {
   const band = riskBand(score)
-  const color = { critical: 'text-red-300 bg-red-500/12 ring-red-500/30', high: 'text-orange-300 bg-orange-500/12 ring-orange-500/30', medium: 'text-amber-300 bg-amber-500/12 ring-amber-500/30', low: 'text-green-300 bg-green-500/12 ring-green-500/30', informational: '' }[band]
+  const color = { critical: 'text-red-700 bg-red-500/12 ring-red-500/30', high: 'text-orange-700 bg-orange-500/12 ring-orange-500/30', medium: 'text-amber-700 bg-amber-500/12 ring-amber-500/30', low: 'text-green-700 bg-green-500/12 ring-green-500/30', informational: '' }[band]
   return (
     <Tooltip content={label ?? `Risk score ${score}/100 (${band}). Dynamic prioritization model — see Prioritization for weights.`}>
       <span tabIndex={0} className={cn('num inline-flex items-center justify-center rounded-md font-semibold ring-1', color, size === 'lg' ? 'h-11 min-w-11 px-2 text-lg' : 'h-6 min-w-8 px-1.5 text-xs')}>

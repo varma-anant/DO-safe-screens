@@ -8,9 +8,10 @@ import { generateVendors, scoreAssessment } from './tprm'
 import { generateAISystems, generateGovernanceReviews } from './ai'
 import { generateControls, generateScenarios, INVESTMENTS } from './crq'
 import { generateAgents } from './agents'
+import { buildAccessRequests, buildApplications, buildInvitations, buildProjects, buildSupportTickets, treasuryAssets } from './projects'
 import { generateAttackPaths, generateAudit, generateDataQuality, generateEvents, generateIncidents, generateIngestion, generateNotifications, generateTickets } from './ops'
 
-export const DB_VERSION = 4
+export const DB_VERSION = 6
 export const SEED = 20261020
 
 export const DEFAULT_WEIGHTS = { cvss: 22, epss: 14, kev: 14, exploit: 8, internet: 14, assetCriticality: 12, serviceCriticality: 12, compensating: 8 }
@@ -99,12 +100,18 @@ export function buildDatabase(anchor = new Date()): Database {
 
   const audit = generateAudit(rng, clock, findings, tickets, incidents, alerts)
   const notifications = generateNotifications(clock, findings, incidents)
+  // Generated last so the deterministic IDs of everything above stay stable.
+  const allAssets = [...assets, ...treasuryAssets(clock, assets.length + 1)]
 
   return {
     version: DB_VERSION,
     users,
-    services,
-    assets,
+    projects: buildProjects(clock),
+    accessRequests: buildAccessRequests(clock),
+    invitations: buildInvitations(clock),
+    supportTickets: buildSupportTickets(clock),
+    services: buildApplications(services, allAssets, findings, clock),
+    assets: allAssets,
     knowledge,
     findings,
     attackPaths,
@@ -126,6 +133,52 @@ export function buildDatabase(anchor = new Date()): Database {
     dataQuality,
     audit,
     notifications,
-    settings: { weights: { ...DEFAULT_WEIGHTS }, currentUserId: 'USR-001', seededAt: clock.anchor.toISOString(), latencyMs: 180, slaDays: { ...SLA_DAYS } },
+    settings: { weights: { ...DEFAULT_WEIGHTS }, currentUserId: 'USR-006', authenticated: false, workspace: 'northstar', orgName: 'Northstar Financial Services', currentProjectId: null, identity: { provider: 'Corporate SSO (Okta, simulated)', mfaRequired: true, sessionTimeoutHours: 8, stepUpForApprovals: true }, seededAt: clock.anchor.toISOString(), latencyMs: 180, slaDays: { ...SLA_DAYS } },
+  }
+}
+
+export const ACME_USERS: Database['users'] = [
+  { id: 'ACM-001', name: 'Alex Rivera', role: 'Platform Administrator', team: 'IT Security', email: 'alex.rivera@acme.example', initials: 'AR', orgRole: 'admin', status: 'active', mfaEnabled: true, demoLogin: true },
+  { id: 'ACM-002', name: 'Jordan Blake', role: 'Security Analyst', team: 'IT Security', email: 'jordan.blake@acme.example', initials: 'JB', orgRole: 'analyst', status: 'active', mfaEnabled: true },
+]
+
+/**
+ * A brand-new customer workspace with nothing set up: used to demonstrate first-time onboarding
+ * (declare assets → map → connect → test run → full run).
+ */
+export function buildEmptyDatabase(anchor = new Date()): Database {
+  const full = buildDatabase(anchor)
+  const clock = createClock(anchor)
+  const users = clone(ACME_USERS)
+  return {
+    ...full,
+    users,
+    projects: [],
+    accessRequests: [],
+    invitations: [],
+    supportTickets: [],
+    services: [],
+    assets: [],
+    knowledge: full.knowledge.filter((k) => k.type !== 'INTERNAL'),
+    findings: [],
+    attackPaths: [],
+    events: [],
+    incidents: [],
+    tickets: [],
+    vendors: [],
+    assessments: [],
+    monitoringAlerts: [],
+    aiSystems: [],
+    governanceReviews: [],
+    scenarios: [],
+    investments: [],
+    agents: full.agents.map((a) => ({ ...a, status: 'idle', warnings: [], lastRunAt: clock.ago(0, 1) })),
+    executions: [],
+    integrations: full.integrations.map((i) => (i.category === 'Threat intelligence' && i.vendor.includes('public') ? { ...i, recordsIngested: 0, lastSyncAt: clock.ago(0, 1), syncHistory: [] } : { ...i, status: 'available', config: undefined, recordsIngested: 0, health: 0, syncHistory: [], lastSyncAt: undefined })),
+    ingestionRuns: [],
+    dataQuality: [],
+    audit: [{ id: 'AUD-ACM-1', at: clock.ago(0, 1), actorId: 'ACM-001', action: 'workspace created', entityType: 'settings', entityId: 'workspace', details: 'Acme Corporation workspace provisioned', module: 'Platform' }],
+    notifications: [{ id: 'NTF-ACM-1', at: clock.ago(0, 1), title: 'Welcome to DO SAFE', body: 'Start by telling us what you want to secure.', link: '/onboarding', severity: 'info', read: false }],
+    settings: { ...full.settings, currentUserId: 'ACM-001', workspace: 'acme', orgName: 'Acme Corporation', currentProjectId: null, recentRecords: [] },
   }
 }

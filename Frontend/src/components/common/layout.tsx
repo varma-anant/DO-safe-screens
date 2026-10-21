@@ -17,7 +17,7 @@ export function PageHeader({ title, description, actions, back, badges, icon }: 
       )}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          {icon && <div className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-violet-300 [&_svg]:size-5">{icon}</div>}
+          {icon && <div className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary-soft text-violet-700 [&_svg]:size-5">{icon}</div>}
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-semibold tracking-tight text-fg">{title}</h1>
@@ -33,7 +33,7 @@ export function PageHeader({ title, description, actions, back, badges, icon }: 
 }
 
 export function KpiCard({ label, value, sub, tone, trend, onClick, help, icon }: { label: string; value: React.ReactNode; sub?: React.ReactNode; tone?: 'red' | 'amber' | 'green' | 'violet' | 'default'; trend?: { value: string; good: boolean; up: boolean }; onClick?: () => void; help?: string; icon?: React.ReactNode }) {
-  const color = { red: 'text-red-300', amber: 'text-amber-300', green: 'text-emerald-300', violet: 'text-violet-300', default: 'text-fg' }[tone ?? 'default']
+  const color = { red: 'text-red-700', amber: 'text-amber-700', green: 'text-emerald-700', violet: 'text-violet-700', default: 'text-fg' }[tone ?? 'default']
   return (
     <div role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined} onClick={onClick} onKeyDown={onClick ? (e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onClick()) : undefined} className={cn('card flex flex-col items-start p-4 text-left transition-colors', onClick && 'cursor-pointer hover:border-border-strong hover:bg-surface-2/60')}>
       <div className="flex w-full items-center justify-between gap-2">
@@ -46,7 +46,7 @@ export function KpiCard({ label, value, sub, tone, trend, onClick, help, icon }:
       <div className={cn('num mt-1.5 text-2xl font-semibold tracking-tight', color)}>{value}</div>
       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted">
         {trend && (
-          <span className={cn('inline-flex items-center gap-0.5', trend.good ? 'text-emerald-400' : 'text-red-400')}>
+          <span className={cn('inline-flex items-center gap-0.5', trend.good ? 'text-emerald-600' : 'text-red-600')}>
             {trend.up ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
             {trend.value}
           </span>
@@ -86,7 +86,7 @@ export function LoadingState({ rows = 6, kpis = 0 }: { rows?: number; kpis?: num
 export function ErrorState({ error, onRetry }: { error?: Error; onRetry?: () => void }) {
   return (
     <Card className="flex flex-col items-center px-6 py-14 text-center">
-      <div className="flex size-11 items-center justify-center rounded-full bg-red-500/10 text-red-400">
+      <div className="flex size-11 items-center justify-center rounded-full bg-red-500/10 text-red-600">
         <AlertTriangle className="size-5" />
       </div>
       <h3 className="mt-3 text-sm font-semibold">Unable to load data</h3>
@@ -151,7 +151,7 @@ export function Section({ title, children, actions, className, description }: { 
 }
 
 export function Callout({ tone = 'info', title, children, icon }: { tone?: 'info' | 'warn' | 'danger' | 'success' | 'demo'; title?: string; children: React.ReactNode; icon?: React.ReactNode }) {
-  const cls = { info: 'border-sky-500/25 bg-sky-500/8 text-sky-200', warn: 'border-amber-500/25 bg-amber-500/8 text-amber-200', danger: 'border-red-500/25 bg-red-500/8 text-red-200', success: 'border-emerald-500/25 bg-emerald-500/8 text-emerald-200', demo: 'border-slate-500/25 bg-slate-500/8 text-slate-300' }[tone]
+  const cls = { info: 'border-sky-500/25 bg-sky-500/8 text-sky-700', warn: 'border-amber-500/25 bg-amber-500/8 text-amber-700', danger: 'border-red-500/25 bg-red-500/8 text-red-700', success: 'border-emerald-500/25 bg-emerald-500/8 text-emerald-700', demo: 'border-slate-500/25 bg-slate-500/8 text-slate-600' }[tone]
   return (
     <div className={cn('flex gap-2.5 rounded-lg border px-3 py-2.5 text-xs leading-relaxed', cls)}>
       {icon && <div className="mt-0.5 shrink-0 [&_svg]:size-4">{icon}</div>}

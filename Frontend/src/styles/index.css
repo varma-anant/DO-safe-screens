@@ -5,26 +5,27 @@
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Surfaces */
-  --color-bg: #090b12;
-  --color-surface: #111522;
-  --color-surface-2: #171c2b;
-  --color-surface-3: #1e2436;
-  --color-border: #232a3d;
-  --color-border-strong: #2f3850;
+  /* Surfaces — light enterprise palette shared with DO Studio */
+  --color-bg: #f6f6f8;
+  --color-sidebar: #f1f1f4;
+  --color-surface: #ffffff;
+  --color-surface-2: #f6f6f9;
+  --color-surface-3: #ececf1;
+  --color-border: #e4e4ea;
+  --color-border-strong: #d2d2dc;
 
   /* Text */
-  --color-fg: #f1f5f9;
-  --color-muted: #94a3b8;
-  --color-subtle: #64748b;
+  --color-fg: #16161d;
+  --color-muted: #55566a;
+  --color-subtle: #8a8b9c;
 
   /* Accents */
-  --color-primary: #8b5cf6;
-  --color-primary-hover: #7c3aed;
-  --color-primary-soft: rgb(139 92 246 / 0.14);
-  --color-accent: #10b981;
-  --color-accent-soft: rgb(16 185 129 / 0.14);
-  --color-info: #38bdf8;
+  --color-primary: #6b47f5;
+  --color-primary-hover: #5933e6;
+  --color-primary-soft: rgb(107 71 245 / 0.09);
+  --color-accent: #059669;
+  --color-accent-soft: rgb(5 150 105 / 0.1);
+  --color-info: #0284c7;
 
   /* Severity */
   --color-critical: #ef4444;
@@ -46,7 +47,7 @@
     font-family: var(--font-sans);
     font-size: 14px;
     -webkit-font-smoothing: antialiased;
-    color-scheme: dark;
+    color-scheme: light;
   }
   * {
     border-color: var(--color-border);
@@ -64,14 +65,14 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #2a3146;
+    background: #d4d4dd;
     border-radius: 4px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #3a4360;
+    background: #b9b9c6;
   }
   ::selection {
-    background: rgb(139 92 246 / 0.35);
+    background: rgb(107 71 245 / 0.18);
   }
 }
 
@@ -79,12 +80,13 @@
   .card {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: 12px;
+    border-radius: 14px;
+    box-shadow: 0 1px 2px rgb(22 22 29 / 0.04);
   }
   .glass {
-    background: rgb(17 21 34 / 0.72);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgb(255 255 255 / 0.06);
+    background: rgb(255 255 255 / 0.86);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--color-border);
   }
   .label-xs {
     font-size: 11px;
@@ -103,14 +105,14 @@
 
 /* Recharts tweaks */
 .recharts-cartesian-grid line {
-  stroke: #1f2638;
+  stroke: #ececf1;
 }
 .recharts-text {
-  fill: #94a3b8;
+  fill: #6b6c80;
   font-size: 11px;
 }
 .recharts-tooltip-cursor {
-  fill: rgb(139 92 246 / 0.08);
+  fill: rgb(107 71 245 / 0.06);
 }
 .recharts-surface:focus,
 .recharts-wrapper:focus,
@@ -121,13 +123,13 @@
 /* React Flow dark */
 .react-flow {
   --xy-background-color: transparent;
-  --xy-edge-stroke: #3a4360;
-  --xy-edge-stroke-selected: #8b5cf6;
-  --xy-minimap-background-color: #111522;
-  --xy-controls-button-background-color: #171c2b;
-  --xy-controls-button-background-color-hover: #1e2436;
-  --xy-controls-button-color: #cbd5e1;
-  --xy-controls-button-border-color: #232a3d;
+  --xy-edge-stroke: #c4c5d2;
+  --xy-edge-stroke-selected: #6b47f5;
+  --xy-minimap-background-color: #ffffff;
+  --xy-controls-button-background-color: #ffffff;
+  --xy-controls-button-background-color-hover: #f1f1f4;
+  --xy-controls-button-color: #55566a;
+  --xy-controls-button-border-color: #e4e4ea;
   --xy-attribution-background-color: transparent;
 }
 .react-flow__attribution {
@@ -135,7 +137,7 @@
   opacity: 0.45;
 }
 .react-flow__attribution a {
-  color: #64748b !important;
+  color: #8a8b9c !important;
 }
 
 @keyframes pulse-dot {

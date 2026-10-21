@@ -91,7 +91,7 @@ const WORKFLOWS: WorkflowDef[] = [
     recordLabel: 'Agent execution',
     stages: [
       { id: 'select', label: 'Select validated findings', description: 'Validated findings without tickets are gathered.', inputs: ['Validated findings'], outputs: ['Candidate list'], agent: 'Remediation Orchestrator' },
-      { id: 'route', label: 'Resolve owners', description: 'Owners derived from asset and business service mappings.', inputs: ['Ownership map'], outputs: ['Owner per finding'], agent: 'Remediation Orchestrator' },
+      { id: 'route', label: 'Resolve owners', description: 'Owners derived from asset and application mappings.', inputs: ['Ownership map'], outputs: ['Owner per finding'], agent: 'Remediation Orchestrator' },
       { id: 'draft', label: 'Draft tickets', description: 'Ticket drafts with SLA due dates and evidence.', inputs: ['Findings', 'SLA policy'], outputs: ['Ticket drafts'], agent: 'Remediation Orchestrator' },
       { id: 'gate', label: 'Human approval', description: 'A security lead approves or rejects the proposed tickets.', inputs: ['Ticket drafts'], outputs: ['Decision'], approval: 'Required — bulk ticket creation is a high-impact action' },
       { id: 'create', label: 'Create & sync', description: 'Tickets created in DO SAFE and synced to Jira (simulated).', inputs: ['Approved drafts'], outputs: ['Tickets'] },
@@ -100,7 +100,7 @@ const WORKFLOWS: WorkflowDef[] = [
     status: (db, id) => {
       const e = db.executions.find((x) => x.id === id)!
       const s: StageStatus[] = e.status === 'running' ? seq(5, Math.min(2, e.steps.filter((x) => x.status === 'done').length)) : e.status === 'awaiting_approval' ? seq(5, 3) : e.status === 'rejected' ? ['done', 'done', 'done', 'done', 'skipped'] : e.status === 'failed' ? seq(5, 2, 2) : ['done', 'done', 'done', 'done', 'done']
-      return { statuses: s, history: e.steps.map((st, i) => ({ id: `${e.id}-${i}`, at: e.startedAt, actorId: 'SYSTEM', type: 'comment', summary: `${st.name}: ${st.status}`, detail: st.detail })), link: <Link to={`/intelligence/agents/${e.agentId}`} className="text-violet-300">{e.id} (Remediation Orchestrator)</Link> }
+      return { statuses: s, history: e.steps.map((st, i) => ({ id: `${e.id}-${i}`, at: e.startedAt, actorId: 'SYSTEM', type: 'comment', summary: `${st.name}: ${st.status}`, detail: st.detail })), link: <Link to={`/intelligence/agents/${e.agentId}`} className="text-violet-700">{e.id} (Remediation Orchestrator)</Link> }
     },
   },
   {
@@ -143,7 +143,7 @@ const WORKFLOWS: WorkflowDef[] = [
     status: (db, id) => {
       const g = db.governanceReviews.find((x) => x.id === id)!
       const idx = g.status === 'open' ? 2 : g.status === 'in_review' ? 3 : g.status === 'closed' ? 5 : 4
-      return { statuses: seq(5, idx), history: g.notes.map((n) => ({ id: n.id, at: n.at, actorId: n.authorId, type: 'comment' as const, summary: 'Review note', detail: n.text })), link: <Link to={`/ai-security/governance/${g.id}`} className="text-violet-300">{g.id}</Link> }
+      return { statuses: seq(5, idx), history: g.notes.map((n) => ({ id: n.id, at: n.at, actorId: n.authorId, type: 'comment' as const, summary: 'Review note', detail: n.text })), link: <Link to={`/ai-security/governance/${g.id}`} className="text-violet-700">{g.id}</Link> }
     },
   },
   {
@@ -169,10 +169,10 @@ const WORKFLOWS: WorkflowDef[] = [
 ]
 
 const STATUS_STYLE: Record<StageStatus, { icon: React.ReactNode; cls: string; label: string }> = {
-  done: { icon: <CheckCircle2 className="size-3.5 text-emerald-400" />, cls: 'border-emerald-500/40', label: 'Completed' },
-  running: { icon: <CircleDot className="size-3.5 text-violet-300 pulse-dot" />, cls: 'border-violet-400 shadow-violet-900/40', label: 'In progress' },
+  done: { icon: <CheckCircle2 className="size-3.5 text-emerald-600" />, cls: 'border-emerald-500/40', label: 'Completed' },
+  running: { icon: <CircleDot className="size-3.5 text-violet-700 pulse-dot" />, cls: 'border-violet-400 shadow-violet-900/40', label: 'In progress' },
   pending: { icon: <Circle className="size-3.5 text-subtle" />, cls: 'border-border-strong opacity-70', label: 'Pending' },
-  blocked: { icon: <PauseCircle className="size-3.5 text-red-400" />, cls: 'border-red-500/50', label: 'Blocked' },
+  blocked: { icon: <PauseCircle className="size-3.5 text-red-600" />, cls: 'border-red-500/50', label: 'Blocked' },
   skipped: { icon: <XCircle className="size-3.5 text-subtle" />, cls: 'border-dashed border-border-strong opacity-50', label: 'Skipped' },
 }
 
@@ -180,12 +180,12 @@ function StageNode({ data }: { data: { stage: StageDef; status: StageStatus; sel
   const st = STATUS_STYLE[data.status]
   return (
     <div className={cn('w-48 rounded-xl border bg-surface px-3 py-2.5 shadow-lg transition-all', st.cls, data.selected && 'ring-2 ring-violet-500/60')}>
-      <Handle type="target" position={data.reversed ? Position.Right : Position.Left} className="!bg-violet-400" />
+      <Handle type="target" position={data.reversed ? Position.Right : Position.Left} className="!bg-violet-500" />
       <div className="flex items-center justify-between gap-1">
         <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-subtle">
           {st.icon} {st.label}
         </span>
-        {data.stage.approval && <Lock className="size-3 text-amber-300" aria-label="Approval gate" />}
+        {data.stage.approval && <Lock className="size-3 text-amber-700" aria-label="Approval gate" />}
       </div>
       <div className="mt-1 text-[13px] font-medium">{data.stage.label}</div>
       {data.stage.agent && (
@@ -193,7 +193,7 @@ function StageNode({ data }: { data: { stage: StageDef; status: StageStatus; sel
           <Bot className="size-3" /> {data.stage.agent}
         </div>
       )}
-      <Handle type="source" position={data.reversed ? Position.Left : Position.Right} className="!bg-violet-400" />
+      <Handle type="source" position={data.reversed ? Position.Left : Position.Right} className="!bg-violet-500" />
     </div>
   )
 }
@@ -224,7 +224,7 @@ export function WorkflowCenter() {
   const edges: Edge[] = wf.stages.slice(1).map((s, i) => {
     const done = state.statuses[i] === 'done'
     const sameRow = Math.floor(i / perRow) === Math.floor((i + 1) / perRow)
-    return { id: `${wf.id}-e${i}`, source: wf.stages[i].id, target: s.id, type: sameRow ? 'default' : 'smoothstep', animated: state.statuses[i + 1] === 'running', style: { stroke: done ? '#10b981' : '#3a4360', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: done ? '#10b981' : '#3a4360' } }
+    return { id: `${wf.id}-e${i}`, source: wf.stages[i].id, target: s.id, type: sameRow ? 'default' : 'smoothstep', animated: state.statuses[i + 1] === 'running', style: { stroke: done ? '#10b981' : '#c4c5d2', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: done ? '#10b981' : '#c4c5d2' } }
   })
   const stage = wf.stages[sel] ?? wf.stages[0]
   const stageHistory = state.history.filter((h) => !stage.historyTypes || stage.historyTypes.includes(h.type))
@@ -255,7 +255,7 @@ export function WorkflowCenter() {
           </Card>
           <Card className="h-[400px] overflow-hidden">
             <ReactFlow key={`${wf.id}-${instId}`} nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView fitViewOptions={{ padding: 0.2 }} onNodeClick={(_, n) => setSel(wf.stages.findIndex((s) => s.id === n.id))} nodesDraggable={false} nodesConnectable={false}>
-              <Background color="#1f2638" gap={20} />
+              <Background color="#ececf1" gap={20} />
               <Controls showInteractive={false} />
             </ReactFlow>
           </Card>
@@ -268,8 +268,8 @@ export function WorkflowCenter() {
               items={[
                 { label: 'Inputs', value: <ul className="space-y-0.5">{stage.inputs.map((x) => <li key={x}>• {x}</li>)}</ul> },
                 { label: 'Outputs', value: <ul className="space-y-0.5">{stage.outputs.map((x) => <li key={x}>• {x}</li>)}</ul> },
-                { label: 'Agent', value: stage.agent ? <span className="inline-flex items-center gap-1"><Bot className="size-3.5 text-violet-300" /> {stage.agent} <DemoTag /></span> : 'Human-performed' },
-                { label: 'Approval requirement', value: stage.approval ? <span className="inline-flex items-center gap-1 text-amber-200"><Lock className="size-3.5" /> {stage.approval}</span> : 'None' },
+                { label: 'Agent', value: stage.agent ? <span className="inline-flex items-center gap-1"><Bot className="size-3.5 text-violet-700" /> {stage.agent} <DemoTag /></span> : 'Human-performed' },
+                { label: 'Approval requirement', value: stage.approval ? <span className="inline-flex items-center gap-1 text-amber-700"><Lock className="size-3.5" /> {stage.approval}</span> : 'None' },
               ]}
             />
           </Section>

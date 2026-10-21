@@ -144,7 +144,7 @@ export function EventsPage() {
             <KeyValue cols={2} items={[{ label: 'Occurred', value: fmtDateTime(ev.occurredAt) }, { label: 'Source', value: <IntegrationName id={ev.sourceIntegrationId} /> }, { label: 'Asset', value: <EntityLink type="asset" id={ev.assetId} /> }, { label: 'AI system', value: <EntityLink type="aiSystem" id={ev.aiSystemId} /> }, { label: 'Linked finding', value: <EntityLink type="finding" id={ev.findingId} /> }, { label: 'Linked incident', value: <EntityLink type="incident" id={ev.incidentId} /> }]} />
             <div>
               <div className="label-xs mb-1">Raw event summary</div>
-              <pre className="whitespace-pre-wrap rounded-lg bg-surface-2 p-3 font-mono text-xs text-slate-300">{ev.rawSummary}</pre>
+              <pre className="whitespace-pre-wrap rounded-lg bg-surface-2 p-3 font-mono text-xs text-slate-600">{ev.rawSummary}</pre>
             </div>
             <Field label="Analyst assessment">
               <Textarea rows={3} value={assessment} onChange={(e) => setAssessment(e.target.value)} placeholder="e.g. Benign — authorized admin script, change ticket CHG-1234" />
@@ -268,7 +268,7 @@ const NEXT_STATUS: Partial<Record<IncidentStatus, IncidentStatus>> = { open: 'in
 export function IncidentDetail() {
   const { id } = useParams()
   const users = useUsers()
-  const { data, isLoading, error, retry } = useCollections(['incidents', 'findings', 'events', 'assets'] as const)
+  const { data, isLoading, error, retry } = useCollections(['incidents', 'findings', 'events', 'assets'] as const, { ignoreProjectFilter: true })
   const inc = data?.incidents.find((i) => i.id === id)
   usePage(inc?.id ?? 'Incident', [{ label: 'Security Operations' }, { label: 'Incidents', to: '/operations/incidents' }, { label: id ?? '' }])
   const { run, pending } = useAction()
@@ -341,7 +341,7 @@ export function IncidentDetail() {
                   ),
                 },
                 { label: 'Declared by', value: <UserName id={inc.createdById} /> },
-                { label: 'Business services', value: inc.businessServiceIds.map((s) => <div key={s}><EntityLink type="service" id={s} showId={false} /></div>) },
+                { label: 'Applications', value: inc.businessServiceIds.map((s) => <div key={s}><EntityLink type="service" id={s} showId={false} /></div>) },
               ]}
             />
           </Section>
@@ -518,8 +518,8 @@ export function TicketsTable({ tickets, tableId, initialFilters, views }: { tick
     tCol.accessor('status', { header: 'Status', filterFn: 'multi', cell: (c) => <StatusBadge map={TICKET_STATUS} value={c.getValue()} /> }),
     tCol.accessor((t) => users.find((u) => u.id === t.assigneeId)?.name ?? 'Unassigned', { id: 'assignee', header: 'Assignee', filterFn: 'multi', cell: (c) => <UserName id={c.row.original.assigneeId} /> }),
     tCol.accessor('progress', { header: 'Progress', cell: (c) => <div className="flex w-24 items-center gap-2"><Progress value={c.getValue()} tone={c.getValue() === 100 ? 'emerald' : 'violet'} /><span className="text-[11px] text-muted">{c.getValue()}%</span></div> }),
-    tCol.accessor((t) => (ticketOverdue(t) ? 'Overdue' : 'On track'), { id: 'sla', header: 'Due', filterFn: 'multi', cell: (c) => <span className={cn('inline-flex items-center gap-1 whitespace-nowrap', c.getValue() === 'Overdue' ? 'text-red-300' : 'text-muted')}>{c.getValue() === 'Overdue' && <AlarmClock className="size-3" />}{fmtDate(c.row.original.dueDate)}</span>, sortingFn: (a, b) => a.original.dueDate.localeCompare(b.original.dueDate) }),
-    tCol.accessor((t) => t.findingId ?? t.vendorId ?? t.aiSystemId ?? t.incidentId ?? '', { id: 'linked', header: 'Linked record', cell: (c) => { const t = c.row.original; return t.findingId ? <span className="font-mono text-[11px] text-violet-300">{t.findingId}</span> : t.vendorId ? <span className="font-mono text-[11px] text-violet-300">{t.vendorId}</span> : '—' } }),
+    tCol.accessor((t) => (ticketOverdue(t) ? 'Overdue' : 'On track'), { id: 'sla', header: 'Due', filterFn: 'multi', cell: (c) => <span className={cn('inline-flex items-center gap-1 whitespace-nowrap', c.getValue() === 'Overdue' ? 'text-red-700' : 'text-muted')}>{c.getValue() === 'Overdue' && <AlarmClock className="size-3" />}{fmtDate(c.row.original.dueDate)}</span>, sortingFn: (a, b) => a.original.dueDate.localeCompare(b.original.dueDate) }),
+    tCol.accessor((t) => t.findingId ?? t.vendorId ?? t.aiSystemId ?? t.incidentId ?? '', { id: 'linked', header: 'Linked record', cell: (c) => { const t = c.row.original; return t.findingId ? <span className="font-mono text-[11px] text-violet-700">{t.findingId}</span> : t.vendorId ? <span className="font-mono text-[11px] text-violet-700">{t.vendorId}</span> : '—' } }),
     tCol.accessor('updatedAt', { header: 'Updated', cell: (c) => <RelTime iso={c.getValue()} /> }),
   ]
   return (
@@ -618,7 +618,7 @@ export function VerifyDialog({ ticket, open, onOpenChange }: { ticket: Ticket; o
 export function TicketDetail() {
   const { id } = useParams()
   const users = useUsers()
-  const { data, isLoading, error, retry } = useCollections(['tickets', 'findings', 'vendors'] as const)
+  const { data, isLoading, error, retry } = useCollections(['tickets', 'findings', 'vendors'] as const, { ignoreProjectFilter: true })
   const t = data?.tickets.find((x) => x.id === id)
   usePage(t?.id ?? 'Ticket', [{ label: 'Security Operations' }, { label: 'Tickets', to: '/operations/tickets' }, { label: id ?? '' }])
   const { run, pending } = useAction()
@@ -780,7 +780,7 @@ export function TicketDetail() {
               {t.assessmentId && (
                 <li>
                   <div className="label-xs mb-0.5">Assessment</div>
-                  <Link to={`/tprm/assessments/${t.assessmentId}`} className="font-mono text-violet-300">{t.assessmentId}</Link>
+                  <Link to={`/tprm/assessments/${t.assessmentId}`} className="font-mono text-violet-700">{t.assessmentId}</Link>
                 </li>
               )}
               {t.aiSystemId && (
@@ -899,7 +899,7 @@ export function VerificationPage() {
               return (
                 <div key={t.id} className="flex flex-wrap items-center gap-3 py-3">
                   <div className="min-w-0 flex-1">
-                    <Link to={`/operations/tickets/${t.id}`} className="block truncate text-[13px] font-medium hover:text-violet-200">
+                    <Link to={`/operations/tickets/${t.id}`} className="block truncate text-[13px] font-medium hover:text-violet-700">
                       <span className="font-mono text-[11px] text-muted">{t.id}</span> {t.title}
                     </Link>
                     <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[11px] text-muted">
@@ -922,7 +922,7 @@ export function VerificationPage() {
         <div className="divide-y divide-border/60">
           {recent.slice(0, 15).map((t) => (
             <div key={t.id} className="flex flex-wrap items-center justify-between gap-3 py-2.5 text-xs">
-              <Link to={`/operations/tickets/${t.id}`} className="min-w-0 flex-1 truncate hover:text-violet-200">
+              <Link to={`/operations/tickets/${t.id}`} className="min-w-0 flex-1 truncate hover:text-violet-700">
                 <span className="font-mono text-muted">{t.id}</span> {t.title}
               </Link>
               <span className="text-muted">{t.verification!.method}</span>
@@ -942,6 +942,11 @@ export function VerificationPage() {
 
 export function ApprovalsPage() {
   usePage('Approvals', [{ label: 'Security Operations' }, { label: 'Approvals' }])
+  return <ApprovalsContent />
+}
+
+/** Human approval gates (agent actions, risk acceptance, AI governance). Also embedded in Requests. */
+export function ApprovalsContent({ embedded }: { embedded?: boolean }) {
   const { data, isLoading, error, retry } = useCollections(['executions', 'agents', 'findings', 'governanceReviews'] as const)
   const { run, pending } = useAction()
   if (error) return <ErrorState error={error} onRetry={retry} />
@@ -956,7 +961,7 @@ export function ApprovalsPage() {
   ].sort((a, b) => b.at.localeCompare(a.at))
   return (
     <div className="space-y-5">
-      <PageHeader title="Human Approval Gates" icon={<Scale />} description="High-impact actions proposed by agents, risk acceptance requests and AI governance decisions require explicit human approval. Every decision is recorded in the audit log." />
+      {!embedded && <PageHeader title="Human Approval Gates" icon={<Scale />} description="High-impact actions proposed by agents, risk acceptance requests and AI governance decisions require explicit human approval. Every decision is recorded in the audit log." />}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         <KpiCard label="Agent actions awaiting approval" value={agentPending.length} tone="violet" />
         <KpiCard label="Risk acceptance requests" value={raPending.length} tone="amber" />
@@ -977,7 +982,7 @@ export function ApprovalsPage() {
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <div className="flex items-center gap-2">
-                      <Link to={`/intelligence/agents/${a.id}`} className="font-semibold hover:text-violet-200">{a.name}</Link>
+                      <Link to={`/intelligence/agents/${a.id}`} className="font-semibold hover:text-violet-700">{a.name}</Link>
                       <DemoTag>Simulated run</DemoTag>
                     </div>
                     <div className="mt-0.5 text-[13px]">Proposed action: <span className="font-medium">{e.approval!.action}</span></div>

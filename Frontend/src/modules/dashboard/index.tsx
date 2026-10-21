@@ -93,7 +93,7 @@ export function ExecutiveDashboard() {
         <KpiCard label="Open critical exposures" icon={<ShieldAlert />} value={openCritical.length} tone="red" trend={{ value: `${critDelta > 0 ? '+' : ''}${critDelta} in 90d`, good: critDelta <= 0, up: critDelta > 0 }} sub={`${openCritical.filter((o) => o.f.kev).length} KEV-listed`} onClick={() => navigate('/exposures/vulnerabilities?severity=critical&status=new,triaged,in_validation,validated,in_remediation,pending_verification')} />
         <KpiCard label="Estimated annual loss" icon={<Calculator />} value={fmtMoney(ale)} tone="violet" sub={<span>Illustrative ALE · {fmtMoney(ale - aleRemediated)} reducible</span>} help="Sum of scenario ALE using the documented illustrative model (CRQ → Risk Overview). Not a validated actuarial estimate." onClick={() => navigate('/crq')} />
         <KpiCard label="High-risk vendors" icon={<Building2 />} value={highVendors.length} tone="amber" sub={`of ${vendors.filter((v) => v.lifecycle !== 'offboarded').length} active third parties`} onClick={() => navigate('/tprm/vendors?risk=high,critical')} />
-        <KpiCard label="AI systems" icon={<Bot />} value={aiSystems.length} sub={<span className="text-amber-300">{shadow.length} shadow AI detected</span>} onClick={() => navigate('/ai-security')} />
+        <KpiCard label="AI systems" icon={<Bot />} value={aiSystems.length} sub={<span className="text-amber-700">{shadow.length} shadow AI detected</span>} onClick={() => navigate('/ai-security')} />
         <KpiCard label="Overdue remediation" icon={<Clock />} value={overdue.length} tone={overdue.length ? 'red' : 'green'} sub={`MTTR ${mttrDays(findings)}d · SLA ${fmtPct(slaCompliance(findings))}`} onClick={() => navigate('/operations/remediation?sla=Overdue')} />
       </div>
 
@@ -113,11 +113,11 @@ export function ExecutiveDashboard() {
             </ResponsiveContainer>
           </div>
         </Section>
-        <Section title="Business impact by service" description="Illustrative ALE and open critical/high exposures" actions={<Button variant="ghost" size="xs" asChild><Link to="/services">All services <ArrowRight /></Link></Button>}>
+        <Section title="Business impact by service" description="Illustrative ALE and open critical/high exposures" actions={<Button variant="ghost" size="xs" asChild><Link to="/applications">All services <ArrowRight /></Link></Button>}>
           <ul className="space-y-2">
             {byService.map((b) => (
               <li key={b.svc.id}>
-                <Link to={`/services/${b.svc.id}`} className="flex items-center justify-between gap-3 rounded-lg bg-surface-2/60 px-3 py-2.5 hover:bg-surface-2">
+                <Link to={`/applications/${b.svc.id}`} className="flex items-center justify-between gap-3 rounded-lg bg-surface-2/60 px-3 py-2.5 hover:bg-surface-2">
                   <div className="flex min-w-0 items-center gap-2.5">
                     <span className="size-2 shrink-0 rounded-full" style={{ background: b.critical > 2 ? SEVERITY_COLOR.critical : b.critical > 0 || b.high > 3 ? SEVERITY_COLOR.high : SEVERITY_COLOR.medium }} />
                     <div className="min-w-0">
@@ -145,8 +145,8 @@ export function ExecutiveDashboard() {
                   <div className="truncate text-[13px] font-medium">{t.f.title}</div>
                   <div className="truncate text-[11px] text-muted">
                     <span className="font-mono">{t.f.id}</span> · {t.asset?.name ?? '—'} · {t.service?.name ?? '—'}
-                    {t.f.kev && <span className="text-red-300"> · KEV</span>}
-                    {t.asset?.internetExposed && <span className="text-orange-300"> · internet-facing</span>}
+                    {t.f.kev && <span className="text-red-700"> · KEV</span>}
+                    {t.asset?.internetExposed && <span className="text-orange-700"> · internet-facing</span>}
                   </div>
                 </div>
                 <SeverityBadge severity={t.f.severity} />
@@ -174,7 +174,7 @@ export function ExecutiveDashboard() {
           <div className="relative h-44">
             <ResponsiveContainer>
               <PieChart>
-                <Pie data={sevData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={72} paddingAngle={2} stroke="#111522" strokeWidth={2} onClick={(d) => navigate(`/operations/findings?severity=${(d as unknown as { key: string }).key}&status=new,triaged,in_validation,validated,in_remediation,pending_verification`)} className="cursor-pointer">
+                <Pie data={sevData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={72} paddingAngle={2} stroke="#ffffff" strokeWidth={2} onClick={(d) => navigate(`/operations/findings?severity=${(d as unknown as { key: string }).key}&status=new,triaged,in_validation,validated,in_remediation,pending_verification`)} className="cursor-pointer">
                   {sevData.map((d) => (
                     <Cell key={d.key} fill={d.fill} />
                   ))}
@@ -213,12 +213,12 @@ export function ExecutiveDashboard() {
             className="space-y-2"
           >
             <div className="relative">
-              <Sparkles className="pointer-events-none absolute left-2.5 top-2.5 size-4 text-violet-300" />
+              <Sparkles className="pointer-events-none absolute left-2.5 top-2.5 size-4 text-violet-700" />
               <input value={ask} onChange={(e) => setAsk(e.target.value)} placeholder="Ask about organizational risk…" className="h-9 w-full rounded-lg border border-violet-500/30 bg-violet-500/8 pl-8 pr-3 text-sm focus:outline-none focus:border-violet-500/60" aria-label="Ask DO SAFE" />
             </div>
           </form>
           <div className="mt-3 space-y-1.5">
-            {['Which business service has the highest risk?', 'Which vendors require attention?', 'What remediation tasks are overdue?', 'Summarize the current security posture'].map((q) => (
+            {['Which application has the highest risk?', 'Which vendors require attention?', 'What remediation tasks are overdue?', 'Summarize the current security posture'].map((q) => (
               <button key={q} onClick={() => navigate(`/intelligence?q=${encodeURIComponent(q)}`)} className="block w-full rounded-md bg-surface-2/70 px-2.5 py-1.5 text-left text-xs text-muted hover:bg-surface-2 hover:text-fg cursor-pointer">
                 {q}
               </button>
@@ -233,7 +233,7 @@ export function ExecutiveDashboard() {
 function WorkflowRow({ to, icon, label, value, detail, tone }: { to: string; icon: React.ReactNode; label: string; value: number; detail?: string; tone?: 'red' | 'amber' }) {
   return (
     <Link to={to} className="flex items-center gap-3 rounded-lg bg-surface-2/60 px-3 py-2 hover:bg-surface-2">
-      <span className={cn('flex size-8 items-center justify-center rounded-lg [&_svg]:size-4', tone === 'red' ? 'bg-red-500/12 text-red-300' : tone === 'amber' ? 'bg-amber-500/12 text-amber-300' : 'bg-primary-soft text-violet-300')}>{icon}</span>
+      <span className={cn('flex size-8 items-center justify-center rounded-lg [&_svg]:size-4', tone === 'red' ? 'bg-red-500/12 text-red-700' : tone === 'amber' ? 'bg-amber-500/12 text-amber-700' : 'bg-primary-soft text-violet-700')}>{icon}</span>
       <div className="min-w-0 flex-1">
         <div className="text-[13px] font-medium">{label}</div>
         {detail && <div className="truncate text-[11px] text-muted">{detail}</div>}
@@ -308,7 +308,7 @@ export function RiskAnalytics() {
         </Section>
       </div>
       <div className="grid gap-5 xl:grid-cols-3">
-        <Section className="xl:col-span-2" title="Risk concentration: business service × severity" description="Open findings — click a cell to open the filtered list">
+        <Section className="xl:col-span-2" title="Risk concentration: application × severity" description="Open findings — click a cell to open the filtered list">
           <div className="overflow-x-auto">
             <table className="w-full text-xs">
               <thead>
@@ -325,13 +325,13 @@ export function RiskAnalytics() {
                 {heat.map((h) => (
                   <tr key={h.svc.id}>
                     <td className="py-1 pr-3 text-[13px]">
-                      <Link to={`/services/${h.svc.id}`} className="hover:text-violet-200">
+                      <Link to={`/applications/${h.svc.id}`} className="hover:text-violet-700">
                         {h.svc.name}
                       </Link>
                     </td>
                     {h.cells.map((n, i) => (
                       <td key={i} className="p-0.5">
-                        <button onClick={() => navigate(`/operations/findings?severity=${SEVS[i]}&service=${encodeURIComponent(h.svc.name)}&status=new,triaged,in_validation,validated,in_remediation,pending_verification`)} className="num flex h-9 w-full items-center justify-center rounded-md text-[13px] font-medium cursor-pointer hover:ring-1 hover:ring-violet-400" style={{ background: n ? `${SEVERITY_COLOR[SEVS[i]]}${Math.round(20 + (n / maxHeat) * 150).toString(16).padStart(2, '0')}` : '#171c2b' }} aria-label={`${h.svc.name} ${SEVS[i]}: ${n}`}>
+                        <button onClick={() => navigate(`/operations/findings?severity=${SEVS[i]}&service=${encodeURIComponent(h.svc.name)}&status=new,triaged,in_validation,validated,in_remediation,pending_verification`)} className="num flex h-9 w-full items-center justify-center rounded-md text-[13px] font-medium cursor-pointer hover:ring-1 hover:ring-violet-400" style={{ background: n ? `${SEVERITY_COLOR[SEVS[i]]}${Math.round(20 + (n / maxHeat) * 150).toString(16).padStart(2, '0')}` : '#f6f6f9' }} aria-label={`${h.svc.name} ${SEVS[i]}: ${n}`}>
                           {n}
                         </button>
                       </td>
@@ -348,7 +348,7 @@ export function RiskAnalytics() {
               <div key={m.name}>
                 <div className="mb-1 flex justify-between text-xs">
                   <span>{m.name}</span>
-                  <span className={cn('num', m.days > m.sla ? 'text-red-300' : 'text-emerald-300')}>
+                  <span className={cn('num', m.days > m.sla ? 'text-red-700' : 'text-emerald-700')}>
                     {m.days}d / SLA {m.sla}d
                   </span>
                 </div>
@@ -374,7 +374,7 @@ export function RiskAnalytics() {
                 <RTooltip content={({ active, payload }) => (active && payload?.[0] ? <div className="rounded-lg border border-border-strong bg-surface-3 px-3 py-2 text-xs"><div className="font-medium">{(payload[0].payload as { name: string }).name}</div><div className="text-muted">{(payload[0].payload as { id: string }).id} · CVSS {(payload[0].payload as { cvss: number }).cvss} · EPSS {(payload[0].payload as { epss: number }).epss}% · Risk {(payload[0].payload as { score: number }).score}</div></div> : null)} />
                 <Scatter data={scatter} onClick={(d) => navigate(`/exposures/vulnerabilities/${(d as unknown as { id: string }).id}`)} className="cursor-pointer">
                   {scatter.map((s) => (
-                    <Cell key={s.id} fill={s.fill} fillOpacity={0.75} stroke="#111522" strokeWidth={2} />
+                    <Cell key={s.id} fill={s.fill} fillOpacity={0.75} stroke="#ffffff" strokeWidth={2} />
                   ))}
                 </Scatter>
               </ScatterChart>
@@ -403,10 +403,10 @@ export function RiskAnalytics() {
   )
 }
 
-// ============================================================ Business services
+// ============================================================ Applications
 
 export function BusinessServices() {
-  usePage('Business Services', [{ label: 'Overview' }, { label: 'Business Services' }])
+  usePage('Applications', [{ label: 'Overview' }, { label: 'Applications' }])
   const settings = useSettings()
   const { data, isLoading, error, retry } = useCollections(['services', 'assets', 'findings', 'scenarios', 'vendors', 'aiSystems', 'users'] as const)
   if (error) return <ErrorState error={error} onRetry={retry} />
@@ -415,17 +415,17 @@ export function BusinessServices() {
   void settings
   return (
     <div className="space-y-5">
-      <PageHeader title="Business Services" description="Security exposure and illustrative financial risk mapped to the services Northstar's business depends on (CRQ business service mapping)." icon={<Briefcase />} />
+      <PageHeader title="Applications" description="Security exposure and illustrative financial risk mapped to the services Northstar's business depends on (CRQ application mapping)." icon={<Briefcase />} />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {services.map((svc) => {
           const svcAssets = assets.filter((a) => a.businessServiceId === svc.id && !a.duplicateOfId)
           const open = findings.filter((f) => f.businessServiceId === svc.id && isOpen(f.status))
           const ale = scenarios.filter((s) => s.businessServiceId === svc.id).reduce((s, x) => s + computeScenario(x, findings).ale, 0)
           return (
-            <Link key={svc.id} to={`/services/${svc.id}`} className="card group p-4 transition-colors hover:border-border-strong">
+            <Link key={svc.id} to={`/applications/${svc.id}`} className="card group p-4 transition-colors hover:border-border-strong">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <div className="text-[15px] font-semibold group-hover:text-violet-200">{svc.name}</div>
+                  <div className="text-[15px] font-semibold group-hover:text-violet-700">{svc.name}</div>
                   <div className="mt-0.5 line-clamp-2 text-xs text-muted">{svc.description}</div>
                 </div>
                 <CriticalityBadge value={svc.criticality} />
@@ -461,12 +461,12 @@ export function ServiceDetail() {
   const { id } = useParams()
   const settings = useSettings()
   const navigate = useNavigate()
-  const { data, isLoading, error, retry } = useCollections(['services', 'assets', 'findings', 'scenarios', 'vendors', 'aiSystems', 'incidents', 'attackPaths'] as const)
+  const { data, isLoading, error, retry } = useCollections(['services', 'assets', 'findings', 'scenarios', 'vendors', 'aiSystems', 'incidents', 'attackPaths'] as const, { ignoreProjectFilter: true })
   const svc = data?.services.find((s) => s.id === id)
-  usePage(svc?.name ?? 'Business service', [{ label: 'Overview' }, { label: 'Business Services', to: '/services' }, { label: svc?.name ?? id ?? '' }])
+  usePage(svc?.name ?? 'Application', [{ label: 'Overview' }, { label: 'Applications', to: '/applications' }, { label: svc?.name ?? id ?? '' }])
   if (error) return <ErrorState error={error} onRetry={retry} />
   if (isLoading || !data) return <LoadingState kpis={4} />
-  if (!svc) return <NotFound what="Business service" back={{ to: '/services', label: 'Back to Business Services' }} />
+  if (!svc) return <NotFound what="Application" back={{ to: '/applications', label: 'Back to Applications' }} />
   const { assets, findings, scenarios, vendors, aiSystems, incidents, attackPaths, services } = data
   const svcAssets = assets.filter((a) => a.businessServiceId === svc.id && !a.duplicateOfId)
   const svcFindings = scoreFindings(findings.filter((f) => f.businessServiceId === svc.id), assets, services, settings.weights)
@@ -483,13 +483,13 @@ export function ServiceDetail() {
     assetCol.accessor('type', { header: 'Type', cell: (c) => ASSET_TYPE_LABEL[c.getValue()] }),
     assetCol.accessor('environment', { header: 'Environment', cell: (c) => <span className="capitalize text-muted">{c.getValue()}</span> }),
     assetCol.accessor('criticality', { header: 'Criticality', cell: (c) => <CriticalityBadge value={c.getValue()} /> }),
-    assetCol.accessor((a) => (a.internetExposed ? 'Yes' : 'No'), { id: 'internet', header: 'Internet-facing', cell: (c) => <span className={c.getValue() === 'Yes' ? 'text-orange-300' : 'text-muted'}>{c.getValue()}</span> }),
+    assetCol.accessor((a) => (a.internetExposed ? 'Yes' : 'No'), { id: 'internet', header: 'Internet-facing', cell: (c) => <span className={c.getValue() === 'Yes' ? 'text-orange-700' : 'text-muted'}>{c.getValue()}</span> }),
     assetCol.accessor((a) => findings.filter((f) => f.assetId === a.id && isOpen(f.status)).length, { id: 'open', header: 'Open findings' }),
   ]
 
   return (
     <div className="space-y-5">
-      <PageHeader title={svc.name} back={{ to: '/services', label: 'Business Services' }} description={svc.description} badges={<CriticalityBadge value={svc.criticality} />} icon={<Briefcase />} actions={<Button variant="secondary" asChild><Link to={svcScenarios[0] ? `/crq/scenarios/${svcScenarios[0].id}` : '/crq/scenarios'}><Calculator /> Open risk scenario</Link></Button>} />
+      <PageHeader title={svc.name} back={{ to: '/applications', label: 'Applications' }} description={svc.description} badges={<CriticalityBadge value={svc.criticality} />} icon={<Briefcase />} actions={<Button variant="secondary" asChild><Link to={svcScenarios[0] ? `/crq/scenarios/${svcScenarios[0].id}` : '/crq/scenarios'}><Calculator /> Open risk scenario</Link></Button>} />
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <KpiCard label="Assets" value={svcAssets.length} sub={`${svcAssets.filter((a) => a.internetExposed).length} internet-facing`} />
         <KpiCard label="Open exposures" value={open.length} tone={open.some((o) => o.f.severity === 'critical') ? 'red' : 'default'} sub={`${open.filter((o) => o.f.severity === 'critical').length} critical`} />

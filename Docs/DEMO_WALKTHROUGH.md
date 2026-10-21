@@ -4,13 +4,66 @@
 
 ## Before you present
 
-1. `cd Frontend && npm install && npm run dev`, then open http://localhost:5173.
-2. **Settings → Demo controls → Reset demo data.** This gives you the same deterministic dataset every time, so the record IDs below match.
-3. **Settings → Simulated API latency → 0 ms** for snappy transitions. Leave **Simulate API errors** off.
-4. Use a 1440×900 or larger window. Switch personas from the avatar menu (top right); each demo lists the recommended persona.
-5. The amber **DEMO MODE** badge in the top bar explains the simulation if anyone asks.
+1. `cd Frontend && npm install && npm run dev`, then open http://localhost:5173. You land on **Sign in**.
+2. Pick a workspace on the sign-in page:
+   * **Northstar Financial Services**: a mature customer with 4 projects, 7 applications (6 protected, 1 mid-onboarding) and a full history. Use it for Demos 1–10.
+   * **Acme Corporation**: a brand-new, empty customer. Use it for Demo 0, the first-run onboarding journey.
+3. Sign in with a **demo account** button. You can also type any active person's email with any password of 4+ characters (for example `elena.marsh@northstar.example`). Roles are enforced, so each demo names the person to sign in as.
+4. **Settings → Demo controls → Reset demo data** restores the deterministic dataset, so the record IDs below match. Set **Simulated API latency → 0 ms** for snappy transitions.
+5. Use a 1440×900 or larger window. The **Interactive prototype** pill in the top bar is your answer to "is this real?".
+
+| Demo account | Organization role | What it shows |
+|---|---|---|
+| Hannah Lee | Administrator | Everything, including User management and integrations |
+| Priya Raman | Security analyst | All projects; triage, tickets, scans. No onboarding or user management |
+| Jonas Weber | Project owner | Only *Core Banking & Payments* and *Treasury Portal Launch*; can onboard there and decide access requests |
+| Ravi Shah | Viewer | Read-only, member projects only |
+| Alex Rivera (Acme) | Administrator | Empty workspace → first-run journey |
 
 Record IDs below come from the deterministic seed after a reset. If a demo has already been run without resetting, the same steps still work on any equivalent record.
+
+---
+
+## Demo 0 — New customer secures its first application
+
+| | |
+|---|---|
+| **Sign in as** | Alex Rivera — Administrator, **Acme Corporation** workspace |
+| **Starting screen** | Home (`/home`) |
+| **Objective** | Show the enterprise journey: login → "what are your assets?" → map and link them → test run → actual run → SAFE application. |
+
+**Click sequence**
+1. Home asks **"What do you want to secure?"**. Point out the six application types, the six-step journey strip and the workspace setup checklist. The left panel is the enterprise workspace: Requests, SAFE applications, Asset mapping, Ticket management, Prioritization, Notifications, User management, then **Projects**, then Knowledge base, Help & Support and Settings.
+2. Click **Web application** → onboarding. **Project** step: create *Customer Portal* (you become its owner) → **Continue**.
+3. **Application** step: name *Customer Portal Web*, pick an owner, describe it → **Create application**.
+4. **Declare assets**: the seven suggested assets are pre-selected → **Add 7 selected**. Mention the *Add manually* and *Paste a list* tabs → **Continue to mapping**.
+5. **Map & link**: click **Suggest links**, then drag between two assets to add a link and choose its relation → **Save map & continue**. Explain that the map drives attack-path analysis and prioritization.
+6. **Connect sources**: to show a failure, tick only one cell (e.g. the web asset under a scanner that is *not connected*) → **Save & continue to test run** → **Start test run**.
+7. The test run **fails**. Each asset gets a reason ("No source assigned…", "…is not connected — finish its setup") and the full run is blocked. Click **Connect sources**.
+8. Click **Recommend coverage**, then **Connect** on each recommended source → **Save & continue to test run** → **Run the test again** → **passed**.
+9. **Continue to full run** → **Start full run**. Six stages animate, then the findings summary appears and the header badge turns **SAFE application**. A notification arrives.
+10. Open **SAFE applications** (the app is listed as protected), then **Home**, which now shows top risks instead of the first-run screen.
+
+**Data changes:** project, application, assets, links, coverage, connected integrations, two runs, about 10 findings, audit events and notifications.
+**Final outcome:** a customer goes from zero to a monitored SAFE application in one guided flow, and nothing is scanned until a test run proves coverage.
+
+---
+
+## Demo 0b — Enterprise access: roles, projects and requests
+
+| | |
+|---|---|
+| **Sign in as** | Ravi Shah (Viewer), then Hannah Lee (Administrator) |
+| **Starting screen** | Home |
+
+**Click sequence**
+1. As **Ravi**: the sidebar has no User management or Integrations, and Projects lists only his two projects. Open `/admin` → "User management is restricted" → **Request access**, which creates an access request with a justification.
+2. Sign out (user card → Sign out). Sign in as **Hannah** → **Requests**. Ravi's request shows its justification and a before/after permission impact. Approve it with a note.
+3. **User management**: People (change a role inline, deactivate someone), Invitations (invite, then *Simulate acceptance*), Roles & permissions matrix, Project access (organization grant ∩ project grant), **Permission inspector** (pick a person and a project, see each capability and why), Audit log, Identity & security policy.
+4. **Help & Support**: open SUP-1042, reply, and follow the Submitted → Triage → Investigating → Resolved stepper. Raise a new request; a simulated support reply arrives in about 2.5 s.
+5. **Knowledge base**: open *Test run vs full run*, then use **Where to go next**.
+
+**Final outcome:** access is role- and project-based. Restricted actions are blocked in the API layer too, not just hidden, and every decision is audited.
 
 ---
 
@@ -18,19 +71,19 @@ Record IDs below come from the deterministic seed after a reset. If a demo has a
 
 | | |
 |---|---|
-| **Persona** | Elena Marsh — CISO |
+| **Sign in as** | Elena Marsh — CISO |
 | **Starting screen** | Executive Dashboard (`/dashboard`) |
 | **Objective** | Understand overall posture, where the business is exposed and what is being done about it, in under three minutes. |
 
 **Click sequence**
 1. Read the KPI row: posture score, open critical exposures (with KEV count), estimated annual loss (illustrative), high-risk vendors, AI systems with shadow-AI count, overdue remediation.
 2. Point at **Exposure trend** (13 weeks, reconstructed from detection/closure dates) and hover for weekly counts.
-3. In **Business impact by service**, click **Payment Processing** → service detail with tabs for Exposures, Assets, Risk scenarios, Vendors, AI systems, Incidents and Attack paths.
+3. In **Business impact by application**, click **Payment Processing** → application detail with tabs for Findings, Asset map, Assets, Runs, Details, Risk & dependencies and Incidents.
 4. Back on the dashboard, click the **Critical** segment of **Severity breakdown** → Security Findings, filtered to open critical.
 5. In **Active workflows**, click **Awaiting human approval** → Approvals.
 6. Click **Board risk report** (header) → printable report with top scenarios, drivers and recommended investments.
 
-**Expected transitions:** Dashboard → Service detail → filtered findings list → Approvals → Risk report.
+**Expected transitions:** Dashboard → Application detail → filtered findings list → Approvals → Risk report.
 **Data changes:** none (read-only demo).
 **Final outcome:** the executive sees one consolidated picture covering exposures, money, vendors, AI and operations, and every number drills down to the underlying records.
 
@@ -40,7 +93,7 @@ Record IDs below come from the deterministic seed after a reset. If a demo has a
 
 | | |
 |---|---|
-| **Persona** | Priya Raman — Security Analyst |
+| **Sign in as** | Priya Raman — Security Analyst |
 | **Starting screen** | Vulnerabilities (`/exposures/vulnerabilities`), "Critical findings" view |
 | **Objective** | Decide whether a critical finding is real, how bad it is, and what to do. |
 
@@ -63,7 +116,7 @@ Record IDs below come from the deterministic seed after a reset. If a demo has a
 
 | | |
 |---|---|
-| **Persona** | Priya Raman — Security Analyst |
+| **Sign in as** | Priya Raman — Security Analyst |
 | **Starting screen** | FND-1001 → **Classification** tab |
 | **Objective** | Show how a finding is mapped to public knowledge systems, and why. |
 
@@ -83,7 +136,7 @@ Record IDs below come from the deterministic seed after a reset. If a demo has a
 
 | | |
 |---|---|
-| **Persona** | Priya Raman — Security Analyst |
+| **Sign in as** | Priya Raman — Security Analyst |
 | **Starting screen** | Investigation Assistant (`/intelligence/investigation`) |
 | **Objective** | Record an explainable, reversible false-positive decision. |
 
@@ -105,7 +158,7 @@ Record IDs below come from the deterministic seed after a reset. If a demo has a
 
 | | |
 |---|---|
-| **Persona** | Priya Raman (create), then Jonas Weber / any owner (progress), then Priya (verify) |
+| **Sign in as** | Priya Raman (create), then Jonas Weber / any owner (progress), then Priya (verify) |
 | **Starting screen** | FND-1001 (Log4Shell) |
 | **Objective** | Run Workflow A end to end: finding → ticket → progress → verification → resolved. |
 
@@ -126,7 +179,7 @@ Record IDs below come from the deterministic seed after a reset. If a demo has a
 
 | | |
 |---|---|
-| **Persona** | Marcus Chen — TPRM Manager |
+| **Sign in as** | Marcus Chen — TPRM Manager |
 | **Starting screen** | Vendor Overview (`/tprm`) |
 | **Objective** | Run Workflow C: assess a new vendor and track remediation. |
 
@@ -148,7 +201,7 @@ Record IDs below come from the deterministic seed after a reset. If a demo has a
 
 | | |
 |---|---|
-| **Persona** | Sofia Alvarez — AI Security Analyst |
+| **Sign in as** | Sofia Alvarez — AI Security Analyst |
 | **Starting screen** | AI Security Overview (`/ai-security`) |
 | **Objective** | Run Workflow D: from shadow AI detection to a governance decision. |
 
@@ -170,7 +223,7 @@ Record IDs below come from the deterministic seed after a reset. If a demo has a
 
 | | |
 |---|---|
-| **Persona** | David Okafor — Risk Manager |
+| **Sign in as** | David Okafor — Risk Manager |
 | **Starting screen** | Business Services → Payment Processing (`/services/SVC-PAY`) |
 | **Objective** | Run Workflow F: quantify, simulate and compare. |
 
@@ -191,7 +244,7 @@ Record IDs below come from the deterministic seed after a reset. If a demo has a
 
 | | |
 |---|---|
-| **Persona** | Elena Marsh — CISO |
+| **Sign in as** | Elena Marsh — CISO |
 | **Starting screen** | Top bar **Ask DO SAFE…** or Intelligence Assistant (`/intelligence`) |
 | **Objective** | Run Workflow G: get cited answers and act on them. |
 
@@ -211,7 +264,7 @@ Record IDs below come from the deterministic seed after a reset. If a demo has a
 
 | | |
 |---|---|
-| **Persona** | Hannah Lee — Platform Administrator |
+| **Sign in as** | Hannah Lee — Platform Administrator |
 | **Starting screen** | Integration Marketplace (`/integrations`) |
 | **Objective** | Run Workflow H: connect a source and inspect imported data. |
 

@@ -1,4 +1,4 @@
-import type { AIAnalysis, AISystem, Asset, BusinessService, Finding, FindingStatus, HistoryEntry, KnowledgeRecord, Severity } from '@/types'
+import type { AIAnalysis, AISystem, Asset, Finding, FindingStatus, HistoryEntry, KnowledgeRecord, Severity } from '@/types'
 import type { Clock, Rng } from './rng'
 import { pad } from './rng'
 import { INTEGRATIONS } from './reference'
@@ -26,7 +26,7 @@ const ANALYSTS = ['USR-002', 'USR-007']
 interface Ctx {
   rng: Rng
   clock: Clock
-  services: BusinessService[]
+  services: { id: string; name: string }[]
   knowledge: KnowledgeRecord[]
   userName: (id: string) => string
 }

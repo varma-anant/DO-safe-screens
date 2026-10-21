@@ -20,15 +20,15 @@ import { cn, fmtDate, fmtDateTime } from '@/utils/format'
 import { ASSESSMENT_STATUS, SEVERITY_COLOR } from '@/utils/labels'
 
 const ANSWERS: { v: AssessmentAnswer['answer']; label: string; cls: string }[] = [
-  { v: 'yes', label: 'Yes', cls: 'border-emerald-500/60 bg-emerald-500/12 text-emerald-200' },
-  { v: 'partial', label: 'Partial', cls: 'border-amber-500/60 bg-amber-500/12 text-amber-200' },
-  { v: 'no', label: 'No', cls: 'border-red-500/60 bg-red-500/12 text-red-200' },
-  { v: 'na', label: 'N/A', cls: 'border-slate-500/60 bg-slate-500/12 text-slate-200' },
+  { v: 'yes', label: 'Yes', cls: 'border-emerald-500/60 bg-emerald-500/12 text-emerald-700' },
+  { v: 'partial', label: 'Partial', cls: 'border-amber-500/60 bg-amber-500/12 text-amber-700' },
+  { v: 'no', label: 'No', cls: 'border-red-500/60 bg-red-500/12 text-red-700' },
+  { v: 'na', label: 'N/A', cls: 'border-slate-500/60 bg-slate-500/12 text-slate-600' },
 ]
 
 export function AssessmentDetail() {
   const { id } = useParams()
-  const { data, isLoading, error, retry } = useCollections(['assessments', 'vendors', 'tickets'] as const)
+  const { data, isLoading, error, retry } = useCollections(['assessments', 'vendors', 'tickets'] as const, { ignoreProjectFilter: true })
   const a = data?.assessments.find((x) => x.id === id)
   const v = data?.vendors.find((x) => x.id === a?.vendorId)
   usePage(a?.name ?? 'Assessment', [{ label: 'Third-Party Risk' }, { label: 'Assessments', to: '/tprm/assessments' }, { label: id ?? '' }])
@@ -108,7 +108,7 @@ export function AssessmentDetail() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="text-[13px]">
               <span className="num font-semibold">{answeredCount}</span> of {qs.length} questions answered
-              {dirty && <span className="ml-2 text-amber-300">· unsaved changes</span>}
+              {dirty && <span className="ml-2 text-amber-700">· unsaved changes</span>}
             </div>
             <Progress value={(answeredCount / qs.length) * 100} className="max-w-md" tone={answeredCount === qs.length ? 'emerald' : 'violet'} />
           </div>
@@ -180,7 +180,7 @@ export function AssessmentDetail() {
             return (
               <button key={s} onClick={() => setSection(s)} className={cn('flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-[13px] cursor-pointer', activeSection === s ? 'bg-primary-soft text-fg' : 'text-muted hover:bg-surface-2')}>
                 <span>{s}</span>
-                <span className={cn('num text-[11px]', done === sq.length ? 'text-emerald-300' : 'text-subtle')}>
+                <span className={cn('num text-[11px]', done === sq.length ? 'text-emerald-700' : 'text-subtle')}>
                   {done}/{sq.length}
                 </span>
               </button>
@@ -203,7 +203,7 @@ export function AssessmentDetail() {
                     </div>
                     {q.guidance && <div className="mt-1 text-xs text-muted">{q.guidance}</div>}
                   </div>
-                  {ans && <CheckCircle2 className="size-4 shrink-0 text-emerald-400" />}
+                  {ans && <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label={`Answer for ${q.id}`}>
                   {ANSWERS.map((o) => (

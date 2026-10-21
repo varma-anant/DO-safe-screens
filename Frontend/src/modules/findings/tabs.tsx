@@ -81,7 +81,7 @@ export function LifecycleStepper({ f }: { f: Finding }) {
             <React.Fragment key={s.key}>
               {i > 0 && <div className={cn('h-px min-w-6 flex-1', done || current ? 'bg-violet-500/60' : 'bg-border')} />}
               <div className="flex shrink-0 items-center gap-1.5">
-                <span className={cn('flex size-5 items-center justify-center rounded-full border text-[10px]', done ? 'border-violet-500 bg-violet-600 text-white' : current ? 'border-violet-400 bg-violet-500/20 text-violet-200' : 'border-border-strong text-subtle')}>{done ? <Check className="size-3" /> : i + 1}</span>
+                <span className={cn('flex size-5 items-center justify-center rounded-full border text-[10px]', done ? 'border-violet-500 bg-violet-600 text-white' : current ? 'border-violet-400 bg-violet-500/20 text-violet-700' : 'border-border-strong text-subtle')}>{done ? <Check className="size-3" /> : i + 1}</span>
                 <span className={cn('text-xs', current ? 'font-semibold text-fg' : done ? 'text-muted' : 'text-subtle')}>{s.label}{current && f.status === 'in_validation' ? ' · validating' : ''}</span>
               </div>
             </React.Fragment>
@@ -109,7 +109,7 @@ export function OverviewTab({ ctx }: { ctx: FindingCtx }) {
         <Section title="Technical description" actions={<ProvenanceBadge value="external" />}>
           <p className="text-[13px] leading-relaxed text-muted">{f.description}</p>
         </Section>
-        <Section title="Business impact" actions={service && <Link to={`/services/${service.id}`} className="text-xs text-violet-300">{service.name} →</Link>}>
+        <Section title="Business impact" actions={service && <Link to={`/applications/${service.id}`} className="text-xs text-violet-700">{service.name} →</Link>}>
           <p className="text-[13px] leading-relaxed text-muted">{f.businessImpact}</p>
           {service && (
             <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -220,7 +220,7 @@ function KbItem({ rec, fallbackId }: { rec?: KnowledgeRecord; fallbackId: string
   return (
     <div className="rounded-lg bg-surface-2 px-3 py-2">
       <div className="flex flex-wrap items-center gap-2">
-        <Link to={`/intelligence/library/${rec.id}`} className="font-mono text-xs text-violet-300 hover:text-violet-200">
+        <Link to={`/intelligence/library/${rec.id}`} className="font-mono text-xs text-violet-700 hover:text-violet-700">
           {rec.externalId}
         </Link>
         <span className="text-[13px] font-medium">{rec.name}</span>
@@ -229,7 +229,7 @@ function KbItem({ rec, fallbackId }: { rec?: KnowledgeRecord; fallbackId: string
       </div>
       <p className="mt-1 text-xs text-muted">{rec.summary}</p>
       {rec.url && (
-        <a href={rec.url} target="_blank" rel="noreferrer noopener" className="mt-1 inline-flex items-center gap-1 text-[11px] text-subtle hover:text-violet-300">
+        <a href={rec.url} target="_blank" rel="noreferrer noopener" className="mt-1 inline-flex items-center gap-1 text-[11px] text-subtle hover:text-violet-700">
           {rec.source} <ExternalLink className="size-3" />
         </a>
       )}
@@ -278,7 +278,7 @@ export function ClassificationTab({ ctx }: { ctx: FindingCtx }) {
                 {parseCvss(f.cvss.vector).map((m) => (
                   <div key={m.raw} className="flex justify-between text-xs">
                     <span className="text-muted">{m.metric}</span>
-                    <span className={m.bad ? 'text-orange-300' : ''}>{m.value}</span>
+                    <span className={m.bad ? 'text-orange-700' : ''}>{m.value}</span>
                   </div>
                 ))}
               </div>
@@ -295,7 +295,7 @@ export function ClassificationTab({ ctx }: { ctx: FindingCtx }) {
                 <Stat label="Probability (30 days)" value={fmtPct(f.epss.score, 1)} />
                 <Stat label="Percentile" value={fmtPct(f.epss.percentile, 1)} />
               </div>
-              <p className="mt-2 text-[11px] text-amber-300/80">{cve?.epss?.note}</p>
+              <p className="mt-2 text-[11px] text-amber-700/80">{cve?.epss?.note}</p>
             </>
           ) : (
             <NotMapped reason="EPSS scores exist only for CVEs." />
@@ -317,7 +317,7 @@ export function ClassificationTab({ ctx }: { ctx: FindingCtx }) {
             </li>
           </ul>
           {threatEvents.map((e) => (
-            <div key={e.id} className="mt-2 rounded-md bg-red-500/8 px-2.5 py-1.5 text-[11px] text-red-200">
+            <div key={e.id} className="mt-2 rounded-md bg-red-500/8 px-2.5 py-1.5 text-[11px] text-red-700">
               {e.title}
             </div>
           ))}
@@ -350,7 +350,7 @@ export function EvidenceTab({ ctx }: { ctx: FindingCtx }) {
               <React.Fragment key={s.label}>
                 {i > 0 && <ArrowRight className="size-3.5 text-subtle" />}
                 <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-2 px-2.5 py-1.5">
-                  <span className="text-violet-300 [&_svg]:size-3.5">{s.icon}</span>
+                  <span className="text-violet-700 [&_svg]:size-3.5">{s.icon}</span>
                   <span>
                     <span className="block font-medium">{s.label}</span>
                     <span className="block text-[11px] text-subtle">{s.sub}</span>
@@ -375,7 +375,7 @@ export function EvidenceTab({ ctx }: { ctx: FindingCtx }) {
                     <Badge tone={e.reliability === 'high' ? 'emerald' : e.reliability === 'medium' ? 'amber' : 'red'}>reliability: {e.reliability}</Badge>
                   </div>
                 </div>
-                <pre className="overflow-x-auto whitespace-pre-wrap px-3 py-2 font-mono text-[11.5px] leading-relaxed text-slate-300">{e.content}</pre>
+                <pre className="overflow-x-auto whitespace-pre-wrap px-3 py-2 font-mono text-[11.5px] leading-relaxed text-slate-600">{e.content}</pre>
                 <div className="flex flex-wrap gap-x-4 border-t border-border px-3 py-1.5 text-[11px] text-subtle">
                   <span>Collected {fmtDateTime(e.collectedAt)}</span>
                   <span>
@@ -413,7 +413,7 @@ export function EvidenceTab({ ctx }: { ctx: FindingCtx }) {
           {f.missingEvidence.length ? (
             <ul className="space-y-1.5">
               {f.missingEvidence.map((m) => (
-                <li key={m} className="flex gap-2 text-xs text-amber-200">
+                <li key={m} className="flex gap-2 text-xs text-amber-700">
                   <CircleDashed className="mt-0.5 size-3.5 shrink-0" /> {m}
                 </li>
               ))}
@@ -426,7 +426,7 @@ export function EvidenceTab({ ctx }: { ctx: FindingCtx }) {
           <ul className="space-y-1.5">
             {refs.map((r) => (
               <li key={r.id} className="text-xs">
-                <a href={r.url} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 text-violet-300 hover:text-violet-200">
+                <a href={r.url} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 text-violet-700 hover:text-violet-700">
                   {r.externalId} — {r.source} <ExternalLink className="size-3" />
                 </a>
               </li>
@@ -474,7 +474,7 @@ export function RootCauseTab({ ctx }: { ctx: FindingCtx }) {
                     Supporting evidence:{' '}
                     {h.supportingEvidenceIds.length
                       ? h.supportingEvidenceIds.map((id) => (
-                          <a key={id} href={`#${id}`} className="mr-1 font-mono text-violet-300">
+                          <a key={id} href={`#${id}`} className="mr-1 font-mono text-violet-700">
                             {id}
                           </a>
                         ))
@@ -553,7 +553,7 @@ export function RootCauseTab({ ctx }: { ctx: FindingCtx }) {
             <ul className="space-y-1.5">
               {f.rootCause.relatedConfigIssues.map((c) => (
                 <li key={c} className="flex gap-2 text-xs">
-                  <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-300" /> {c}
+                  <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-700" /> {c}
                 </li>
               ))}
             </ul>
@@ -576,7 +576,7 @@ export function RootCauseTab({ ctx }: { ctx: FindingCtx }) {
           <ul className="space-y-1 text-xs">
             {f.evidence.map((e) => (
               <li key={e.id}>
-                <a href={`#${e.id}`} className="text-violet-300">
+                <a href={`#${e.id}`} className="text-violet-700">
                   <span className="font-mono">{e.id}</span> {e.label}
                 </a>
               </li>
@@ -618,7 +618,7 @@ export function RemediationTab({ ctx }: { ctx: FindingCtx }) {
               <ul className="space-y-1.5 text-[13px]">
                 {f.remediation.compensatingControls.map((c) => (
                   <li key={c} className="flex gap-2">
-                    <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-emerald-300" /> {c}
+                    <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-emerald-700" /> {c}
                   </li>
                 ))}
               </ul>
@@ -655,7 +655,7 @@ export function RemediationTab({ ctx }: { ctx: FindingCtx }) {
             <ul className="space-y-2">
               {internal.map((k) => (
                 <li key={k.id} className="rounded-lg bg-surface-2 px-3 py-2 text-xs">
-                  <Link to={`/intelligence/library/${k.id}`} className="font-medium text-violet-300">
+                  <Link to={`/intelligence/library/${k.id}`} className="font-medium text-violet-700">
                     {k.name}
                   </Link>
                   <p className="mt-0.5 text-muted">{k.summary}</p>
@@ -663,7 +663,7 @@ export function RemediationTab({ ctx }: { ctx: FindingCtx }) {
               ))}
               {f.remediation.similarResolutions.map((s) => (
                 <li key={s} className="flex gap-2 text-xs text-muted">
-                  <Lightbulb className="mt-0.5 size-3.5 shrink-0 text-amber-300" /> {s}
+                  <Lightbulb className="mt-0.5 size-3.5 shrink-0 text-amber-700" /> {s}
                 </li>
               ))}
             </ul>
@@ -679,7 +679,7 @@ export function RemediationTab({ ctx }: { ctx: FindingCtx }) {
             items={[
               { label: 'Status', value: <Badge tone={f.remediation.status === 'verified' ? 'emerald' : f.remediation.status === 'in_progress' ? 'amber' : 'slate'}>{f.remediation.status.replace(/_/g, ' ')}</Badge> },
               { label: 'Assigned owner', value: <UserName id={f.ownerId} /> },
-              { label: 'Target date', value: <span className={f.targetDate && new Date(f.targetDate) < new Date() && !closed ? 'text-red-300' : ''}>{fmtDate(f.targetDate)}</span> },
+              { label: 'Target date', value: <span className={f.targetDate && new Date(f.targetDate) < new Date() && !closed ? 'text-red-700' : ''}>{fmtDate(f.targetDate)}</span> },
               { label: 'Finding status', value: <FindingStatusBadge status={f.status} /> },
             ]}
           />
@@ -688,7 +688,7 @@ export function RemediationTab({ ctx }: { ctx: FindingCtx }) {
           <ul className="space-y-1.5">
             {f.remediation.verificationRequirements.map((v) => (
               <li key={v} className="flex gap-2 text-xs">
-                <FileSearch className="mt-0.5 size-3.5 shrink-0 text-sky-300" /> {v}
+                <FileSearch className="mt-0.5 size-3.5 shrink-0 text-sky-700" /> {v}
               </li>
             ))}
           </ul>
@@ -725,7 +725,7 @@ export function HistoryTab({ ctx }: { ctx: FindingCtx }) {
       <Section className="xl:col-span-2" title="Finding timeline" description="Every discovery, classification change, analyst decision, remediation update and verification event">
         <div className="mb-4 flex flex-wrap gap-1.5">
           {Object.keys(HIST_GROUPS).map((g) => (
-            <button key={g} onClick={() => setGroup(g)} className={cn('rounded-full border px-2.5 py-1 text-xs cursor-pointer', group === g ? 'border-violet-500/50 bg-violet-500/15 text-violet-200' : 'border-border text-muted hover:text-fg')}>
+            <button key={g} onClick={() => setGroup(g)} className={cn('rounded-full border px-2.5 py-1 text-xs cursor-pointer', group === g ? 'border-violet-500/50 bg-violet-500/15 text-violet-700' : 'border-border text-muted hover:text-fg')}>
               {g}
             </button>
           ))}
@@ -800,7 +800,7 @@ export function AIAnalysisTab({ ctx }: { ctx: FindingCtx }) {
             <ul className="space-y-1.5">
               {a.keyObservations.map((o) => (
                 <li key={o} className="flex gap-2 text-[13px] text-muted">
-                  <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-violet-400" /> {o}
+                  <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-violet-500" /> {o}
                 </li>
               ))}
             </ul>
@@ -812,7 +812,7 @@ export function AIAnalysisTab({ ctx }: { ctx: FindingCtx }) {
                   const e = f.evidence.find((x) => x.id === id)
                   return (
                     <li key={id}>
-                      <span className="font-mono text-violet-300">{id}</span> <span className="text-muted">{e?.label ?? '(evidence removed)'}</span>
+                      <span className="font-mono text-violet-700">{id}</span> <span className="text-muted">{e?.label ?? '(evidence removed)'}</span>
                     </li>
                   )
                 })}
@@ -823,7 +823,7 @@ export function AIAnalysisTab({ ctx }: { ctx: FindingCtx }) {
                 {a.knowledgeRefs.map((k) => {
                   const rec = kb(ctx, k)
                   return rec ? (
-                    <Link key={k} to={`/intelligence/library/${rec.id}`} className="rounded-md border border-sky-500/25 bg-sky-500/10 px-1.5 py-0.5 font-mono text-[11px] text-sky-200 hover:border-sky-400/50">
+                    <Link key={k} to={`/intelligence/library/${rec.id}`} className="rounded-md border border-sky-500/25 bg-sky-500/10 px-1.5 py-0.5 font-mono text-[11px] text-sky-700 hover:border-sky-400/50">
                       {k}
                     </Link>
                   ) : (
@@ -838,7 +838,7 @@ export function AIAnalysisTab({ ctx }: { ctx: FindingCtx }) {
             {a.missingInformation.length ? (
               <ul className="space-y-1.5">
                 {a.missingInformation.map((m) => (
-                  <li key={m} className="flex gap-2 text-xs text-amber-200">
+                  <li key={m} className="flex gap-2 text-xs text-amber-700">
                     <CircleDashed className="mt-0.5 size-3.5 shrink-0" /> {m}
                   </li>
                 ))}
@@ -861,7 +861,7 @@ export function AIAnalysisTab({ ctx }: { ctx: FindingCtx }) {
                 {a.confidenceFactors.map((c) => (
                   <li key={c.factor} className="flex justify-between text-[11px]">
                     <span className="text-muted">{c.factor}</span>
-                    <span className={c.effect === 'raises' ? 'text-emerald-300' : 'text-amber-300'}>{c.effect}</span>
+                    <span className={c.effect === 'raises' ? 'text-emerald-700' : 'text-amber-700'}>{c.effect}</span>
                   </li>
                 ))}
               </ul>
@@ -958,7 +958,7 @@ export function RelatedTab({ ctx }: { ctx: FindingCtx }) {
           </li>
         ))}
       </Block>
-      <Block title="Related business services" empty={!ctx.service}>
+      <Block title="Related applications" empty={!ctx.service}>
         {ctx.service && (
           <li className="text-xs">
             <EntityLink type="service" id={ctx.service.id} />
@@ -968,7 +968,7 @@ export function RelatedTab({ ctx }: { ctx: FindingCtx }) {
       <Block title={`Attack paths (${paths.length})`} empty={!paths.length}>
         {paths.map((p) => (
           <li key={p.id} className="text-xs">
-            <Link to={`/exposures/attack-paths/${p.id}`} className="text-violet-300">
+            <Link to={`/exposures/attack-paths/${p.id}`} className="text-violet-700">
               <span className="font-mono text-muted">{p.id}</span> {p.name}
             </Link>
           </li>
@@ -977,7 +977,7 @@ export function RelatedTab({ ctx }: { ctx: FindingCtx }) {
       <Block title={`Security events (${ctx.events.length})`} empty={!ctx.events.length}>
         {ctx.events.map((e) => (
           <li key={e.id} className="flex items-center justify-between gap-2 text-xs">
-            <Link to={`/operations/events?q=${e.id}`} className="truncate text-violet-300">
+            <Link to={`/operations/events?q=${e.id}`} className="truncate text-violet-700">
               <span className="font-mono text-muted">{e.id}</span> {e.title}
             </Link>
             <StatusBadge map={EVENT_STATUS} value={e.status} />

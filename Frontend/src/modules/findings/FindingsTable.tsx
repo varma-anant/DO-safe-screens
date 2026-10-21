@@ -51,9 +51,9 @@ export function FindingsTable({ rows, tableId, views = FINDING_VIEWS, initialVie
             <div className="truncate font-medium text-fg">{c.getValue()}</div>
             <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-subtle">
               <span>{c.row.original.f.category}</span>
-              {c.row.original.f.cveId && <span className="font-mono text-sky-300/80">{c.row.original.f.cveId}</span>}
+              {c.row.original.f.cveId && <span className="font-mono text-sky-700/80">{c.row.original.f.cveId}</span>}
               {c.row.original.f.kev && <KevBadge />}
-              {c.row.original.f.tags.includes('imported-demo') && <span className="text-emerald-300/80">· newly imported</span>}
+              {c.row.original.f.tags.includes('imported-demo') && <span className="text-emerald-700/80">· newly imported</span>}
             </div>
           </div>
         ),
@@ -61,18 +61,18 @@ export function FindingsTable({ rows, tableId, views = FINDING_VIEWS, initialVie
       ch.accessor((r) => r.f.severity, { id: 'severity', header: 'Severity', cell: (c) => <SeverityBadge severity={c.getValue()} />, filterFn: 'multi', sortingFn: (a, b) => SEVERITY_RANK[a.original.f.severity] - SEVERITY_RANK[b.original.f.severity] }),
       ch.accessor((r) => r.f.status, { id: 'status', header: 'Status', cell: (c) => <FindingStatusBadge status={c.getValue()} />, filterFn: 'multi' }),
       ch.accessor((r) => (r.f.aiSystemId ? aiSystems.find((a) => a.id === r.f.aiSystemId)?.name : r.asset?.name) ?? '—', { id: 'target', header: showAI ? 'Asset / AI system' : 'Asset', cell: (c) => <span className="whitespace-nowrap">{c.getValue()}</span> }),
-      ch.accessor((r) => r.service?.name ?? '—', { id: 'service', header: 'Business service', filterFn: 'multi', cell: (c) => <span className="whitespace-nowrap text-muted">{c.getValue()}</span> }),
+      ch.accessor((r) => r.service?.name ?? '—', { id: 'service', header: 'Application', filterFn: 'multi', cell: (c) => <span className="whitespace-nowrap text-muted">{c.getValue()}</span> }),
       ch.accessor((r) => r.f.category, { id: 'category', header: 'Category', filterFn: 'multi', cell: (c) => <span className="text-muted">{c.getValue()}</span> }),
       ch.accessor((r) => r.f.domain, { id: 'domain', header: 'Domain', filterFn: 'multi', cell: (c) => <span className="capitalize text-muted">{c.getValue()}</span> }),
-      ch.accessor((r) => (r.asset?.internetExposed || r.f.tags.includes('internet-facing') ? 'Internet-facing' : 'Internal'), { id: 'exposure', header: 'Exposure', filterFn: 'multi', cell: (c) => <span className={c.getValue() === 'Internet-facing' ? 'text-orange-300' : 'text-muted'}>{c.getValue()}</span> }),
-      ch.accessor((r) => (r.f.kev ? 'KEV' : 'Not KEV'), { id: 'kev', header: 'KEV', filterFn: 'multi', enableHiding: true, cell: (c) => (c.getValue() === 'KEV' ? <span className="text-red-300">Yes</span> : <span className="text-subtle">No</span>) }),
+      ch.accessor((r) => (r.asset?.internetExposed || r.f.tags.includes('internet-facing') ? 'Internet-facing' : 'Internal'), { id: 'exposure', header: 'Exposure', filterFn: 'multi', cell: (c) => <span className={c.getValue() === 'Internet-facing' ? 'text-orange-700' : 'text-muted'}>{c.getValue()}</span> }),
+      ch.accessor((r) => (r.f.kev ? 'KEV' : 'Not KEV'), { id: 'kev', header: 'KEV', filterFn: 'multi', enableHiding: true, cell: (c) => (c.getValue() === 'KEV' ? <span className="text-red-700">Yes</span> : <span className="text-subtle">No</span>) }),
       ch.accessor((r) => users.find((u) => u.id === r.f.ownerId)?.name ?? 'Unassigned', { id: 'owner', header: 'Owner', filterFn: 'multi', cell: (c) => <UserName id={c.row.original.f.ownerId} /> }),
       ch.accessor((r) => (isOverdue(r.f) ? 'Overdue' : 'Within SLA'), {
         id: 'sla',
         header: 'Due',
         filterFn: 'multi',
         cell: (c) => (
-          <span className={`inline-flex items-center gap-1 whitespace-nowrap ${c.getValue() === 'Overdue' ? 'text-red-300' : 'text-muted'}`}>
+          <span className={`inline-flex items-center gap-1 whitespace-nowrap ${c.getValue() === 'Overdue' ? 'text-red-700' : 'text-muted'}`}>
             {c.getValue() === 'Overdue' && <AlarmClock className="size-3" />}
             {['resolved', 'false_positive', 'risk_accepted'].includes(c.row.original.f.status) ? '—' : fmtDate(c.row.original.f.targetDate)}
           </span>

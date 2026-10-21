@@ -1,5 +1,6 @@
-import { createBrowserRouter, Navigate, useRouteError, Link } from 'react-router'
+import { createBrowserRouter, Navigate, useParams, useRouteError, Link } from 'react-router'
 import { AppShell } from '@/layouts/AppShell'
+import { SecurityLayout } from '@/layouts/SecurityLayout'
 import { Button } from '@/components/ui/button'
 
 function RouteError({ forceNotFound }: { forceNotFound?: boolean }) {
@@ -7,13 +8,17 @@ function RouteError({ forceNotFound }: { forceNotFound?: boolean }) {
   const notFound = forceNotFound || err?.status === 404
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
-      <div className="text-4xl font-semibold text-violet-300">{notFound ? '404' : 'Error'}</div>
+      <div className="text-4xl font-semibold text-violet-700">{notFound ? '404' : 'Error'}</div>
       <p className="mt-2 text-sm text-muted">{notFound ? 'This screen does not exist in the DO SAFE prototype.' : err?.message ?? 'Unexpected error'}</p>
       <Button asChild className="mt-5" variant="secondary">
-        <Link to="/dashboard">Back to Executive Dashboard</Link>
+        <Link to="/home">Back to Home</Link>
       </Button>
     </div>
   )
+}
+
+function ServiceRedirect() {
+  return <Navigate to={`/applications/${useParams().id}`} replace />
 }
 
 type Loader = () => Promise<object>
@@ -29,8 +34,16 @@ const ai = () => import('@/modules/ai')
 const intel = () => import('@/modules/intelligence')
 const integ = () => import('@/modules/integrations')
 const platform = () => import('@/modules/platform')
+const auth = () => import('@/modules/auth')
+const home = () => import('@/modules/home')
+const apps = () => import('@/modules/applications')
+const onboarding = () => import('@/modules/onboarding')
+const requests = () => import('@/modules/requests')
+const admin = () => import('@/modules/admin')
+const support = () => import('@/modules/support')
 
 export const router = createBrowserRouter([
+  { path: '/login', ...page(auth, 'LoginPage'), errorElement: <RouteError />, hydrateFallbackElement: <div className="p-8 text-sm text-muted">Loading DO SAFE…</div> },
   {
     path: '/',
     element: <AppShell />,
@@ -38,12 +51,37 @@ export const router = createBrowserRouter([
     hydrateFallbackElement: <div className="p-8 text-sm text-muted">Loading DO SAFE…</div>,
     children: [
       { errorElement: <RouteError />, children: [
-        { index: true, element: <Navigate to="/dashboard" replace /> },
+        { index: true, element: <Navigate to="/home" replace /> },
+        { path: 'home', ...page(home, 'HomePage') },
         { path: 'dashboard', ...page(dash, 'ExecutiveDashboard') },
-        { path: 'analytics', ...page(dash, 'RiskAnalytics') },
-        { path: 'services', ...page(dash, 'BusinessServices') },
-        { path: 'services/:id', ...page(dash, 'ServiceDetail') },
+        { path: 'requests', ...page(requests, 'RequestsPage') },
+        { path: 'applications', ...page(apps, 'ApplicationsPage') },
+        { path: 'applications/:id', ...page(apps, 'ApplicationDetail') },
+        { path: 'mapping', ...page(apps, 'MappingPage') },
+        { path: 'projects', ...page(apps, 'ProjectsPage') },
+        { path: 'projects/:id', ...page(apps, 'ProjectDetail') },
+        { path: 'onboarding', ...page(onboarding, 'OnboardingPage') },
+        { path: 'services', element: <Navigate to="/applications" replace /> },
+        { path: 'services/:id', element: <ServiceRedirect /> },
+        { path: 'support', ...page(support, 'SupportPage') },
+        { path: 'knowledge', ...page(support, 'KnowledgePage') },
+        {
+          path: 'admin',
+          ...page(admin, 'AdminLayout'),
+          children: [
+            { index: true, ...page(admin, 'AdminOverview') },
+            { path: 'people', ...page(admin, 'PeoplePage') },
+            { path: 'invitations', ...page(admin, 'InvitationsPage') },
+            { path: 'roles', ...page(admin, 'RolesPage') },
+            { path: 'project-access', ...page(admin, 'ProjectAccessPage') },
+            { path: 'inspector', ...page(admin, 'InspectorPage') },
+            { path: 'audit', ...page(admin, 'AdminAuditPage') },
+            { path: 'identity', ...page(admin, 'IdentityPage') },
+          ],
+        },
 
+        { element: <SecurityLayout />, children: [
+        { path: 'analytics', ...page(dash, 'RiskAnalytics') },
         { path: 'exposures', ...page(ctem, 'ExposureInventory') },
         { path: 'exposures/assets', ...page(ctem, 'AssetsPage') },
         { path: 'exposures/assets/:id', ...page(ctem, 'AssetDetail') },
@@ -102,6 +140,8 @@ export const router = createBrowserRouter([
         { path: 'intelligence/investigation', ...page(intel, 'InvestigationPage') },
         { path: 'intelligence/agents', ...page(intel, 'AgentsPage') },
         { path: 'intelligence/agents/:id', ...page(intel, 'AgentDetail') },
+
+        ] },
 
         { path: 'integrations', ...page(integ, 'MarketplacePage') },
         { path: 'integrations/connected', ...page(integ, 'ConnectedPage') },

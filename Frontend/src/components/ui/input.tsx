@@ -16,14 +16,18 @@ export function Label({ className, ...props }: React.LabelHTMLAttributes<HTMLLab
 }
 
 export function Field({ label, error, hint, children, required }: { label: string; error?: string; hint?: string; children: React.ReactNode; required?: boolean }) {
+  const autoId = React.useId()
+  const child = React.isValidElement<{ id?: string; 'aria-describedby'?: string; 'aria-invalid'?: boolean }>(children) ? children : null
+  const id = child?.props.id ?? autoId
+  const noteId = `${id}-note`
   return (
     <div>
-      <Label>
+      <Label htmlFor={child ? id : undefined}>
         {label}
-        {required && <span className="text-red-400"> *</span>}
+        {required && <span className="text-red-600"> *</span>}
       </Label>
-      {children}
-      {error ? <p className="mt-1 text-xs text-red-400" role="alert">{error}</p> : hint ? <p className="mt-1 text-xs text-subtle">{hint}</p> : null}
+      {child ? React.cloneElement(child, { id, 'aria-describedby': error || hint ? noteId : child.props['aria-describedby'], 'aria-invalid': error ? true : child.props['aria-invalid'] }) : children}
+      {error ? <p id={noteId} className="mt-1 text-xs text-red-600" role="alert">{error}</p> : hint ? <p id={noteId} className="mt-1 text-xs text-subtle">{hint}</p> : null}
     </div>
   )
 }

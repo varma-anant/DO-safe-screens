@@ -82,7 +82,7 @@ export function AssistantPage() {
         <Card className="flex min-h-[560px] flex-col">
           <div className="flex-1 space-y-5 overflow-y-auto p-4">
             {turns.length === 0 && (
-              <EmptyState icon={<Sparkles />} title="Ask about your risk posture" description="Pick a suggested question or type your own. Supported topics: critical vulnerabilities, KEV, business service risk, vendors, AI configuration, shadow AI, overdue remediation, ALE, false positives, incidents and CVE lookups." />
+              <EmptyState icon={<Sparkles />} title="Ask about your risk posture" description="Pick a suggested question or type your own. Supported topics: critical vulnerabilities, KEV, application risk, vendors, AI configuration, shadow AI, overdue remediation, ALE, false positives, incidents and CVE lookups." />
             )}
             {turns.map((t) => (
               <div key={t.id} className="space-y-3">
@@ -94,7 +94,7 @@ export function AssistantPage() {
                 </div>
                 {!t.r ? (
                   <div className="flex items-center gap-2 text-xs text-muted">
-                    <Loader2 className="size-4 animate-spin text-violet-300" /> Querying demo records…
+                    <Loader2 className="size-4 animate-spin text-violet-700" /> Querying demo records…
                   </div>
                 ) : (
                   <ResponseCard r={t.r} onAction={(to) => (to === '#search' ? setSearchOpen(true) : navigate(to))} />
@@ -156,7 +156,7 @@ function ResponseCard({ r, onAction }: { r: IntelResponse; onAction: (to: string
                 <Link key={rec.type + rec.id} to={entityPath(rec.type, rec.id, rec.domain)} className="flex items-center gap-2 rounded-md px-2 py-1 text-xs hover:bg-surface-3">
                   <EntityIcon type={rec.type} />
                   <span className="font-mono text-[11px] text-muted">{rec.type === 'knowledge' ? '' : rec.id}</span>
-                  <span className="truncate text-violet-200">{rec.label}</span>
+                  <span className="truncate text-violet-700">{rec.label}</span>
                   {rec.meta && <span className="ml-auto shrink-0 text-[11px] text-subtle">{rec.meta}</span>}
                 </Link>
               ))}
@@ -204,7 +204,7 @@ export function LibraryPage() {
   const linkedCount = (k: KnowledgeRecord) => (k.type === 'INTERNAL' ? k.derivedFromFindingIds?.length ?? 0 : data.findings.filter((f) => f.cveId === k.externalId || f.cweIds.includes(k.externalId) || f.attackIds.includes(k.externalId) || f.owaspIds.includes(k.externalId) || (k.type === 'KEV' && f.kev)).length)
   const rows = data.knowledge.map((k) => ({ ...k, linked: linkedCount(k) }))
   const columns = [
-    kCol.accessor('externalId', { header: 'Identifier', cell: (c) => <span className="font-mono text-xs text-sky-200">{c.getValue()}</span> }),
+    kCol.accessor('externalId', { header: 'Identifier', cell: (c) => <span className="font-mono text-xs text-sky-700">{c.getValue()}</span> }),
     kCol.accessor('name', { header: 'Name', cell: (c) => <span className="block max-w-[420px] truncate font-medium">{c.getValue()}</span> }),
     kCol.accessor('type', { header: 'Knowledge system', filterFn: 'multi', cell: (c) => <Badge tone={c.getValue() === 'INTERNAL' ? 'emerald' : c.getValue() === 'CVE' ? 'red' : c.getValue() === 'CWE' ? 'amber' : c.getValue() === 'ATTACK' ? 'sky' : 'violet'}>{KB_TYPE_LABEL[c.getValue()]}</Badge> }),
     kCol.accessor((k) => (k.kev ? 'KEV' : k.cvss ? 'Not KEV' : '—'), { id: 'kev', header: 'KEV', cell: (c) => (c.getValue() === 'KEV' ? <KevBadge /> : <span className="text-subtle">{c.getValue()}</span>) }),
@@ -232,7 +232,7 @@ export function LibraryPage() {
 export function KnowledgeDetail() {
   const { id } = useParams()
   const settings = useSettings()
-  const { data, isLoading, error, retry } = useCollections(['knowledge', 'findings', 'assets', 'services'] as const)
+  const { data, isLoading, error, retry } = useCollections(['knowledge', 'findings', 'assets', 'services'] as const, { ignoreProjectFilter: true })
   const k = data?.knowledge.find((x) => x.id === id)
   usePage(k?.externalId ?? 'Knowledge record', [{ label: 'Security Intelligence' }, { label: 'Knowledge Library', to: '/intelligence/library' }, { label: k?.externalId ?? id ?? '' }])
   React.useEffect(() => {
@@ -255,13 +255,13 @@ export function KnowledgeDetail() {
           {k.affectedProducts && <div className="mt-3 text-xs"><span className="text-muted">Affected products: </span>{k.affectedProducts.join('; ')}</div>}
         </Section>
         <Section title="Record details">
-          <KeyValue cols={1} items={[{ label: 'Source', value: k.source }, { label: 'Published', value: k.published ?? '—' }, { label: 'Library updated', value: fmtDateTime(k.lastUpdated) }, ...(k.cvss ? [{ label: `CVSS ${k.cvss.version}`, value: <span><span className="font-semibold">{k.cvss.score}</span> <code className="block break-all text-[11px] text-muted">{k.cvss.vector}</code></span> }] : []), ...(k.epss ? [{ label: 'EPSS (illustrative)', value: <span>{fmtPct(k.epss.score, 1)} · pct {fmtPct(k.epss.percentile, 1)}<div className="text-[11px] text-amber-300/80">{k.epss.note}</div></span> }] : []), ...(k.tactic ? [{ label: 'Tactic', value: k.tactic }] : [])]} />
+          <KeyValue cols={1} items={[{ label: 'Source', value: k.source }, { label: 'Published', value: k.published ?? '—' }, { label: 'Library updated', value: fmtDateTime(k.lastUpdated) }, ...(k.cvss ? [{ label: `CVSS ${k.cvss.version}`, value: <span><span className="font-semibold">{k.cvss.score}</span> <code className="block break-all text-[11px] text-muted">{k.cvss.vector}</code></span> }] : []), ...(k.epss ? [{ label: 'EPSS (illustrative)', value: <span>{fmtPct(k.epss.score, 1)} · pct {fmtPct(k.epss.percentile, 1)}<div className="text-[11px] text-amber-700/80">{k.epss.note}</div></span> }] : []), ...(k.tactic ? [{ label: 'Tactic', value: k.tactic }] : [])]} />
         </Section>
       </div>
       {(relatedCwe.length > 0 || coMapped.length > 0) && (
         <Section title="Related knowledge" description={k.type === 'CVE' ? 'Weakness classes assigned to this CVE' : 'CVEs observed alongside this mapping in Northstar findings'}>
           <div className="flex flex-wrap gap-2">
-            {[...relatedCwe, ...coMapped].map((r) => <Link key={r.id} to={`/intelligence/library/${r.id}`} className="rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-xs hover:border-violet-500/40"><span className="font-mono text-sky-200">{r.externalId}</span> {r.name}</Link>)}
+            {[...relatedCwe, ...coMapped].map((r) => <Link key={r.id} to={`/intelligence/library/${r.id}`} className="rounded-lg border border-border bg-surface-2 px-2.5 py-1.5 text-xs hover:border-violet-500/40"><span className="font-mono text-sky-700">{r.externalId}</span> {r.name}</Link>)}
           </div>
         </Section>
       )}
@@ -313,7 +313,7 @@ export function ThreatIntelPage() {
             {kev.map(({ k, affected }) => (
               <div key={k.id} className="flex flex-wrap items-center gap-3 py-2.5">
                 <div className="min-w-0 flex-1">
-                  <Link to={`/intelligence/library/${k.id}`} className="text-[13px] font-medium hover:text-violet-200"><span className="font-mono text-sky-200">{k.externalId}</span> {k.name}</Link>
+                  <Link to={`/intelligence/library/${k.id}`} className="text-[13px] font-medium hover:text-violet-700"><span className="font-mono text-sky-700">{k.externalId}</span> {k.name}</Link>
                   <div className="text-[11px] text-muted">CVSS {k.cvss?.score} · EPSS {fmtPct(k.epss?.score ?? 0)} (illustrative) · published {k.published}</div>
                 </div>
                 {affected.length ? <Button size="xs" variant="secondary" onClick={() => navigate(`/exposures/vulnerabilities/${affected[0].id}`)}>{affected.length} open finding(s)</Button> : <Badge tone="emerald">No open exposure</Badge>}
@@ -325,7 +325,7 @@ export function ThreatIntelPage() {
           <Section title="Daily threat digest" actions={<DemoTag />}>
             {lastDigest ? (
               <ul className="space-y-1.5 text-xs">
-                {lastDigest.outputs.map((o, i) => <li key={i} className="flex gap-1.5"><Lightbulb className="mt-0.5 size-3 shrink-0 text-amber-300" /> {o.label}</li>)}
+                {lastDigest.outputs.map((o, i) => <li key={i} className="flex gap-1.5"><Lightbulb className="mt-0.5 size-3 shrink-0 text-amber-700" /> {o.label}</li>)}
                 <li className="pt-1 text-[11px] text-subtle">Generated {fmtDateTime(lastDigest.finishedAt)}</li>
               </ul>
             ) : (
@@ -428,7 +428,7 @@ export function InvestigationPage() {
                 {sel.missingEvidence.length > 0 && (
                   <div className="mt-3 space-y-1">
                     <div className="label-xs">Collect next</div>
-                    {sel.missingEvidence.map((m) => <div key={m} className="flex gap-1.5 text-xs text-amber-200"><CircleDashed className="mt-0.5 size-3 shrink-0" />{m}</div>)}
+                    {sel.missingEvidence.map((m) => <div key={m} className="flex gap-1.5 text-xs text-amber-700"><CircleDashed className="mt-0.5 size-3 shrink-0" />{m}</div>)}
                   </div>
                 )}
               </Section>
@@ -436,7 +436,7 @@ export function InvestigationPage() {
                 <div className="space-y-1.5">
                   {fpSignals.map((s) => (
                     <div key={s.label} className="flex items-start gap-2 text-xs">
-                      {s.pass ? <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-400" /> : <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-400" />}
+                      {s.pass ? <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-600" /> : <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-600" />}
                       <span className={s.pass ? 'text-muted' : ''}>{s.label}</span>
                     </div>
                   ))}
@@ -474,7 +474,7 @@ export function InvestigationPage() {
                   <Stat label="Resolved" value={resolvedSimilar.length} />
                   <Stat label="False positive" value={fpSimilar.length} />
                 </div>
-                {internal.map((k) => <Link key={k.id} to={`/intelligence/library/${k.id}`} className="mt-2 block rounded-lg bg-surface-2 px-3 py-2 text-xs hover:bg-surface-3"><span className="font-medium text-violet-300">{k.name}</span><p className="mt-0.5 line-clamp-2 text-muted">{k.summary}</p></Link>)}
+                {internal.map((k) => <Link key={k.id} to={`/intelligence/library/${k.id}`} className="mt-2 block rounded-lg bg-surface-2 px-3 py-2 text-xs hover:bg-surface-3"><span className="font-medium text-violet-700">{k.name}</span><p className="mt-0.5 line-clamp-2 text-muted">{k.summary}</p></Link>)}
               </Section>
             </div>
           </div>
@@ -515,9 +515,9 @@ export function AgentsPage() {
             <Card key={a.id} className="flex flex-col p-4">
               <div className="flex items-start justify-between gap-2">
                 <Link to={`/intelligence/agents/${a.id}`} className="flex items-center gap-2.5">
-                  <span className="flex size-9 items-center justify-center rounded-xl bg-primary-soft text-violet-300"><Bot className="size-4.5" /></span>
+                  <span className="flex size-9 items-center justify-center rounded-xl bg-primary-soft text-violet-700"><Bot className="size-4.5" /></span>
                   <span>
-                    <span className="block text-[14px] font-semibold hover:text-violet-200">{a.name}</span>
+                    <span className="block text-[14px] font-semibold hover:text-violet-700">{a.name}</span>
                     <span className="block text-[11px] text-muted">{a.module}</span>
                   </span>
                 </Link>
@@ -527,8 +527,8 @@ export function AgentsPage() {
               <div className="mt-2 flex flex-wrap gap-1">
                 {a.capabilities.slice(0, 3).map((c) => <Badge key={c}>{c}</Badge>)}
               </div>
-              {a.requiresApprovalFor.length > 0 && <div className="mt-2 flex items-center gap-1 text-[11px] text-amber-200"><Lock className="size-3" /> Approval: {a.requiresApprovalFor.join(', ')}</div>}
-              {a.warnings.length > 0 && <div className="mt-1 flex items-center gap-1 text-[11px] text-orange-300"><AlertTriangle className="size-3" /> {a.warnings.length} warning</div>}
+              {a.requiresApprovalFor.length > 0 && <div className="mt-2 flex items-center gap-1 text-[11px] text-amber-700"><Lock className="size-3" /> Approval: {a.requiresApprovalFor.join(', ')}</div>}
+              {a.warnings.length > 0 && <div className="mt-1 flex items-center gap-1 text-[11px] text-orange-700"><AlertTriangle className="size-3" /> {a.warnings.length} warning</div>}
               <div className="mt-auto flex items-center justify-between gap-2 pt-3 text-[11px] text-subtle">
                 <span>Last run <RelTime iso={a.lastRunAt} /> · {fmtPct(a.successRate)} success</span>
                 <div className="flex items-center gap-2">
@@ -547,7 +547,7 @@ export function AgentsPage() {
 
 export function AgentDetail() {
   const { id } = useParams()
-  const { data, isLoading, error, retry } = useCollections(['agents', 'executions'] as const)
+  const { data, isLoading, error, retry } = useCollections(['agents', 'executions'] as const, { ignoreProjectFilter: true })
   const a = data?.agents.find((x) => x.id === id)
   usePage(a?.name ?? 'Agent', [{ label: 'Security Intelligence' }, { label: 'Specialized Agents', to: '/intelligence/agents' }, { label: a?.name ?? id ?? '' }])
   const [sel, setSel] = React.useState<string | null>(null)
@@ -569,7 +569,7 @@ export function AgentDetail() {
       />
       <div className="grid gap-5 xl:grid-cols-3">
         <Section title="Agent profile">
-          <KeyValue cols={1} items={[{ label: 'Assigned capabilities', value: <div className="flex flex-wrap gap-1">{a.capabilities.map((c) => <Badge key={c}>{c}</Badge>)}</div> }, { label: 'Input sources', value: a.inputSources.join(', ') }, { label: 'Approval requirements', value: <span className="inline-flex items-start gap-1"><Lock className="mt-0.5 size-3.5 shrink-0 text-amber-300" />{a.approvalRequirement}</span> }, { label: 'Last execution', value: fmtDateTime(a.lastRunAt) }, { label: 'Success rate', value: fmtPct(a.successRate) }]} />
+          <KeyValue cols={1} items={[{ label: 'Assigned capabilities', value: <div className="flex flex-wrap gap-1">{a.capabilities.map((c) => <Badge key={c}>{c}</Badge>)}</div> }, { label: 'Input sources', value: a.inputSources.join(', ') }, { label: 'Approval requirements', value: <span className="inline-flex items-start gap-1"><Lock className="mt-0.5 size-3.5 shrink-0 text-amber-700" />{a.approvalRequirement}</span> }, { label: 'Last execution', value: fmtDateTime(a.lastRunAt) }, { label: 'Success rate', value: fmtPct(a.successRate) }]} />
           {a.warnings.length > 0 && <div className="mt-3 space-y-1.5">{a.warnings.map((w) => <Callout key={w} tone="warn" icon={<AlertTriangle />}>{w}</Callout>)}</div>}
         </Section>
         <Section className="xl:col-span-2" title={exe ? `Execution ${exe.id}` : 'Executions'} description={exe ? `${exe.trigger} · started ${fmtDateTime(exe.startedAt)} · ${exe.inputSummary}` : undefined} actions={exe && <Badge tone={EXEC_STATUS[exe.status].tone} icon={exe.status === 'running' ? <Loader2 className="animate-spin" /> : undefined}>{EXEC_STATUS[exe.status].label}</Badge>}>
@@ -579,7 +579,7 @@ export function AgentDetail() {
               <ol className="space-y-2">
                 {exe.steps.map((s, i) => (
                   <li key={i} className="flex items-center gap-3 rounded-lg bg-surface-2 px-3 py-2">
-                    {s.status === 'done' ? <CheckCircle2 className="size-4 text-emerald-400" /> : s.status === 'running' ? <Loader2 className="size-4 animate-spin text-violet-300" /> : s.status === 'failed' ? <XCircle className="size-4 text-red-400" /> : s.status === 'skipped' ? <PauseCircle className="size-4 text-subtle" /> : <CircleDashed className="size-4 text-subtle" />}
+                    {s.status === 'done' ? <CheckCircle2 className="size-4 text-emerald-600" /> : s.status === 'running' ? <Loader2 className="size-4 animate-spin text-violet-700" /> : s.status === 'failed' ? <XCircle className="size-4 text-red-600" /> : s.status === 'skipped' ? <PauseCircle className="size-4 text-subtle" /> : <CircleDashed className="size-4 text-subtle" />}
                     <span className="flex-1 text-[13px]">{s.name}</span>
                     <span className="text-[11px] text-muted">{s.detail}</span>
                     {s.durationMs && <span className="num text-[11px] text-subtle">{(s.durationMs / 1000).toFixed(1)}s</span>}
@@ -597,7 +597,7 @@ export function AgentDetail() {
               {exe.approval && (
                 <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="text-[13px]"><Lock className="mr-1 inline size-3.5 text-amber-300" /> Human approval gate: <span className="font-medium">{exe.approval.action}</span></div>
+                    <div className="text-[13px]"><Lock className="mr-1 inline size-3.5 text-amber-700" /> Human approval gate: <span className="font-medium">{exe.approval.action}</span></div>
                     <Badge tone={exe.approval.status === 'approved' ? 'emerald' : exe.approval.status === 'rejected' ? 'slate' : 'amber'}>{exe.approval.status}</Badge>
                   </div>
                   {exe.approval.status === 'pending' ? (

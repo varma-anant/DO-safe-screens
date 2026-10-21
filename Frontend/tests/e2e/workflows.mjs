@@ -1,6 +1,7 @@
 // End-to-end workflows A–H, agent approval gate, search and persistence.
 // Requires the dev server on :5173 and Playwright (npm i -D playwright && npx playwright install chromium).
 import { chromium } from 'playwright'
+import { signIn } from './login.mjs'
 const base = 'http://localhost:5173'
 const browser = await chromium.launch()
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
@@ -12,6 +13,7 @@ const db = () => page.evaluate(() => JSON.parse(localStorage.getItem('do-safe-un
 const ok = (cond, msg) => console.log(`${cond ? '✓' : '✗'} ${msg}`)
 const step = async (name, fn) => { try { await fn() } catch (e) { await page.screenshot({ path: 'fail-' + name + '.png' }); console.log('✗', name, e.message.split('\n').slice(0,3).join(' | ')) } }
 
+await signIn(page, base)
 await page.goto(base + '/dashboard'); await page.waitForLoadState('networkidle')
 // speed up: set latency to 0 via settings API in localStorage
 await page.evaluate(() => { const k = 'do-safe-unified-demo-db'; const s = JSON.parse(localStorage.getItem(k)); s.state.db.settings.latencyMs = 20; localStorage.setItem(k, JSON.stringify(s)) })
@@ -142,9 +144,9 @@ await step('E', async () => {
 
 // ---------------- Workflow F
 await step('F', async () => {
-  await page.goto(`${base}/services/SVC-PAY`); await page.waitForSelector('main h1')
-  await page.getByRole('tab', { name: /Assets/ }).click(); await page.waitForTimeout(150)
-  await page.getByRole('link', { name: 'Open risk scenario' }).click(); await page.waitForURL(/crq\/scenarios\//)
+  await page.goto(`${base}/applications/SVC-PAY`); await page.waitForSelector('main h1')
+  await page.getByRole('tab', { name: /Risk & dependencies/ }).click(); await page.waitForTimeout(150)
+  await page.locator('main a[href^="/crq/scenarios/"]').first().click(); await page.waitForURL(/crq\/scenarios\//)
   const before = await page.locator('text=Simulated ALE').locator('..').locator('..').innerText()
   await page.getByRole('checkbox').first().check()
   const thumb = page.getByRole('slider').first(); await thumb.focus(); for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowLeft')

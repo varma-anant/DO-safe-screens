@@ -53,7 +53,7 @@ export function MarketplacePage() {
         </div>
         <div className="flex flex-wrap gap-1.5">
           {cats.map((c) => (
-            <button key={c} onClick={() => setCat(c)} className={cn('rounded-full border px-2.5 py-1 text-xs cursor-pointer', cat === c ? 'border-violet-500/50 bg-violet-500/15 text-violet-200' : 'border-border text-muted hover:text-fg')}>{c}</button>
+            <button key={c} onClick={() => setCat(c)} className={cn('rounded-full border px-2.5 py-1 text-xs cursor-pointer', cat === c ? 'border-violet-500/50 bg-violet-500/15 text-violet-700' : 'border-border text-muted hover:text-fg')}>{c}</button>
           ))}
         </div>
       </div>
@@ -93,7 +93,7 @@ const cfgSchema = z.object({
 export function IntegrationDetail() {
   const { id } = useParams()
   const settings = useSettings()
-  const { data, isLoading, error, retry } = useCollections(['integrations', 'ingestionRuns', 'findings', 'assets', 'services'] as const)
+  const { data, isLoading, error, retry } = useCollections(['integrations', 'ingestionRuns', 'findings', 'assets', 'services'] as const, { ignoreProjectFilter: true })
   const i = data?.integrations.find((x) => x.id === id)
   usePage(i?.name ?? 'Integration', [{ label: 'Integrations' }, { label: 'Integration Marketplace', to: '/integrations' }, { label: i?.name ?? id ?? '' }])
   const { run, pending } = useAction()
@@ -131,7 +131,7 @@ export function IntegrationDetail() {
       </div>
       <div className="grid gap-5 xl:grid-cols-3">
         <Section title="Capabilities">
-          <ul className="space-y-1.5 text-[13px]">{i.capabilities.map((c) => <li key={c} className="flex gap-2"><CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-400" />{c}</li>)}</ul>
+          <ul className="space-y-1.5 text-[13px]">{i.capabilities.map((c) => <li key={c} className="flex gap-2"><CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-600" />{c}</li>)}</ul>
           <div className="label-xs mb-1 mt-4">Data types</div>
           <div className="flex flex-wrap gap-1">{i.dataTypes.map((d) => <Badge key={d}>{d}</Badge>)}</div>
         </Section>
@@ -158,11 +158,11 @@ export function IntegrationDetail() {
               <Button type="submit" variant="secondary" loading={formState.isSubmitting} disabled={!formState.isDirty && !!i.config}>Save configuration</Button>
               <Button type="button" variant="secondary" disabled={!i.config || formState.isDirty} loading={testing} onClick={async () => { setTesting(true); await run(() => api.testIntegration(i.id), (ok) => (ok ? 'Connection test succeeded (simulated)' : 'Connection test failed (simulated)')); setTesting(false) }}><TestTube2 /> Test connection</Button>
               {i.config?.testResult && (
-                <span className={cn('inline-flex items-center gap-1 text-xs', i.config.testResult === 'success' ? 'text-emerald-300' : 'text-red-300')}>
+                <span className={cn('inline-flex items-center gap-1 text-xs', i.config.testResult === 'success' ? 'text-emerald-700' : 'text-red-700')}>
                   {i.config.testResult === 'success' ? <CheckCircle2 className="size-3.5" /> : <XCircle className="size-3.5" />} Last test {i.config.testResult} · {fmtDateTime(i.config.testedAt)}
                 </span>
               )}
-              {formState.isDirty && i.config && <span className="text-xs text-amber-300">Unsaved changes</span>}
+              {formState.isDirty && i.config && <span className="text-xs text-amber-700">Unsaved changes</span>}
             </div>
           </form>
           {i.status === 'error' && <div className="mt-3"><Callout tone="danger" icon={<AlertTriangle />} title="Connector error">{runs.find((r) => r.status === 'failed')?.message ?? 'Last sync failed.'} Update credentials and re-test to restore.</Callout></div>}
@@ -192,7 +192,7 @@ function RunsTable({ runs, integrations }: { runs: IngestionRun[]; integrations:
     rCol.accessor('received', { header: 'Received', cell: (c) => <span className="num">{fmtNum(c.getValue())}</span> }),
     rCol.accessor('normalized', { header: 'Normalized', cell: (c) => <span className="num">{fmtNum(c.getValue())}</span> }),
     rCol.accessor('duplicatesMerged', { header: 'Duplicates merged', cell: (c) => <span className="num text-muted">{fmtNum(c.getValue())}</span> }),
-    rCol.accessor('rejected', { header: 'Rejected', cell: (c) => <span className={cn('num', c.getValue() ? 'text-amber-300' : 'text-subtle')}>{c.getValue()}</span> }),
+    rCol.accessor('rejected', { header: 'Rejected', cell: (c) => <span className={cn('num', c.getValue() ? 'text-amber-700' : 'text-subtle')}>{c.getValue()}</span> }),
     rCol.accessor((r) => r.createdFindingIds.length, { id: 'created', header: 'New findings', cell: (c) => (c.getValue() ? <Badge tone="violet">{c.getValue()}</Badge> : <span className="text-subtle">0</span>) }),
     rCol.accessor('durationSec', { header: 'Duration', cell: (c) => <span className="text-muted">{c.getValue()}s</span> }),
     rCol.accessor('message', { header: 'Message', cell: (c) => <span className="block max-w-[320px] truncate text-xs text-muted">{c.getValue()}</span> }),
@@ -224,7 +224,7 @@ export function ConnectedPage() {
           <div key={i.id} className="flex flex-wrap items-center gap-4 px-4 py-3">
             <Logo i={i} />
             <button onClick={() => navigate(`/integrations/${i.id}`)} className="min-w-0 flex-1 text-left cursor-pointer">
-              <div className="text-[13px] font-medium hover:text-violet-200">{i.name}</div>
+              <div className="text-[13px] font-medium hover:text-violet-700">{i.name}</div>
               <div className="text-[11px] text-muted">{i.category} · {i.config?.syncInterval} · last sync {i.lastSyncAt ? <RelTime iso={i.lastSyncAt} /> : 'never'}</div>
             </button>
             <div className="h-8 w-32">
@@ -274,7 +274,7 @@ export function PipelinesPage() {
       <div className="grid gap-3 md:grid-cols-5">
         {stages.map((s, i) => (
           <div key={s.name} className="card relative p-4">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-primary-soft text-violet-300 [&_svg]:size-4">{s.icon}</span>
+            <span className="flex size-8 items-center justify-center rounded-lg bg-primary-soft text-violet-700 [&_svg]:size-4">{s.icon}</span>
             <div className="mt-2 text-[14px] font-semibold">{s.name}</div>
             <div className="num text-xl font-semibold">{fmtNum(s.n)}</div>
             <div className="text-[11px] text-muted">{s.sub}</div>
@@ -295,7 +295,7 @@ export function PipelinesPage() {
                 ['secret_type, validity', 'GitHub', 'category, evidence'],
                 ['app.name, user_count', 'Netskope', 'aiSystem, users'],
                 ['first_found / last_found', '*', 'firstDetected / lastObserved'],
-              ].map(([a, b, c]) => <tr key={a} className="border-t border-border/50"><td className="py-1.5 text-muted">{a}</td><td className="font-sans">{b}</td><td className="text-violet-200">{c}</td></tr>)}
+              ].map(([a, b, c]) => <tr key={a} className="border-t border-border/50"><td className="py-1.5 text-muted">{a}</td><td className="font-sans">{b}</td><td className="text-violet-700">{c}</td></tr>)}
             </tbody>
           </table>
         </Section>
@@ -321,7 +321,7 @@ export function PipelinesPage() {
         <div className="grid gap-3 md:grid-cols-3">
           {data.integrations.filter((i) => data.findings.some((f) => f.sourceIntegrationId === i.id)).map((i) => (
             <Link key={i.id} to={`/integrations/${i.id}`} className="flex items-center justify-between rounded-lg bg-surface-2 px-3 py-2 text-xs hover:bg-surface-3">
-              <span className="flex items-center gap-2"><Tags className="size-3.5 text-violet-300" /> {i.name}</span>
+              <span className="flex items-center gap-2"><Tags className="size-3.5 text-violet-700" /> {i.name}</span>
               <span className="num font-semibold">{data.findings.filter((f) => f.sourceIntegrationId === i.id).length}</span>
             </Link>
           ))}
@@ -380,13 +380,13 @@ export function IngestionMonitoringPage() {
           <div className="space-y-2">
             {integrations.filter((i) => i.status === 'error').map((i) => (
               <Link key={i.id} to={`/integrations/${i.id}`} className="block rounded-lg border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs">
-                <div className="flex items-center gap-1.5 font-medium text-red-200"><XCircle className="size-3.5" /> {i.name}</div>
+                <div className="flex items-center gap-1.5 font-medium text-red-700"><XCircle className="size-3.5" /> {i.name}</div>
                 <div className="text-muted">{runs.find((r) => r.integrationId === i.id && r.status === 'failed')?.message}</div>
               </Link>
             ))}
             {runs.filter((r) => r.status === 'partial').slice(0, 3).map((r) => (
               <div key={r.id} className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs">
-                <div className="flex items-center gap-1.5 font-medium text-amber-200"><AlertTriangle className="size-3.5" /> {integrations.find((i) => i.id === r.integrationId)?.name}</div>
+                <div className="flex items-center gap-1.5 font-medium text-amber-700"><AlertTriangle className="size-3.5" /> {integrations.find((i) => i.id === r.integrationId)?.name}</div>
                 <div className="text-muted">{r.message}</div>
               </div>
             ))}

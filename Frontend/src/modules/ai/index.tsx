@@ -26,7 +26,7 @@ import { aiRiskScore, riskBand } from '@/utils/risk'
 import { scoreFindings } from '@/utils/derive'
 
 const DIMENSIONS = ['Live activity', 'Configuration', 'External exposure', 'Compliance evidence', 'Contract'] as const
-const SIG_COLOR = { ok: 'bg-emerald-500/20 text-emerald-300', warning: 'bg-amber-500/20 text-amber-300', risk: 'bg-red-500/25 text-red-300', unknown: 'bg-slate-500/15 text-slate-400' }
+const SIG_COLOR = { ok: 'bg-emerald-500/20 text-emerald-700', warning: 'bg-amber-500/20 text-amber-700', risk: 'bg-red-500/25 text-red-700', unknown: 'bg-slate-500/15 text-slate-500' }
 const GOV_STATUS: Record<GovernanceReview['status'], { label: string; tone: 'violet' | 'amber' | 'emerald' | 'red' | 'slate' | 'sky' }> = { open: { label: 'Open', tone: 'violet' }, in_review: { label: 'In review', tone: 'amber' }, approved: { label: 'Approved', tone: 'emerald' }, approved_with_conditions: { label: 'Approved with conditions', tone: 'sky' }, rejected: { label: 'Rejected / prohibited', tone: 'red' }, closed: { label: 'Closed', tone: 'slate' } }
 const POLICIES = ['AI Acceptable Use Policy §3.2', 'AI Acceptable Use Policy §5', 'AI Risk Management Standard §4', 'AI Risk Management Standard §6', 'Data Classification Standard §4', 'Third-Party Risk Standard §2.4', 'Data Residency Standard', 'Model Risk Management (SR 11-7)']
 
@@ -78,7 +78,7 @@ export function NewGovernanceReviewDialog({ ai, findingId, open, onOpenChange }:
           <Field label="Policy references" required>
             <div className="flex flex-wrap gap-1.5">
               {POLICIES.map((p) => (
-                <button type="button" key={p} onClick={() => setForm({ ...form, policies: form.policies.includes(p) ? form.policies.filter((x) => x !== p) : [...form.policies, p] })} className={cn('rounded-lg border px-2 py-1 text-xs cursor-pointer', form.policies.includes(p) ? 'border-violet-500/60 bg-violet-500/15 text-violet-200' : 'border-border text-muted')}>
+                <button type="button" key={p} onClick={() => setForm({ ...form, policies: form.policies.includes(p) ? form.policies.filter((x) => x !== p) : [...form.policies, p] })} className={cn('rounded-lg border px-2 py-1 text-xs cursor-pointer', form.policies.includes(p) ? 'border-violet-500/60 bg-violet-500/15 text-violet-700' : 'border-border text-muted')}>
                   {p}
                 </button>
               ))}
@@ -253,13 +253,13 @@ export function AIInventory() {
 // ============================================================ AI system detail
 
 function GraphNode({ data }: { data: { label: string; sub: string; kind: 'ai' | 'vendor' | 'finding' | 'data' | 'signal'; tone?: string } }) {
-  const icon = { ai: <Bot className="size-3.5 text-violet-300" />, vendor: <Building2 className="size-3.5 text-sky-300" />, finding: <ShieldAlert className="size-3.5 text-red-300" />, data: <Database className="size-3.5 text-amber-300" />, signal: <Network className="size-3.5 text-emerald-300" /> }[data.kind]
+  const icon = { ai: <Bot className="size-3.5 text-violet-700" />, vendor: <Building2 className="size-3.5 text-sky-700" />, finding: <ShieldAlert className="size-3.5 text-red-700" />, data: <Database className="size-3.5 text-amber-700" />, signal: <Network className="size-3.5 text-emerald-700" /> }[data.kind]
   return (
     <div className={cn('w-44 rounded-lg border bg-surface px-2.5 py-2 shadow', data.kind === 'ai' ? 'border-violet-400' : data.tone === 'risk' ? 'border-red-500/50' : data.tone === 'warning' ? 'border-amber-500/50' : 'border-border-strong')}>
-      <Handle type="target" position={Position.Top} className="!bg-violet-400" />
+      <Handle type="target" position={Position.Top} className="!bg-violet-500" />
       <div className="flex items-center gap-1.5 text-[12px] font-medium">{icon}<span className="truncate">{data.label}</span></div>
       <div className="truncate text-[10px] text-muted">{data.sub}</div>
-      <Handle type="source" position={Position.Bottom} className="!bg-violet-400" />
+      <Handle type="source" position={Position.Bottom} className="!bg-violet-500" />
     </div>
   )
 }
@@ -269,7 +269,7 @@ export function AISystemDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const settings = useSettings()
-  const { data, isLoading, error, retry } = useCollections(['aiSystems', 'findings', 'assets', 'services', 'vendors', 'governanceReviews', 'incidents', 'tickets', 'assessments'] as const)
+  const { data, isLoading, error, retry } = useCollections(['aiSystems', 'findings', 'assets', 'services', 'vendors', 'governanceReviews', 'incidents', 'tickets', 'assessments'] as const, { ignoreProjectFilter: true })
   const ai = data?.aiSystems.find((a) => a.id === id)
   usePage(ai?.name ?? 'AI system', [{ label: 'AI Security' }, { label: 'AI Inventory', to: '/ai-security/inventory' }, { label: ai?.name ?? id ?? '' }])
   const [govOpen, setGovOpen] = React.useState(false)
@@ -303,7 +303,7 @@ export function AISystemDetail() {
   ]
   ring.forEach((r, i) => {
     nodes.push({ id: r.id, type: 'g', position: { x: (i % 5) * 200, y: 140 + Math.floor(i / 5) * 100 }, data: { label: r.label, sub: r.sub, kind: r.kind, tone: r.tone, link: r.link } })
-    edges.push({ id: `e-${r.id}`, source: 'ai', target: r.id, animated: r.tone === 'risk', style: { stroke: r.tone === 'risk' ? '#ef4444' : r.tone === 'warning' ? '#f59e0b' : '#3a4360', strokeWidth: 1.5 } })
+    edges.push({ id: `e-${r.id}`, source: 'ai', target: r.id, animated: r.tone === 'risk', style: { stroke: r.tone === 'risk' ? '#ef4444' : r.tone === 'warning' ? '#f59e0b' : '#c4c5d2', strokeWidth: 1.5 } })
   })
   return (
     <div className="space-y-5">
@@ -345,7 +345,7 @@ export function AISystemDetail() {
         <TabsContent value="profile">
           <div className="grid gap-5 xl:grid-cols-3">
             <Section className="xl:col-span-2" title="AI application profile">
-              <KeyValue cols={3} items={[{ label: 'System ID', value: <span className="font-mono">{ai.id}</span> }, { label: 'Owner', value: <UserName id={ai.ownerId} /> }, { label: 'Business service', value: ai.businessServiceId ? <EntityLink type="service" id={ai.businessServiceId} showId={false} /> : 'Not mapped' }, { label: 'Models', value: ai.models.join(', ') }, { label: 'Deployment', value: ai.deployment }, { label: 'Data classification', value: ai.dataClassification }, { label: 'Data sources', value: ai.dataSources.join('; ') }, { label: 'Integrations / tools', value: ai.integrations.join('; ') || 'None' }, { label: 'Provider', value: vendor ? <EntityLink type="vendor" id={vendor.id} showId={false} /> : ai.provider }, { label: 'First seen', value: fmtDate(ai.firstSeen) }, { label: 'Last activity', value: fmtDateTime(ai.lastActivity) }, { label: 'Discovered via', value: ai.discoveredVia.join(', ') }]} />
+              <KeyValue cols={3} items={[{ label: 'System ID', value: <span className="font-mono">{ai.id}</span> }, { label: 'Owner', value: <UserName id={ai.ownerId} /> }, { label: 'Application', value: ai.businessServiceId ? <EntityLink type="service" id={ai.businessServiceId} showId={false} /> : 'Not mapped' }, { label: 'Models', value: ai.models.join(', ') }, { label: 'Deployment', value: ai.deployment }, { label: 'Data classification', value: ai.dataClassification }, { label: 'Data sources', value: ai.dataSources.join('; ') }, { label: 'Integrations / tools', value: ai.integrations.join('; ') || 'None' }, { label: 'Provider', value: vendor ? <EntityLink type="vendor" id={vendor.id} showId={false} /> : ai.provider }, { label: 'First seen', value: fmtDate(ai.firstSeen) }, { label: 'Last activity', value: fmtDateTime(ai.lastActivity) }, { label: 'Discovered via', value: ai.discoveredVia.join(', ') }]} />
             </Section>
             <Section title="Related incidents">
               {incidents.map((i) => <div key={i.id} className="mb-1.5 text-xs"><EntityLink type="incident" id={i.id} /></div>)}
@@ -375,7 +375,7 @@ export function AISystemDetail() {
               </div>
               <div className="h-[370px]">
                 <ReactFlow nodes={nodes} edges={edges} nodeTypes={graphTypes} fitView fitViewOptions={{ padding: 0.15 }} nodesDraggable={false} onNodeClick={(_, n) => (n.data as { link?: string }).link && navigate((n.data as { link: string }).link)}>
-                  <Background color="#1f2638" gap={20} />
+                  <Background color="#ececf1" gap={20} />
                   <Controls showInteractive={false} />
                 </ReactFlow>
               </div>
@@ -388,7 +388,7 @@ export function AISystemDetail() {
               {ai.configChecks.map((c) => (
                 <div key={c.id} className="flex items-start justify-between gap-3 py-2.5">
                   <div className="flex gap-2.5">
-                    {c.result === 'pass' ? <CheckCircle2 className="mt-0.5 size-4 text-emerald-400" /> : c.result === 'fail' ? <XCircle className="mt-0.5 size-4 text-red-400" /> : c.result === 'warn' ? <AlertTriangle className="mt-0.5 size-4 text-amber-400" /> : <HelpCircle className="mt-0.5 size-4 text-subtle" />}
+                    {c.result === 'pass' ? <CheckCircle2 className="mt-0.5 size-4 text-emerald-600" /> : c.result === 'fail' ? <XCircle className="mt-0.5 size-4 text-red-600" /> : c.result === 'warn' ? <AlertTriangle className="mt-0.5 size-4 text-amber-600" /> : <HelpCircle className="mt-0.5 size-4 text-subtle" />}
                     <div>
                       <div className="text-[13px] font-medium">{c.check}</div>
                       <div className="text-xs text-muted">{c.detail}</div>
@@ -514,7 +514,7 @@ export function ShadowAIPage() {
             <Card key={a.id} className="p-4">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <Link to={`/ai-security/systems/${a.id}`} className="text-[14px] font-semibold hover:text-violet-200">{a.name}</Link>
+                  <Link to={`/ai-security/systems/${a.id}`} className="text-[14px] font-semibold hover:text-violet-700">{a.name}</Link>
                   <div className="text-xs text-muted">{a.provider} · {a.users} users · {a.dataClassification} data at risk</div>
                 </div>
                 <StatusBadge map={AI_APPROVAL} value={a.approval} />
@@ -523,7 +523,7 @@ export function ShadowAIPage() {
                 {a.discoveredVia.map((d) => <Badge key={d} tone="sky">{d}</Badge>)}
               </div>
               {ev && (
-                <pre className="mt-3 max-h-28 overflow-hidden whitespace-pre-wrap rounded-lg bg-surface-2 p-2.5 font-mono text-[11px] text-slate-300">{ev.content}</pre>
+                <pre className="mt-3 max-h-28 overflow-hidden whitespace-pre-wrap rounded-lg bg-surface-2 p-2.5 font-mono text-[11px] text-slate-600">{ev.content}</pre>
               )}
               {ev && <div className="mt-1 text-[11px] text-subtle">Evidence {ev.id} · source <IntegrationName id={ev.sourceIntegrationId} /> · <ProvenanceBadge value={ev.provenance} /></div>}
               <div className="mt-3 flex flex-wrap gap-2">
@@ -572,7 +572,7 @@ export function ConfigRisksPage() {
             {failing.map(({ a, c }) => (
               <li key={a.id + c.id}>
                 <Link to={`/ai-security/systems/${a.id}`} className="block rounded-lg bg-surface-2 px-3 py-2 hover:bg-surface-3">
-                  <div className="flex items-center gap-1.5 text-[13px]"><XCircle className="size-3.5 text-red-400" /> {c.check}</div>
+                  <div className="flex items-center gap-1.5 text-[13px]"><XCircle className="size-3.5 text-red-600" /> {c.check}</div>
                   <div className="text-[11px] text-muted">{a.name} · {c.detail}</div>
                 </Link>
               </li>
@@ -612,7 +612,7 @@ export function AIAssessmentsPage() {
                   <tr key={a.id} onClick={() => navigate(`/ai-security/systems/${a.id}`)} className="cursor-pointer border-t border-border/50 hover:bg-surface-2/50">
                     <td className="py-2 pr-3 font-medium text-fg">{a.name}</td>
                     <td className="py-2 pr-3"><StatusBadge map={AI_APPROVAL} value={a.approval} /></td>
-                    <td className="py-2 pr-3">{of.length} {of.some((f) => f.severity === 'critical') && <span className="text-red-300">(critical)</span>}</td>
+                    <td className="py-2 pr-3">{of.length} {of.some((f) => f.severity === 'critical') && <span className="text-red-700">(critical)</span>}</td>
                     <td className="py-2 pr-3">{a.configChecks.filter((c) => c.result === 'fail').length}</td>
                     <td className="py-2 pr-3">{a.signals.filter((s) => s.status === 'risk').length} risk · {a.signals.filter((s) => s.status === 'warning').length} warn</td>
                     <td className="py-2 pr-3">{a.dataClassification}</td>
@@ -695,7 +695,7 @@ export function GovernancePage() {
 
 export function GovernanceDetail() {
   const { id } = useParams()
-  const { data, isLoading, error, retry } = useCollections(['governanceReviews', 'aiSystems', 'findings', 'tickets'] as const)
+  const { data, isLoading, error, retry } = useCollections(['governanceReviews', 'aiSystems', 'findings', 'tickets'] as const, { ignoreProjectFilter: true })
   const g = data?.governanceReviews.find((x) => x.id === id)
   usePage(g?.id ?? 'Governance review', [{ label: 'AI Security' }, { label: 'Governance', to: '/ai-security/governance' }, { label: id ?? '' }])
   const { run, pending } = useAction()

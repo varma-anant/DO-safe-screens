@@ -77,7 +77,7 @@ export function VendorOverview() {
           <div className="h-44">
             <ResponsiveContainer>
               <PieChart>
-                <Pie data={bands} dataKey="value" nameKey="name" innerRadius={48} outerRadius={70} paddingAngle={2} stroke="#111522" strokeWidth={2} onClick={(d) => navigate(`/tprm/vendors?risk=${(d as unknown as { key: string }).key}`)} className="cursor-pointer">
+                <Pie data={bands} dataKey="value" nameKey="name" innerRadius={48} outerRadius={70} paddingAngle={2} stroke="#ffffff" strokeWidth={2} onClick={(d) => navigate(`/tprm/vendors?risk=${(d as unknown as { key: string }).key}`)} className="cursor-pointer">
                   {bands.map((b) => <Cell key={b.key} fill={b.fill} />)}
                 </Pie>
                 <RTooltip content={<ChartTooltip />} />
@@ -161,7 +161,7 @@ export function VendorInventory() {
     vCol.accessor((v) => v.dataAccess.join(', '), { id: 'data', header: 'Data access', cell: (c) => <span className="block max-w-[220px] truncate text-xs text-muted">{c.getValue()}</span> }),
     vCol.accessor('openAlerts', { header: 'Alerts', cell: (c) => (c.getValue() ? <Badge tone="amber">{c.getValue()}</Badge> : <span className="text-subtle">0</span>) }),
     vCol.accessor('relationshipOwnerId', { header: 'Owner', cell: (c) => <UserName id={c.getValue()} /> }),
-    vCol.accessor('nextReviewDate', { header: 'Next review', cell: (c) => <span className={daysUntil(c.getValue()) < 0 ? 'text-red-300' : 'text-muted'}>{fmtDate(c.getValue())}</span> }),
+    vCol.accessor('nextReviewDate', { header: 'Next review', cell: (c) => <span className={daysUntil(c.getValue()) < 0 ? 'text-red-700' : 'text-muted'}>{fmtDate(c.getValue())}</span> }),
   ]
   return (
     <div className="space-y-5">
@@ -180,7 +180,7 @@ const onboardSchema = z.object({
   description: z.string().min(10, 'Describe the service provided'),
   tier: z.enum(['tier-1', 'tier-2', 'tier-3', 'tier-4']),
   relationshipOwnerId: z.string().min(1, 'Select a relationship owner'),
-  businessServiceIds: z.array(z.string()).min(1, 'Select at least one business service'),
+  businessServiceIds: z.array(z.string()).min(1, 'Select at least one application'),
   dataAccess: z.array(z.string()).min(1, 'Select data access (or None)'),
   integrationAccess: z.string(),
   isAIProvider: z.boolean(),
@@ -209,7 +209,7 @@ function OnboardingWizard({ onClose }: { onClose: () => void }) {
           <ol className="mb-5 flex items-center gap-2">
             {steps.map((s, i) => (
               <li key={s} className="flex flex-1 items-center gap-2">
-                <span className={cn('flex size-6 shrink-0 items-center justify-center rounded-full border text-[11px]', i < step ? 'border-violet-500 bg-violet-600 text-white' : i === step ? 'border-violet-400 text-violet-200' : 'border-border-strong text-subtle')}>{i < step ? <Check className="size-3" /> : i + 1}</span>
+                <span className={cn('flex size-6 shrink-0 items-center justify-center rounded-full border text-[11px]', i < step ? 'border-violet-500 bg-violet-600 text-white' : i === step ? 'border-violet-400 text-violet-700' : 'border-border-strong text-subtle')}>{i < step ? <Check className="size-3" /> : i + 1}</span>
                 <span className={cn('text-xs', i === step ? 'font-medium' : 'text-muted')}>{s}</span>
                 {i < steps.length - 1 && <span className="h-px flex-1 bg-border" />}
               </li>
@@ -265,10 +265,10 @@ function OnboardingWizard({ onClose }: { onClose: () => void }) {
                     <Input type="number" {...register('contractValue')} />
                   </Field>
                 </div>
-                <Field label="Business services supported" required error={formState.errors.businessServiceIds?.message}>
+                <Field label="Applications supported" required error={formState.errors.businessServiceIds?.message}>
                   <div className="flex flex-wrap gap-2">
                     {data?.services.map((s) => (
-                      <button type="button" key={s.id} onClick={() => toggle('businessServiceIds', s.id)} className={cn('rounded-lg border px-2.5 py-1 text-xs cursor-pointer', w.businessServiceIds.includes(s.id) ? 'border-violet-500/60 bg-violet-500/15 text-violet-200' : 'border-border text-muted')}>
+                      <button type="button" key={s.id} onClick={() => toggle('businessServiceIds', s.id)} className={cn('rounded-lg border px-2.5 py-1 text-xs cursor-pointer', w.businessServiceIds.includes(s.id) ? 'border-violet-500/60 bg-violet-500/15 text-violet-700' : 'border-border text-muted')}>
                         {s.name}
                       </button>
                     ))}
@@ -277,7 +277,7 @@ function OnboardingWizard({ onClose }: { onClose: () => void }) {
                 <Field label="Northstar data accessed" required error={formState.errors.dataAccess?.message}>
                   <div className="flex flex-wrap gap-2">
                     {DATA_OPTIONS.map((d) => (
-                      <button type="button" key={d} onClick={() => toggle('dataAccess', d)} className={cn('rounded-lg border px-2.5 py-1 text-xs cursor-pointer', w.dataAccess.includes(d) ? 'border-violet-500/60 bg-violet-500/15 text-violet-200' : 'border-border text-muted')}>
+                      <button type="button" key={d} onClick={() => toggle('dataAccess', d)} className={cn('rounded-lg border px-2.5 py-1 text-xs cursor-pointer', w.dataAccess.includes(d) ? 'border-violet-500/60 bg-violet-500/15 text-violet-700' : 'border-border text-muted')}>
                         {d}
                       </button>
                     ))}
@@ -348,7 +348,7 @@ function OnboardingWizard({ onClose }: { onClose: () => void }) {
 export function VendorDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { data, isLoading, error, retry } = useCollections(['vendors', 'assessments', 'monitoringAlerts', 'tickets', 'services', 'aiSystems', 'findings', 'scenarios'] as const)
+  const { data, isLoading, error, retry } = useCollections(['vendors', 'assessments', 'monitoringAlerts', 'tickets', 'services', 'aiSystems', 'findings', 'scenarios'] as const, { ignoreProjectFilter: true })
   const v = data?.vendors.find((x) => x.id === id)
   usePage(v?.name ?? 'Vendor', [{ label: 'Third-Party Risk' }, { label: 'Vendor Inventory', to: '/tprm/vendors' }, { label: v?.name ?? id ?? '' }])
   const { run, pending } = useAction()
@@ -420,7 +420,7 @@ export function VendorDetail() {
         <TabsContent value="profile">
           <div className="grid gap-5 xl:grid-cols-3">
             <Section className="xl:col-span-2" title="Business relationship">
-              <KeyValue cols={3} items={[{ label: 'Vendor ID', value: <span className="font-mono">{v.id}</span> }, { label: 'Relationship owner', value: <UserName id={v.relationshipOwnerId} /> }, { label: 'Website', value: <span className="text-xs">{v.website}</span> }, { label: 'Business services', value: v.businessServiceIds.map((s) => <div key={s}><EntityLink type="service" id={s} showId={false} /></div>) }, { label: 'Data access', value: v.dataAccess.join(', ') || 'None' }, { label: 'System / network access', value: v.integrationAccess.join('; ') || 'None' }, { label: 'Onboarded', value: fmtDate(v.onboardedAt) }, { label: 'Next review', value: fmtDate(v.nextReviewDate) }, { label: 'Contract value', value: fmtMoney(v.contract.value) }]} />
+              <KeyValue cols={3} items={[{ label: 'Vendor ID', value: <span className="font-mono">{v.id}</span> }, { label: 'Relationship owner', value: <UserName id={v.relationshipOwnerId} /> }, { label: 'Website', value: <span className="text-xs">{v.website}</span> }, { label: 'Applications', value: v.businessServiceIds.map((s) => <div key={s}><EntityLink type="service" id={s} showId={false} /></div>) }, { label: 'Data access', value: v.dataAccess.join(', ') || 'None' }, { label: 'System / network access', value: v.integrationAccess.join('; ') || 'None' }, { label: 'Onboarded', value: fmtDate(v.onboardedAt) }, { label: 'Next review', value: fmtDate(v.nextReviewDate) }, { label: 'Contract value', value: fmtMoney(v.contract.value) }]} />
             </Section>
             <Section title="Inherent risk factors" actions={<ProvenanceBadge value="inferred" />}>
               <div className="space-y-2.5">
@@ -559,7 +559,7 @@ function AssessmentList({ assessments, vendors }: { assessments: Assessment[]; v
     aCol.accessor('status', { header: 'Status', filterFn: 'multi', cell: (c) => <StatusBadge map={ASSESSMENT_STATUS} value={c.getValue()} /> }),
     aCol.accessor((a) => a.answers.length, { id: 'progress', header: 'Answers', cell: (c) => <span className="num text-muted">{c.getValue()}</span> }),
     aCol.accessor((a) => a.result?.score ?? -1, { id: 'score', header: 'Score', cell: (c) => (c.getValue() >= 0 ? <span className="num font-semibold">{c.getValue()}</span> : <span className="text-subtle">—</span>) }),
-    aCol.accessor('dueDate', { header: 'Due', cell: (c) => <span className={daysUntil(c.getValue()) < 0 && c.row.original.status !== 'completed' ? 'text-red-300' : 'text-muted'}>{fmtDate(c.getValue())}</span> }),
+    aCol.accessor('dueDate', { header: 'Due', cell: (c) => <span className={daysUntil(c.getValue()) < 0 && c.row.original.status !== 'completed' ? 'text-red-700' : 'text-muted'}>{fmtDate(c.getValue())}</span> }),
   ]
   return <DataTable tableId={vendors ? 'assessments' : `asm-${assessments[0]?.vendorId}`} data={rows} columns={columns as never} getRowId={(a: Assessment) => a.id} onRowClick={(a: Assessment) => navigate(`/tprm/assessments/${a.id}`)} facets={vendors ? [{ columnId: 'status', label: 'Status', options: Object.entries(ASSESSMENT_STATUS).map(([value, x]) => ({ value, label: x.label })) }, { columnId: 'type', label: 'Type' }, { columnId: 'vendor', label: 'Vendor' }] : []} views={vendors ? [{ id: 'open', label: 'In progress', filters: [{ id: 'status', value: ['draft', 'sent', 'in_progress', 'submitted', 'under_review'] }] }, { id: 'review', label: 'Awaiting review', filters: [{ id: 'status', value: ['submitted', 'under_review'] }] }, { id: 'done', label: 'Completed', filters: [{ id: 'status', value: ['completed'] }] }, { id: 'all', label: 'All', filters: [] }] : []} initialViewId="open" exportName="do-safe-assessments" selectable={false} />
 }
@@ -584,13 +584,13 @@ function EvidenceList({ vendors }: { vendors: Vendor[] }) {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <FileCheck2 className="size-4 text-violet-300" />
+                <FileCheck2 className="size-4 text-violet-700" />
                 <span className="text-[13px] font-medium">{d.name}</span>
                 <Badge>{d.type}</Badge>
               </div>
               <div className="mt-0.5 text-[11px] text-muted">
                 {vendors.length > 1 && <><EntityLink type="vendor" id={v.id} showId={false} /> · </>}uploaded {fmtDate(d.uploadedAt)}
-                {d.expiresAt && <> · {new Date(d.expiresAt) < new Date() ? <span className="text-red-300">expired {fmtDate(d.expiresAt)}</span> : `expires ${fmtDate(d.expiresAt)}`}</>}
+                {d.expiresAt && <> · {new Date(d.expiresAt) < new Date() ? <span className="text-red-700">expired {fmtDate(d.expiresAt)}</span> : `expires ${fmtDate(d.expiresAt)}`}</>}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -625,7 +625,7 @@ function EvidenceList({ vendors }: { vendors: Vendor[] }) {
               {d.analysis.exceptions.length > 0 && (
                 <ul className="mt-2 space-y-1">
                   {d.analysis.exceptions.map((x) => (
-                    <li key={x} className="flex gap-1.5 text-amber-200">
+                    <li key={x} className="flex gap-1.5 text-amber-700">
                       <AlertTriangle className="mt-0.5 size-3 shrink-0" /> {x}
                     </li>
                   ))}
@@ -705,7 +705,7 @@ function ContractCard({ v }: { v: Vendor }) {
         <div className="label-xs mb-1.5 mt-4">Security obligations</div>
         <ul className="space-y-1 text-xs">
           {v.contract.securityClauses.map((c) => (
-            <li key={c} className="flex gap-1.5"><ShieldAlert className="mt-0.5 size-3 shrink-0 text-violet-300" /> {c}</li>
+            <li key={c} className="flex gap-1.5"><ShieldAlert className="mt-0.5 size-3 shrink-0 text-violet-700" /> {c}</li>
           ))}
         </ul>
       </Section>
@@ -806,7 +806,7 @@ export function DueDiligencePage() {
       </div>
       <div className="flex flex-wrap gap-1.5">
         {['pending_review', 'analyzed', 'accepted', 'rejected', 'expired', 'all'].map((s) => (
-          <button key={s} onClick={() => setFilter(s)} className={cn('rounded-full border px-3 py-1 text-xs capitalize cursor-pointer', filter === s ? 'border-violet-500/50 bg-violet-500/15 text-violet-200' : 'border-border text-muted')}>
+          <button key={s} onClick={() => setFilter(s)} className={cn('rounded-full border px-3 py-1 text-xs capitalize cursor-pointer', filter === s ? 'border-violet-500/50 bg-violet-500/15 text-violet-700' : 'border-border text-muted')}>
             {s.replace('_', ' ')}
           </button>
         ))}
@@ -844,7 +844,7 @@ export function MonitoringPage() {
         <div className="space-y-3 xl:col-span-2">
           <div className="flex gap-1.5">
             {(['open', 'all'] as const).map((s) => (
-              <button key={s} onClick={() => setStatus(s)} className={cn('rounded-full border px-3 py-1 text-xs capitalize cursor-pointer', status === s ? 'border-violet-500/50 bg-violet-500/15 text-violet-200' : 'border-border text-muted')}>
+              <button key={s} onClick={() => setStatus(s)} className={cn('rounded-full border px-3 py-1 text-xs capitalize cursor-pointer', status === s ? 'border-violet-500/50 bg-violet-500/15 text-violet-700' : 'border-border text-muted')}>
                 {s === 'open' ? 'Open & acknowledged' : 'All alerts'}
               </button>
             ))}
@@ -909,7 +909,7 @@ export function ContractsPage() {
                 <div className="min-w-0">
                   <div className="text-[13px] font-medium">{m.title}</div>
                   <div className="text-xs text-muted">
-                    <button className="text-violet-300 cursor-pointer" onClick={() => navigate(`/tprm/vendors/${v.id}`)}>{v.name}</button> · {m.type} · due {fmtDate(m.dueDate)} ({daysUntil(m.dueDate) >= 0 ? `in ${daysUntil(m.dueDate)}d` : `${-daysUntil(m.dueDate)}d ago`})
+                    <button className="text-violet-700 cursor-pointer" onClick={() => navigate(`/tprm/vendors/${v.id}`)}>{v.name}</button> · {m.type} · due {fmtDate(m.dueDate)} ({daysUntil(m.dueDate) >= 0 ? `in ${daysUntil(m.dueDate)}d` : `${-daysUntil(m.dueDate)}d ago`})
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

@@ -1,6 +1,7 @@
 // Module-level interactions across Modules 1–8.
 // Requires the dev server on :5173 and Playwright (npm i -D playwright && npx playwright install chromium).
 import { chromium } from 'playwright'
+import { signIn } from './login.mjs'
 const base = 'http://localhost:5173'
 const browser = await chromium.launch()
 const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage(); page.setDefaultTimeout(8000)
@@ -11,12 +12,13 @@ const db = () => page.evaluate(() => JSON.parse(localStorage.getItem('do-safe-un
 const ok = (c, m) => console.log(`${c ? '✓' : '✗'} ${m}`)
 const step = async (name, fn) => { try { await fn() } catch (e) { await page.screenshot({ path: `fail3-${name}.png` }); console.log('✗', name, e.message.split('\n').slice(0, 2).join(' | ')) } }
 const go = async (r) => { await page.goto(base + r); await page.waitForSelector('main h1'); await page.waitForTimeout(250) }
+await signIn(page, base)
 await go('/dashboard')
 
 await step('M1', async () => {
   await page.locator('a[href^="/exposures/vulnerabilities/FND-"]').first().click(); await page.waitForURL(/vulnerabilities\/FND-/); ok(true, 'M1: top prioritized risk → detail')
   await go('/dashboard'); await page.locator('.recharts-pie-sector path').first().click({ force: true }); await page.waitForURL(/operations\/findings\?severity=critical/); ok(true, 'M1: severity chart segment → filtered findings')
-  await go('/dashboard'); await page.getByRole('link', { name: /Payment Processing/ }).first().click(); await page.waitForURL(/services\/SVC-PAY/); ok(true, 'M1: business impact → service detail')
+  await go('/dashboard'); await page.getByRole('link', { name: /Payment Processing/ }).first().click(); await page.waitForURL(/applications\/SVC-PAY/); ok(true, 'M1: business impact → application detail')
   await go('/dashboard'); await page.getByRole('link', { name: /Awaiting human approval/ }).click(); await page.waitForURL(/approvals/); ok(true, 'M1: active workflow monitoring → approvals')
   await go('/dashboard'); await page.getByRole('button', { name: 'Which vendors require attention?' }).click(); await page.waitForURL(/intelligence/); await page.getByText('Supporting records').first().waitFor(); ok(true, 'M1: AI interface from dashboard')
   await go('/analytics'); await page.getByRole('button', { name: /Payment Processing critical/ }).click(); await page.waitForURL(/severity=critical/); ok(true, 'M1: risk trends/heatmap drill-down')
@@ -77,8 +79,9 @@ await step('M6', async () => {
   await page.getByRole('tab', { name: /Root Cause/ }).click(); await page.getByRole('button', { name: 'Confirm' }).first().click(); await page.waitForTimeout(400)
   d = await db(); ok(!!d.findings.find((x) => x.id === f.id).rootCause.confirmed, 'M6: root-cause confirmation')
   await go('/intelligence/library'); await page.getByRole('button', { name: /Internal learning/ }).click(); ok((await page.getByText(/of \d+ records/).innerText()).includes('filtered'), 'M6: library internal learning filter')
-  await go('/intelligence/threats'); await page.getByRole('button', { name: /Generate daily digest/ }).click(); await page.waitForTimeout(4500)
-  d = await db(); ok(d.executions.some((e) => e.agentId === 'AGT-12' && e.trigger === 'Manual (Run Demo)' && e.status === 'completed'), 'M6: threat intel digest (agent run)')
+  await go('/intelligence/threats'); await page.getByRole('button', { name: /Generate daily digest/ }).click()
+  for (let i = 0; i < 24; i++) { d = await db(); if (d.executions.some((e) => e.agentId === 'AGT-12' && e.trigger === 'Manual (Run Demo)' && e.status === 'completed')) break; await page.waitForTimeout(500) }
+  ok(d.executions.some((e) => e.agentId === 'AGT-12' && e.trigger === 'Manual (Run Demo)' && e.status === 'completed'), 'M6: threat intel digest (agent run)')
   await go('/operations/workflows'); await page.getByRole('button', { name: /Vendor assessment/ }).click(); await page.locator('.react-flow__node').nth(3).click(); ok(await page.getByText('Execution history for this stage').isVisible(), 'M6: workflow orchestration view & node inspection')
 })
 

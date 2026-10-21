@@ -10,9 +10,9 @@ export const DialogClose = D.Close
 export function DialogContent({ className, children, title, description, wide, ...props }: React.ComponentPropsWithoutRef<typeof D.Content> & { title: React.ReactNode; description?: React.ReactNode; wide?: boolean }) {
   return (
     <D.Portal>
-      <D.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px] data-[state=open]:animate-in" />
+      <D.Overlay className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-[2px] data-[state=open]:animate-in" />
       <D.Content
-        className={cn('fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border border-border bg-surface shadow-2xl shadow-black/50 focus:outline-none', wide ? 'max-w-3xl' : 'max-w-lg', className)}
+        className={cn('fixed left-1/2 top-1/2 z-50 flex max-h-[90vh] w-[calc(100vw-2rem)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl border border-border bg-surface shadow-2xl shadow-slate-900/10 focus:outline-none', wide ? 'max-w-3xl' : 'max-w-lg', className)}
         {...props}
       >
         <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
@@ -38,7 +38,7 @@ export function Sheet({ open, onOpenChange, title, description, children, width 
   return (
     <D.Root open={open} onOpenChange={onOpenChange}>
       <D.Portal>
-        <D.Overlay className="fixed inset-0 z-50 bg-black/50" />
+        <D.Overlay className="fixed inset-0 z-50 bg-slate-900/30" />
         <D.Content className={cn('fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l border-border bg-surface shadow-2xl focus:outline-none', width)}>
           <div className="flex items-start justify-between gap-4 border-b border-border px-5 py-4">
             <div className="min-w-0">

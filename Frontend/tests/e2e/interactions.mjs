@@ -1,6 +1,7 @@
 // Onboarding, offboarding, risk acceptance, tables, KPI propagation, error state, mobile layout, reset.
 // Requires the dev server on :5173 and Playwright (npm i -D playwright && npx playwright install chromium).
 import { chromium } from 'playwright'
+import { signIn } from './login.mjs'
 const base = 'http://localhost:5173'
 const browser = await chromium.launch()
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true })
@@ -11,6 +12,7 @@ page.on('console', async (m) => { if (m.type() === 'error') { const args = await
 const db = () => page.evaluate(() => JSON.parse(localStorage.getItem('do-safe-unified-demo-db')).state.db)
 const ok = (c, m) => console.log(`${c ? '✓' : '✗'} ${m}`)
 const step = async (name, fn) => { try { await fn() } catch (e) { await page.screenshot({ path: `fail2-${name}.png` }); console.log('✗', name, e.message.split('\n').slice(0, 2).join(' | ')) } }
+await signIn(page, base)
 await page.goto(base + '/dashboard'); await page.waitForSelector('main h1')
 
 await step('Onboarding', async () => {
@@ -108,7 +110,7 @@ await step('Mobile', async () => {
 await step('Reset', async () => {
   await page.goto(base + '/platform/settings'); await page.waitForSelector('main h1')
   await page.getByRole('button', { name: 'Reset demo data' }).click(); await page.getByRole('dialog').getByRole('button', { name: 'Reset demo data' }).click()
-  await page.waitForURL(/dashboard/); await page.waitForTimeout(500)
+  await page.waitForURL(/home/); await page.waitForTimeout(500)
   const x = await db(); ok(!x.vendors.some((v) => v.name.startsWith('Lattice')), 'Reset: demo data regenerated')
 })
 console.log(errors.length ? `ERRORS:\n${errors.join('\n')}` : 'No console errors')

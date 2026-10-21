@@ -1,5 +1,6 @@
 import type { AuditEvent, Database, HistoryEntry, Notification } from '@/types'
 import { getDb, setDb } from '@/stores/db'
+import { can, ROLE_INFO, CAPABILITY_LABEL, type Capability } from '@/utils/permissions'
 
 export class DemoApiError extends Error {}
 
@@ -59,3 +60,11 @@ export function commit(fn: (db: Database) => Database) {
 }
 
 export const userName = (id?: string) => (id === 'SYSTEM' ? 'DO SAFE (system)' : getDb().users.find((u) => u.id === id)?.name ?? id ?? 'Unassigned')
+
+/** Server-side style permission check — every mutating API call enforces the caller's capabilities. */
+export function requireCap(cap: Capability) {
+  const db = getDb()
+  const u = db.users.find((x) => x.id === db.settings.currentUserId)
+  if (!db.settings.authenticated || !u) throw new DemoApiError('Your session has ended. Sign in again.')
+  if (!can(u, cap)) throw new DemoApiError(`Your role (${ROLE_INFO[u.orgRole].label}) can't ${CAPABILITY_LABEL[cap].charAt(0).toLowerCase()}${CAPABILITY_LABEL[cap].slice(1)}. Request access from Requests.`)
+}

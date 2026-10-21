@@ -24,7 +24,7 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <RouterProvider router={router} />
-        <Toaster theme="dark" position="bottom-right" richColors closeButton toastOptions={{ style: { background: '#171c2b', border: '1px solid #2f3850' } }} />
+        <Toaster theme="light" position="bottom-right" richColors closeButton />
       </TooltipProvider>
     </QueryClientProvider>
   </StrictMode>,

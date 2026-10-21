@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Link } from 'react-router'
-import { Bot, Box, Building2, FileWarning, Ticket as TicketIcon, Siren, BookOpen, Briefcase, Calculator } from 'lucide-react'
+import { FolderKanban, Bot, Box, Building2, FileWarning, Ticket as TicketIcon, Siren, BookOpen, Briefcase, Calculator } from 'lucide-react'
 import type { HistoryEntry, SearchEntityType } from '@/types'
 import { useDbStore } from '@/stores/db'
 import { cn, fmtDateTime, fmtRelative } from '@/utils/format'
@@ -23,9 +23,11 @@ export function entityPath(type: SearchEntityType, id: string, domain?: string) 
     case 'knowledge':
       return `/intelligence/library/${id}`
     case 'service':
-      return `/services/${id}`
+      return `/applications/${id}`
     case 'scenario':
       return `/crq/scenarios/${id}`
+    case 'project':
+      return `/projects/${id}`
   }
 }
 
@@ -39,6 +41,7 @@ const ICONS: Record<SearchEntityType, React.ReactNode> = {
   knowledge: <BookOpen />,
   service: <Briefcase />,
   scenario: <Calculator />,
+  project: <FolderKanban />,
 }
 
 export function EntityIcon({ type, className }: { type: SearchEntityType; className?: string }) {
@@ -64,10 +67,11 @@ export function EntityLink({ type, id, showId = true, className, label }: { type
     else if (type === 'knowledge') name = db.knowledge.find((x) => x.id === id)?.name
     else if (type === 'service') name = db.services.find((x) => x.id === id)?.name
     else if (type === 'scenario') name = db.scenarios.find((x) => x.id === id)?.name
+    else if (type === 'project') name = db.projects.find((x) => x.id === id)?.name
   } else if (type === 'finding') domain = db.findings.find((x) => x.id === id)?.domain
   return (
-    <Link to={entityPath(type, id, domain)} className={cn('group inline-flex min-w-0 items-center gap-1.5 text-violet-300 hover:text-violet-200', className)}>
-      {showId && <span className="shrink-0 font-mono text-[11px] text-muted group-hover:text-violet-300">{id}</span>}
+    <Link to={entityPath(type, id, domain)} className={cn('group inline-flex min-w-0 items-center gap-1.5 text-violet-700 hover:text-violet-700', className)}>
+      {showId && <span className="shrink-0 font-mono text-[11px] text-muted group-hover:text-violet-700">{id}</span>}
       {name && <span className="truncate">{name}</span>}
     </Link>
   )
@@ -78,7 +82,7 @@ export function UserName({ id, avatar = true, className }: { id?: string; avatar
   if (id === 'SYSTEM')
     return (
       <span className={cn('inline-flex items-center gap-1.5', className)}>
-        {avatar && <span className="flex size-5 items-center justify-center rounded-full bg-primary-soft text-[9px] font-bold text-violet-300">DO</span>}
+        {avatar && <span className="flex size-5 items-center justify-center rounded-full bg-primary-soft text-[9px] font-bold text-violet-700">DO</span>}
         <span className="text-muted">DO SAFE (system)</span>
       </span>
     )
@@ -97,7 +101,7 @@ export function IntegrationName({ id }: { id?: string }) {
   const i = useDbStore((s) => s.db.integrations.find((x) => x.id === id))
   if (!i) return <span className="text-subtle">{id ?? '—'}</span>
   return (
-    <Link to={`/integrations/${i.id}`} className="text-violet-300 hover:text-violet-200">
+    <Link to={`/integrations/${i.id}`} className="text-violet-700 hover:text-violet-700">
       {i.name}
     </Link>
   )
@@ -114,14 +118,14 @@ export function RelTime({ iso, className }: { iso?: string; className?: string }
 }
 
 const HIST_COLOR: Partial<Record<HistoryEntry['type'], string>> = {
-  discovered: 'bg-sky-400',
-  verification: 'bg-emerald-400',
+  discovered: 'bg-sky-500',
+  verification: 'bg-emerald-500',
   false_positive_review: 'bg-slate-400',
-  reopened: 'bg-orange-400',
-  incident_created: 'bg-red-400',
-  ticket_created: 'bg-violet-400',
-  risk_acceptance: 'bg-amber-400',
-  ai_analysis: 'bg-fuchsia-400',
+  reopened: 'bg-orange-500',
+  incident_created: 'bg-red-500',
+  ticket_created: 'bg-violet-500',
+  risk_acceptance: 'bg-amber-500',
+  ai_analysis: 'bg-fuchsia-500',
 }
 
 export function Timeline({ entries, empty = 'No activity yet.' }: { entries: HistoryEntry[]; empty?: string }) {
@@ -131,7 +135,7 @@ export function Timeline({ entries, empty = 'No activity yet.' }: { entries: His
     <ol className="relative space-y-4 border-l border-border pl-5">
       {sorted.map((e) => (
         <li key={e.id} className="relative">
-          <span className={cn('absolute -left-[25px] top-1.5 size-2.5 rounded-full ring-4 ring-surface', HIST_COLOR[e.type] ?? 'bg-violet-400/70')} />
+          <span className={cn('absolute -left-[25px] top-1.5 size-2.5 rounded-full ring-4 ring-white', HIST_COLOR[e.type] ?? 'bg-violet-500/70')} />
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <span className="text-[13px] font-medium">{e.summary}</span>
             <span className="text-[11px] text-subtle">{fmtDateTime(e.at)}</span>

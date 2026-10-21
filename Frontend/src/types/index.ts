@@ -21,6 +21,10 @@ export type PersonaRole =
   | 'Engineering Owner'
   | 'Incident Responder'
 
+/** Platform role: decides what a user may do in DO SAFE. `role` (job title) is descriptive only. */
+export type OrgRole = 'admin' | 'analyst' | 'project_owner' | 'viewer'
+export type ProjectRole = 'owner' | 'contributor' | 'viewer'
+
 export interface User {
   id: string
   name: string
@@ -29,6 +33,47 @@ export interface User {
   email: string
   initials: string
   isPersona?: boolean
+  orgRole: OrgRole
+  status: 'active' | 'invited' | 'deactivated'
+  lastActiveAt?: ISODate
+  mfaEnabled: boolean
+  /** Shown as a quick sign-in option on the login page. */
+  demoLogin?: boolean
+}
+
+// ---------------------------------------------------------------- Projects & onboarding
+
+export interface Project {
+  id: string
+  name: string
+  description: string
+  ownerId: string
+  members: { userId: string; role: ProjectRole; addedAt: ISODate }[]
+  createdAt: ISODate
+  createdById: string
+}
+
+/** Lifecycle of an application being brought under protection. `active` = a SAFE application. */
+export type AppStatus = 'draft' | 'assets_declared' | 'mapped' | 'connected' | 'test_passed' | 'test_failed' | 'active' | 'paused'
+
+export interface AssetLink {
+  id: string
+  sourceAssetId: string
+  targetAssetId: string
+  relation: 'calls' | 'hosts' | 'stores data in' | 'authenticates via' | 'deploys to' | 'routes to'
+}
+
+export interface ScanRun {
+  id: string
+  kind: 'test' | 'full'
+  status: 'running' | 'passed' | 'passed_with_warnings' | 'failed' | 'completed'
+  startedAt: ISODate
+  finishedAt?: ISODate
+  startedById: string
+  steps: { name: string; status: 'pending' | 'running' | 'done' | 'warning' | 'failed'; detail: string }[]
+  assetResults: { assetId: string; reachable: boolean; credentialsOk: boolean; sourceIds: string[]; note: string }[]
+  findingIds: string[]
+  summary: string
 }
 
 // ---------------------------------------------------------------- Business & assets
@@ -43,6 +88,19 @@ export interface BusinessService {
   dataClassification: 'Restricted' | 'Confidential' | 'Internal' | 'Public'
   regulatoryScope: string[]
   rtoHours: number
+  /** Application onboarding & protection — a business service is the customer's application. */
+  projectId: string
+  appType: 'Web application' | 'API service' | 'Cloud workload' | 'Data platform' | 'SaaS workspace' | 'AI application' | 'Internal platform'
+  environment: Environment
+  status: AppStatus
+  /** Which connected sources assess which assets. */
+  coverage: Record<string, string[]>
+  assetLinks: AssetLink[]
+  runs: ScanRun[]
+  onboardingStartedAt?: ISODate
+  protectedSince?: ISODate
+  nextRunAt?: ISODate
+  runSchedule: 'Daily' | 'Every 6 hours' | 'Weekly' | 'Manual'
 }
 
 export type AssetType =
@@ -710,7 +768,7 @@ export interface Notification {
   read: boolean
 }
 
-export type SearchEntityType = 'asset' | 'finding' | 'vendor' | 'aiSystem' | 'incident' | 'ticket' | 'knowledge' | 'service' | 'scenario'
+export type SearchEntityType = 'asset' | 'finding' | 'vendor' | 'aiSystem' | 'incident' | 'ticket' | 'knowledge' | 'service' | 'scenario' | 'project'
 
 export interface PrioritizationWeights {
   cvss: number
@@ -723,9 +781,58 @@ export interface PrioritizationWeights {
   compensating: number
 }
 
+export interface AccessRequest {
+  id: string
+  requesterId: string
+  kind: 'Project access' | 'Role change' | 'Onboarding approval'
+  projectId?: string
+  requestedRole: string
+  justification: string
+  durationDays?: number
+  risk: 'low' | 'medium' | 'high'
+  status: 'pending' | 'approved' | 'declined'
+  createdAt: ISODate
+  reviewerId?: string
+  decidedAt?: ISODate
+  decisionNote?: string
+}
+
+export interface Invitation {
+  id: string
+  email: string
+  name: string
+  orgRole: OrgRole
+  projectIds: string[]
+  invitedById: string
+  sentAt: ISODate
+  status: 'pending' | 'accepted' | 'revoked' | 'expired'
+}
+
+export interface SupportTicket {
+  id: string
+  title: string
+  category: 'Onboarding & assets' | 'Connectors & scans' | 'Access & permissions' | 'Findings & tickets' | 'Billing & account' | 'Other'
+  priority: 'Low' | 'Normal' | 'High' | 'Urgent'
+  status: 'submitted' | 'triage' | 'investigating' | 'waiting_on_you' | 'resolved'
+  projectId?: string
+  createdById: string
+  createdAt: ISODate
+  updatedAt: ISODate
+  description: string
+  impact: string
+  messages: { id: string; author: string; at: ISODate; text: string }[]
+}
+
 export interface DemoSettings {
   weights: PrioritizationWeights
   currentUserId: string
+  /** Session — the prototype keeps it in the browser only. */
+  authenticated: boolean
+  workspace: 'northstar' | 'acme'
+  orgName: string
+  /** Project the user is working in; null = all projects they can access. */
+  currentProjectId: string | null
+  identity: { provider: string; mfaRequired: boolean; sessionTimeoutHours: number; stepUpForApprovals: boolean }
   seededAt: ISODate
   latencyMs: number
   slaDays: Record<Severity, number>
@@ -736,6 +843,10 @@ export interface DemoSettings {
 export interface Database {
   version: number
   users: User[]
+  projects: Project[]
+  accessRequests: AccessRequest[]
+  invitations: Invitation[]
+  supportTickets: SupportTicket[]
   services: BusinessService[]
   assets: Asset[]
   knowledge: KnowledgeRecord[]

@@ -42,7 +42,7 @@ export function ExposureInventory() {
   const open = exposures.filter((f) => isOpen(f.status))
   const activeAssets = assets.filter((a) => !a.duplicateOfId)
   const stages = [
-    { icon: <Target />, name: 'Scoping', metric: `${services.length} services · ${activeAssets.filter((a) => a.criticality === 'tier-1').length} tier-1 assets`, detail: 'Assets mapped to business services and criticality', to: '/services' },
+    { icon: <Target />, name: 'Scoping', metric: `${services.length} services · ${activeAssets.filter((a) => a.criticality === 'tier-1').length} tier-1 assets`, detail: 'Assets mapped to applications and criticality', to: '/applications' },
     { icon: <Radar />, name: 'Discovery', metric: `${integrations.filter((i) => i.status === 'connected').length} sources · ${assets.filter((a) => a.possibleDuplicateOfId).length} to reconcile`, detail: 'Ingestion, shadow assets, deduplication', to: '/exposures/assets' },
     { icon: <ListOrdered />, name: 'Prioritization', metric: `${open.filter((f) => f.kev).length} KEV · ${attackPaths.filter((p) => p.status === 'active').length} attack paths`, detail: 'Exploitability, threat intel, business impact', to: '/exposures/prioritization' },
     { icon: <ShieldCheck />, name: 'Validation', metric: `${exposures.filter((f) => f.status === 'in_validation').length} in progress · ${exposures.filter((f) => f.validation.status === 'not_exploitable').length} not exploitable`, detail: 'Reachability, exploitability, controls', to: '/exposures/validation' },
@@ -55,10 +55,10 @@ export function ExposureInventory() {
         {stages.map((s, i) => (
           <button key={s.name} onClick={() => navigate(s.to)} className="card group relative p-4 text-left hover:border-border-strong cursor-pointer">
             <div className="flex items-center gap-2">
-              <span className="flex size-7 items-center justify-center rounded-lg bg-primary-soft text-violet-300 [&_svg]:size-4">{s.icon}</span>
+              <span className="flex size-7 items-center justify-center rounded-lg bg-primary-soft text-violet-700 [&_svg]:size-4">{s.icon}</span>
               <span className="text-[11px] text-subtle">Stage {i + 1}</span>
             </div>
-            <div className="mt-2 text-[14px] font-semibold group-hover:text-violet-200">{s.name}</div>
+            <div className="mt-2 text-[14px] font-semibold group-hover:text-violet-700">{s.name}</div>
             <div className="mt-0.5 text-xs text-fg">{s.metric}</div>
             <div className="mt-1 text-[11px] text-muted">{s.detail}</div>
             {i < 4 && <ArrowRight className="absolute -right-3 top-1/2 z-10 hidden size-4 -translate-y-1/2 text-subtle md:block" />}
@@ -124,9 +124,9 @@ export function AssetsPage() {
     assetCol.accessor('name', { header: 'Asset', cell: (c) => <div><div className="font-medium">{c.getValue()}</div><div className="text-[11px] text-subtle">{c.row.original.fqdn ?? c.row.original.ipAddress}</div></div> }),
     assetCol.accessor('type', { header: 'Type', filterFn: 'multi', cell: (c) => ASSET_TYPE_LABEL[c.getValue()] }),
     assetCol.accessor('environment', { header: 'Environment', filterFn: 'multi', cell: (c) => <span className="capitalize text-muted">{c.getValue()}</span> }),
-    assetCol.accessor('serviceName', { id: 'service', header: 'Business service', filterFn: 'multi' }),
+    assetCol.accessor('serviceName', { id: 'service', header: 'Application', filterFn: 'multi' }),
     assetCol.accessor('criticality', { header: 'Criticality', filterFn: 'multi', cell: (c) => <CriticalityBadge value={c.getValue()} /> }),
-    assetCol.accessor((a) => (a.internetExposed ? 'Internet-facing' : 'Internal'), { id: 'internet', header: 'Exposure', filterFn: 'multi', cell: (c) => <span className={c.getValue() === 'Internet-facing' ? 'text-orange-300' : 'text-muted'}>{c.getValue()}</span> }),
+    assetCol.accessor((a) => (a.internetExposed ? 'Internet-facing' : 'Internal'), { id: 'internet', header: 'Exposure', filterFn: 'multi', cell: (c) => <span className={c.getValue() === 'Internet-facing' ? 'text-orange-700' : 'text-muted'}>{c.getValue()}</span> }),
     assetCol.accessor('ownerName', { header: 'Owner', cell: (c) => <UserName id={c.row.original.ownerId} /> }),
     assetCol.accessor('openFindings', { header: 'Open findings', cell: (c) => <span className={c.getValue() ? 'font-semibold' : 'text-subtle'}>{c.getValue()}</span> }),
     assetCol.accessor((a) => a.sourceIntegrationIds.length, { id: 'sources', header: 'Sources', cell: (c) => <span className="text-muted">{c.getValue()}</span> }),
@@ -136,7 +136,7 @@ export function AssetsPage() {
   const noScanner = active.filter((a) => !a.sourceIntegrationIds.some((s) => ['INT-TEN', 'INT-QLY', 'INT-WIZ', 'INT-CRW', 'INT-GHB'].includes(s)))
   return (
     <div className="space-y-5">
-      <PageHeader title="Asset Inventory" icon={<Server />} description="Normalized enterprise asset inventory built from all connected sources, mapped to business services and owners." />
+      <PageHeader title="Asset Inventory" icon={<Server />} description="Normalized enterprise asset inventory built from all connected sources, mapped to applications and owners." />
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <KpiCard label="Assets" value={active.length} sub={`${active.filter((a) => a.environment === 'production').length} production`} />
         <KpiCard label="Internet-facing" value={active.filter((a) => a.internetExposed).length} tone="amber" onClick={() => navigate('/exposures/assets?internet=Internet-facing')} />
@@ -162,7 +162,7 @@ export function AssetsPage() {
             const signals = [
               orig.ipAddress && c.ipAddress === orig.ipAddress && 'Same IP address',
               c.name.toLowerCase().replace(/[^a-z0-9]/g, '').includes(orig.name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8)) && 'Hostname similarity',
-              c.businessServiceId === orig.businessServiceId && 'Same business service',
+              c.businessServiceId === orig.businessServiceId && 'Same application',
               c.cloud === orig.cloud && c.cloud && 'Same cloud account/region',
               c.type === orig.type && 'Same asset type',
             ].filter(Boolean) as string[]
@@ -237,7 +237,7 @@ export function AssetDetail() {
   const { id } = useParams()
   const settings = useSettings()
   const users = useUsers()
-  const { data, isLoading, error, retry } = useCollections(['assets', 'services', 'findings', 'attackPaths', 'events', 'vendors'] as const)
+  const { data, isLoading, error, retry } = useCollections(['assets', 'services', 'findings', 'attackPaths', 'events', 'vendors'] as const, { ignoreProjectFilter: true })
   const a = data?.assets.find((x) => x.id === id)
   usePage(a?.name ?? 'Asset', [{ label: 'Exposure Management' }, { label: 'Assets', to: '/exposures/assets' }, { label: a?.name ?? id ?? '' }])
   const [edit, setEdit] = React.useState(false)
@@ -275,7 +275,7 @@ export function AssetDetail() {
       </div>
       <div className="grid gap-5 xl:grid-cols-3">
         <Section className="xl:col-span-2" title="Asset details">
-          <KeyValue cols={3} items={[{ label: 'Asset ID', value: <span className="font-mono">{a.id}</span> }, { label: 'Business service', value: svc ? <EntityLink type="service" id={svc.id} showId={false} /> : '—' }, { label: 'Owner', value: <UserName id={a.ownerId} /> }, { label: 'Environment', value: <span className="capitalize">{a.environment}</span> }, { label: 'IP address', value: a.ipAddress ?? '—' }, { label: 'Operating system', value: a.os ?? '—' }, { label: 'Cloud / location', value: [a.cloud, a.region].filter(Boolean).join(' · ') || '—' }, { label: 'First seen', value: fmtDateTime(a.firstSeen) }, { label: 'Last seen', value: fmtDateTime(a.lastSeen) }, { label: 'Tags', value: <div className="flex flex-wrap gap-1">{a.tags.map((t) => <Badge key={t}>{t}</Badge>)}</div> }]} />
+          <KeyValue cols={3} items={[{ label: 'Asset ID', value: <span className="font-mono">{a.id}</span> }, { label: 'Application', value: svc ? <EntityLink type="service" id={svc.id} showId={false} /> : '—' }, { label: 'Owner', value: <UserName id={a.ownerId} /> }, { label: 'Environment', value: <span className="capitalize">{a.environment}</span> }, { label: 'IP address', value: a.ipAddress ?? '—' }, { label: 'Operating system', value: a.os ?? '—' }, { label: 'Cloud / location', value: [a.cloud, a.region].filter(Boolean).join(' · ') || '—' }, { label: 'First seen', value: fmtDateTime(a.firstSeen) }, { label: 'Last seen', value: fmtDateTime(a.lastSeen) }, { label: 'Tags', value: <div className="flex flex-wrap gap-1">{a.tags.map((t) => <Badge key={t}>{t}</Badge>)}</div> }]} />
         </Section>
         <Section title="Source provenance" description="Connectors that observed this asset">
           <ul className="space-y-1.5 text-xs">
@@ -424,7 +424,7 @@ export function AttackPathsPage() {
                     {i > 0 && <ArrowRight className="size-3.5 text-subtle" />}
                     <span className={cn('rounded-md border px-2 py-1', f && isOpen(f.status) ? 'border-red-500/30 bg-red-500/8' : 'border-border bg-surface-2')}>
                       {assets.find((a) => a.id === s.assetId)?.name}
-                      {s.techniqueId && <span className="ml-1 font-mono text-[10px] text-sky-300">{s.techniqueId}</span>}
+                      {s.techniqueId && <span className="ml-1 font-mono text-[10px] text-sky-700">{s.techniqueId}</span>}
                     </span>
                   </React.Fragment>
                 )
@@ -440,14 +440,14 @@ export function AttackPathsPage() {
 function PathNode({ data }: { data: { label: string; sub: string; tone: 'entry' | 'mid' | 'target'; open: boolean; selected: boolean } }) {
   return (
     <div className={cn('w-52 rounded-xl border bg-surface px-3 py-2.5 shadow-lg', data.selected ? 'border-violet-400 ring-2 ring-violet-500/30' : data.open ? 'border-red-500/50' : 'border-border-strong')}>
-      <Handle type="target" position={Position.Left} className="!bg-violet-400" />
+      <Handle type="target" position={Position.Left} className="!bg-violet-500" />
       <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-subtle">
-        {data.tone === 'entry' ? <Crosshair className="size-3 text-orange-300" /> : data.tone === 'target' ? <Target className="size-3 text-red-300" /> : <Server className="size-3" />}
+        {data.tone === 'entry' ? <Crosshair className="size-3 text-orange-700" /> : data.tone === 'target' ? <Target className="size-3 text-red-700" /> : <Server className="size-3" />}
         {data.tone === 'entry' ? 'Entry point' : data.tone === 'target' ? 'Target' : 'Pivot'}
       </div>
       <div className="mt-0.5 truncate text-[13px] font-medium text-fg">{data.label}</div>
       <div className="truncate text-[11px] text-muted">{data.sub}</div>
-      <Handle type="source" position={Position.Right} className="!bg-violet-400" />
+      <Handle type="source" position={Position.Right} className="!bg-violet-500" />
     </div>
   )
 }
@@ -456,7 +456,7 @@ const nodeTypes = { path: PathNode }
 export function AttackPathDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { data, isLoading, error, retry } = useCollections(['attackPaths', 'assets', 'findings', 'knowledge', 'services'] as const)
+  const { data, isLoading, error, retry } = useCollections(['attackPaths', 'assets', 'findings', 'knowledge', 'services'] as const, { ignoreProjectFilter: true })
   const p = data?.attackPaths.find((x) => x.id === id)
   usePage(p?.name ?? 'Attack path', [{ label: 'Exposure Management' }, { label: 'Attack Paths', to: '/exposures/attack-paths' }, { label: id ?? '' }])
   const [sel, setSel] = React.useState(0)
@@ -472,7 +472,7 @@ export function AttackPathDetail() {
     const f = findings.find((x) => x.id === s.findingId)
     return { id: String(i), type: 'path', position: { x: i * 280, y: i % 2 ? 60 : 0 }, data: { label: a?.name ?? s.assetId, sub: f ? f.title : s.description, tone: i === 0 ? 'entry' : i === p.steps.length - 1 ? 'target' : 'mid', open: !!f && isOpen(f.status), selected: sel === i } }
   })
-  const edges: Edge[] = p.steps.slice(1).map((s, i) => ({ id: `e${i}`, source: String(i), target: String(i + 1), label: s.techniqueId ?? '', animated: p.status === 'active', style: { stroke: p.status === 'active' ? '#ef4444' : '#3a4360', strokeWidth: 2 }, labelStyle: { fill: '#7dd3fc', fontSize: 11, fontFamily: 'JetBrains Mono' }, labelBgStyle: { fill: '#111522' }, markerEnd: { type: MarkerType.ArrowClosed, color: p.status === 'active' ? '#ef4444' : '#3a4360' } }))
+  const edges: Edge[] = p.steps.slice(1).map((s, i) => ({ id: `e${i}`, source: String(i), target: String(i + 1), label: s.techniqueId ?? '', animated: p.status === 'active', style: { stroke: p.status === 'active' ? '#ef4444' : '#c4c5d2', strokeWidth: 2 }, labelStyle: { fill: '#0369a1', fontSize: 11, fontFamily: 'JetBrains Mono' }, labelBgStyle: { fill: '#ffffff' }, markerEnd: { type: MarkerType.ArrowClosed, color: p.status === 'active' ? '#ef4444' : '#c4c5d2' } }))
   const step = p.steps[sel]
   const stepAsset = assets.find((a) => a.id === step.assetId)
   const stepFinding = findings.find((f) => f.id === step.findingId)
@@ -491,12 +491,12 @@ export function AttackPathDetail() {
       <div className="grid gap-5 xl:grid-cols-3">
         <Card className="h-[380px] overflow-hidden xl:col-span-2">
           <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView fitViewOptions={{ padding: 0.25 }} onNodeClick={(_, n) => setSel(Number(n.id))} nodesDraggable={false}>
-            <Background color="#1f2638" gap={20} />
+            <Background color="#ececf1" gap={20} />
             <Controls showInteractive={false} />
           </ReactFlow>
         </Card>
         <Section title={`Step ${sel + 1}: ${stepAsset?.name}`} description={step.description}>
-          <KeyValue cols={1} items={[{ label: 'Asset', value: <EntityLink type="asset" id={step.assetId} /> }, { label: 'Exploited finding', value: stepFinding ? <div className="space-y-1"><EntityLink type="finding" id={stepFinding.id} /><div className="flex gap-1.5"><SeverityBadge severity={stepFinding.severity} /><FindingStatusBadge status={stepFinding.status} />{stepFinding.kev && <KevBadge />}</div></div> : <span className="text-muted">No discrete finding — relies on reachability / credentials</span> }, { label: 'ATT&CK technique', value: tech ? <Link to={`/intelligence/library/${tech.id}`} className="text-violet-300">{tech.externalId} — {tech.name}</Link> : 'Not mapped' }]} />
+          <KeyValue cols={1} items={[{ label: 'Asset', value: <EntityLink type="asset" id={step.assetId} /> }, { label: 'Exploited finding', value: stepFinding ? <div className="space-y-1"><EntityLink type="finding" id={stepFinding.id} /><div className="flex gap-1.5"><SeverityBadge severity={stepFinding.severity} /><FindingStatusBadge status={stepFinding.status} />{stepFinding.kev && <KevBadge />}</div></div> : <span className="text-muted">No discrete finding — relies on reachability / credentials</span> }, { label: 'ATT&CK technique', value: tech ? <Link to={`/intelligence/library/${tech.id}`} className="text-violet-700">{tech.externalId} — {tech.name}</Link> : 'Not mapped' }]} />
           {stepFinding && isOpen(stepFinding.status) && (
             <Button size="sm" className="mt-4 w-full" onClick={() => navigate(`/exposures/vulnerabilities/${stepFinding.id}`)}>
               Investigate & remediate this step
@@ -552,7 +552,7 @@ const WEIGHT_LABELS: Record<keyof PrioritizationWeights, [string, string]> = {
   exploit: ['Exploit maturity', 'Public PoC, functional or weaponized exploit available.'],
   internet: ['Internet exposure', 'Asset is reachable from the internet (or shadow AI egress).'],
   assetCriticality: ['Asset criticality', 'Tier of the affected asset.'],
-  serviceCriticality: ['Business service criticality', 'Tier of the business service the asset supports.'],
+  serviceCriticality: ['Application criticality', 'Tier of the application the asset supports.'],
   compensating: ['Compensating controls (reduces)', 'Strength of observed compensating controls / not-exploitable validation.'],
 }
 
@@ -612,7 +612,7 @@ export function PrioritizationPage() {
               return (
                 <button key={p.f.id} onClick={() => navigate(`/exposures/vulnerabilities/${p.f.id}`)} className="flex w-full items-center gap-3 py-2 text-left hover:bg-surface-2/40 cursor-pointer">
                   <span className="num w-6 text-right text-xs text-subtle">{i + 1}</span>
-                  <span className={cn('flex w-10 items-center gap-0.5 text-[11px]', delta > 0 ? 'text-emerald-300' : delta < 0 ? 'text-red-300' : 'text-subtle')}>
+                  <span className={cn('flex w-10 items-center gap-0.5 text-[11px]', delta > 0 ? 'text-emerald-700' : delta < 0 ? 'text-red-700' : 'text-subtle')}>
                     {delta > 0 ? <ArrowUp className="size-3" /> : delta < 0 ? <ArrowDown className="size-3" /> : null}
                     {delta !== 0 ? Math.abs(delta) : '–'}
                   </span>
@@ -681,7 +681,7 @@ export function ValidationPage() {
                 <div key={s.f.id} className="flex flex-wrap items-center gap-3 py-2.5">
                   <RiskScore score={s.score} />
                   <button onClick={() => navigate(`/exposures/vulnerabilities/${s.f.id}`)} className="min-w-0 flex-1 text-left cursor-pointer">
-                    <span className="block truncate text-[13px] hover:text-violet-200">{s.f.title}</span>
+                    <span className="block truncate text-[13px] hover:text-violet-700">{s.f.title}</span>
                     <span className="block truncate text-[11px] text-muted">
                       {s.f.id} · {s.asset?.name} {s.asset?.internetExposed && '· internet-facing'}
                     </span>
@@ -729,8 +729,8 @@ export function ValidationPage() {
             </div>
             <div className="mt-1.5 flex gap-3 text-[11px] text-muted">
               <span>● Exploitable</span>
-              <span className="text-green-300">● Not exploitable</span>
-              <span className="text-amber-300">● Inconclusive</span>
+              <span className="text-green-700">● Not exploitable</span>
+              <span className="text-amber-700">● Inconclusive</span>
             </div>
           </div>
         </Section>

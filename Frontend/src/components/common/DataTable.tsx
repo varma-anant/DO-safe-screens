@@ -194,7 +194,7 @@ export function DataTable<T>({ tableId, data, columns, getRowId, onRowClick, sea
           return (
             <DropdownMenu key={f.columnId}>
               <DropdownMenuTrigger asChild>
-                <Button variant="secondary" size="sm" className={cn(current.length && 'border-violet-500/50 text-violet-200')}>
+                <Button variant="secondary" size="sm" className={cn(current.length && 'border-violet-500/50 text-violet-700')}>
                   <Filter /> {f.label}
                   {current.length > 0 && <span className="rounded bg-violet-500/30 px-1 text-[10px]">{current.length}</span>}
                 </Button>
@@ -253,7 +253,7 @@ export function DataTable<T>({ tableId, data, columns, getRowId, onRowClick, sea
       </div>
       {selected.length > 0 && bulkActions && (
         <div className="flex flex-wrap items-center gap-2 border-b border-border bg-violet-500/8 px-3 py-2 text-[13px]">
-          <span className="font-medium text-violet-200">{selected.length} selected</span>
+          <span className="font-medium text-violet-700">{selected.length} selected</span>
           {bulkActions(selected, () => setRowSelection({}))}
           <Button variant="ghost" size="xs" onClick={() => setRowSelection({})}>
             Clear selection

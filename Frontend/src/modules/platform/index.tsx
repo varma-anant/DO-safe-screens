@@ -1,7 +1,7 @@
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router'
 import { createColumnHelper } from '@tanstack/react-table'
-import { Bell, CheckCheck, Download, FlaskConical, RotateCcw, ScrollText, Settings, UserRound } from 'lucide-react'
+import { Bell, CheckCheck, Download, FlaskConical, RotateCcw, ScrollText, Settings } from 'lucide-react'
 import type { AuditEvent, Severity } from '@/types'
 import { useAction, useCollections, useCurrentUser, useSettings, useUsers } from '@/hooks/queries'
 import { usePage } from '@/hooks/usePage'
@@ -15,7 +15,8 @@ import { Input } from '@/components/ui/input'
 import { Slider, Switch } from '@/components/ui/misc'
 import { ResetDialog } from '@/layouts/AppShell'
 import * as api from '@/services/api'
-import { getDb } from '@/stores/db'
+import { getDb, useDbStore } from '@/stores/db'
+import { can, CAPABILITY_LABEL, ROLE_INFO, visibleProjectIds } from '@/utils/permissions'
 import { cn, downloadText, fmtDateTime } from '@/utils/format'
 
 const auditCol = createColumnHelper<AuditEvent & { actor: string }>()
@@ -32,7 +33,7 @@ export function AuditPage() {
     auditCol.accessor('actor', { header: 'Actor', filterFn: 'multi', cell: (c) => <UserName id={c.row.original.actorId} /> }),
     auditCol.accessor('action', { header: 'Action', filterFn: 'multi', cell: (c) => <span className="font-medium">{c.getValue()}</span> }),
     auditCol.accessor('module', { header: 'Module', filterFn: 'multi', cell: (c) => <Badge>{c.getValue()}</Badge> }),
-    auditCol.accessor('entityId', { header: 'Record', cell: (c) => <span className="font-mono text-[11px] text-violet-300">{c.getValue()}</span> }),
+    auditCol.accessor('entityId', { header: 'Record', cell: (c) => <span className="font-mono text-[11px] text-violet-700">{c.getValue()}</span> }),
     auditCol.accessor('details', { header: 'Details', cell: (c) => <span className="block max-w-[460px] truncate text-xs text-muted">{c.getValue()}</span> }),
   ]
   return (
@@ -51,13 +52,13 @@ export function NotificationsPage() {
   if (error) return <ErrorState error={error} onRetry={retry} />
   if (isLoading || !data) return <LoadingState rows={10} />
   const list = data.notifications.filter((n) => filter === 'all' || !n.read)
-  const dot: Record<Severity | 'info', string> = { critical: 'bg-red-400', high: 'bg-orange-400', medium: 'bg-amber-400', low: 'bg-emerald-400', informational: 'bg-slate-400', info: 'bg-violet-400' }
+  const dot: Record<Severity | 'info', string> = { critical: 'bg-red-500', high: 'bg-orange-500', medium: 'bg-amber-500', low: 'bg-emerald-500', informational: 'bg-slate-400', info: 'bg-violet-500' }
   return (
     <div className="space-y-5">
       <PageHeader title="Notification Hub" icon={<Bell />} description="Assignments, approvals, alerts and status changes relevant to you." actions={<Button variant="secondary" onClick={() => api.markNotificationRead('all')}><CheckCheck /> Mark all read</Button>} />
       <div className="flex gap-1.5">
         {(['all', 'unread'] as const).map((f) => (
-          <button key={f} onClick={() => setFilter(f)} className={cn('rounded-full border px-3 py-1 text-xs capitalize cursor-pointer', filter === f ? 'border-violet-500/50 bg-violet-500/15 text-violet-200' : 'border-border text-muted')}>{f} ({f === 'all' ? data.notifications.length : data.notifications.filter((n) => !n.read).length})</button>
+          <button key={f} onClick={() => setFilter(f)} className={cn('rounded-full border px-3 py-1 text-xs capitalize cursor-pointer', filter === f ? 'border-violet-500/50 bg-violet-500/15 text-violet-700' : 'border-border text-muted')}>{f} ({f === 'all' ? data.notifications.length : data.notifications.filter((n) => !n.read).length})</button>
         ))}
       </div>
       <Card className="divide-y divide-border/60">
@@ -80,25 +81,40 @@ export function NotificationsPage() {
 export function SettingsPage() {
   usePage('Settings', [{ label: 'Platform' }, { label: 'Settings' }])
   const settings = useSettings()
-  const users = useUsers()
   const me = useCurrentUser()
+  const db = useDbStore((s) => s.db)
+  const myProjects = visibleProjectIds(db, me.id)
   const { run } = useAction()
   const [reset, setReset] = React.useState(false)
   const [sla, setSla] = React.useState(settings.slaDays)
   return (
     <div className="space-y-5">
-      <PageHeader title="Settings" icon={<Settings />} description="Personas, demo controls and policy settings for the DO SAFE prototype." />
+      <PageHeader title="Settings" icon={<Settings />} description="Your profile and access, workspace policy and demo controls." />
       <div className="grid gap-5 xl:grid-cols-2">
-        <Section title="Persona" description="Switch the acting user. Actions you take are attributed to this persona in history and the audit log.">
-          <div className="grid gap-2 sm:grid-cols-2">
-            {users.filter((u) => u.isPersona).map((u) => (
-              <button key={u.id} onClick={() => api.setCurrentUser(u.id)} className={cn('flex items-center gap-3 rounded-lg border px-3 py-2 text-left cursor-pointer', u.id === me.id ? 'border-violet-500/60 bg-violet-500/10' : 'border-border hover:border-border-strong')}>
-                <span className="flex size-8 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-emerald-600 text-xs font-bold text-white">{u.initials}</span>
-                <span><span className="block text-[13px] font-medium">{u.name}</span><span className="block text-[11px] text-muted">{u.role}</span></span>
-              </button>
-            ))}
+        <Section title="My profile & access" description="Who you are signed in as and what your role lets you do. Access is managed in User management.">
+          <div className="flex items-center gap-3">
+            <span className="flex size-11 items-center justify-center rounded-full bg-[#ece9fb] text-sm font-semibold text-primary">{me.initials}</span>
+            <div>
+              <div className="text-[14px] font-semibold">{me.name}</div>
+              <div className="text-xs text-muted">{me.email} · {me.team}</div>
+            </div>
+            <Badge className="ml-auto" tone="violet">{ROLE_INFO[me.orgRole].label}</Badge>
           </div>
-          <p className="mt-3 flex items-center gap-1.5 text-[11px] text-subtle"><UserRound className="size-3" /> Personas are a demo convenience, not access control. Role-based access is part of the planned enterprise platform package.</p>
+          <KeyValue className="mt-4" cols={2} items={[
+            { label: 'Workspace', value: settings.orgName },
+            { label: 'Sign-in', value: settings.identity.provider },
+            { label: 'MFA', value: me.mfaEnabled ? 'Enabled' : 'Not enabled' },
+            { label: 'Projects', value: can(me, 'view_all_projects') ? 'All projects' : `${myProjects.length} project${myProjects.length === 1 ? '' : 's'}` },
+          ]} />
+          <div className="mt-4 text-xs font-medium text-muted">What you can do</div>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {ROLE_INFO[me.orgRole].caps.map((c) => <Badge key={c}>{CAPABILITY_LABEL[c]}</Badge>)}
+            {!ROLE_INFO[me.orgRole].caps.length && <span className="text-xs text-subtle">Read-only access to your projects.</span>}
+          </div>
+          <div className="mt-4 flex gap-2">
+            <Button size="sm" variant="secondary" asChild><Link to="/requests?new=1">Request more access</Link></Button>
+            {can(me, 'manage_users') && <Button size="sm" variant="ghost" asChild><Link to="/admin">User management</Link></Button>}
+          </div>
         </Section>
         <Section title="Demo controls" description="Settings that shape the demo experience">
           <div className="space-y-5">

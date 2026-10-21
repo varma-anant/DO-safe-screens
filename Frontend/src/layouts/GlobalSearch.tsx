@@ -16,7 +16,7 @@ interface Result {
   domain?: string
 }
 
-const TYPE_LABEL: Record<SearchEntityType, string> = { asset: 'Assets', finding: 'Findings', vendor: 'Vendors', aiSystem: 'AI systems', incident: 'Incidents', ticket: 'Tickets', knowledge: 'Knowledge records', service: 'Business services', scenario: 'Risk scenarios' }
+const TYPE_LABEL: Record<SearchEntityType, string> = { asset: 'Assets', finding: 'Findings', vendor: 'Vendors', aiSystem: 'AI systems', incident: 'Incidents', ticket: 'Tickets', knowledge: 'Knowledge records', service: 'Applications', scenario: 'Risk scenarios', project: 'Projects' }
 
 export function GlobalSearch() {
   const { searchOpen, setSearchOpen } = useUiStore()
@@ -38,7 +38,7 @@ export function GlobalSearch() {
     push(db.incidents.filter((i) => m(i.id, i.title, i.category)).map((i) => ({ type: 'incident', id: i.id, title: i.title, sub: `${i.severity} · ${i.status}` })))
     push(db.tickets.filter((t) => m(t.id, t.title, t.externalRef)).map((t) => ({ type: 'ticket', id: t.id, title: t.title, sub: `${t.priority} · ${t.status.replace(/_/g, ' ')}${t.externalRef ? ` · ${t.externalRef}` : ''}` })))
     push(db.knowledge.filter((k) => m(k.externalId, k.name, k.summary)).map((k) => ({ type: 'knowledge', id: k.id, title: `${k.externalId} — ${k.name}`, sub: k.source })))
-    push(db.services.filter((s) => m(s.id, s.name)).map((s) => ({ type: 'service', id: s.id, title: s.name, sub: `Business service · ${s.criticality}` })), 3)
+    push(db.services.filter((s) => m(s.id, s.name)).map((s) => ({ type: 'service', id: s.id, title: s.name, sub: `Application · ${s.criticality}` })), 3)
     push(db.scenarios.filter((s) => m(s.id, s.name, s.threatType)).map((s) => ({ type: 'scenario', id: s.id, title: s.name, sub: `Risk scenario · ${s.threatType}` })), 3)
     return out
   }, [q, db])
@@ -57,7 +57,7 @@ export function GlobalSearch() {
   return (
     <D.Root open={searchOpen} onOpenChange={setSearchOpen}>
       <D.Portal>
-        <D.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-[2px]" />
+        <D.Overlay className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-[2px]" />
         <D.Content className="fixed left-1/2 top-[12vh] z-50 w-[calc(100vw-2rem)] max-w-2xl -translate-x-1/2 overflow-hidden rounded-xl border border-border-strong bg-surface shadow-2xl focus:outline-none">
           <D.Title className="sr-only">Global search</D.Title>
           <D.Description className="sr-only">Search assets, findings, vendors, AI systems, incidents, tickets and knowledge records</D.Description>
@@ -84,7 +84,7 @@ export function GlobalSearch() {
           <div className="max-h-[60vh] overflow-y-auto p-2">
             {q.trim().length < 2 ? (
               <div className="px-3 py-6 text-center text-xs text-muted">
-                Type at least 2 characters. Try <button className="text-violet-300 cursor-pointer" onClick={() => setQ('CVE-2021-44228')}>CVE-2021-44228</button>, <button className="text-violet-300 cursor-pointer" onClick={() => setQ('okta')}>okta</button>, <button className="text-violet-300 cursor-pointer" onClick={() => setQ('Orbit')}>Orbit</button> or <button className="text-violet-300 cursor-pointer" onClick={() => setQ('T1190')}>T1190</button>.
+                Type at least 2 characters. Try <button className="text-violet-700 cursor-pointer" onClick={() => setQ('CVE-2021-44228')}>CVE-2021-44228</button>, <button className="text-violet-700 cursor-pointer" onClick={() => setQ('okta')}>okta</button>, <button className="text-violet-700 cursor-pointer" onClick={() => setQ('Orbit')}>Orbit</button> or <button className="text-violet-700 cursor-pointer" onClick={() => setQ('T1190')}>T1190</button>.
               </div>
             ) : results.length === 0 ? (
               <div className="px-3 py-8 text-center">

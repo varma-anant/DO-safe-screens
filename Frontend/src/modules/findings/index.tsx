@@ -28,7 +28,7 @@ export function FindingDetailPage() {
   const location = useLocation()
   const settings = useSettings()
   const sec = sectionFor(location.pathname)
-  const { data, isLoading, error, retry } = useCollections(['findings', 'assets', 'services', 'knowledge', 'integrations', 'tickets', 'incidents', 'events', 'attackPaths', 'aiSystems', 'vendors'] as const)
+  const { data, isLoading, error, retry } = useCollections(['findings', 'assets', 'services', 'knowledge', 'integrations', 'tickets', 'incidents', 'events', 'attackPaths', 'aiSystems', 'vendors'] as const, { ignoreProjectFilter: true })
   const f = data?.findings.find((x) => x.id === id)
   usePage(f ? f.id : 'Finding', [{ label: sec.group }, { label: sec.list, to: sec.to }, { label: id ?? '' }])
   const [dialog, setDialog] = React.useState<null | 'assign' | 'ticket' | 'fp' | 'reopen' | 'risk' | 'escalate'>(null)
@@ -158,7 +158,7 @@ export function FindingDetailPage() {
             <span className="flex flex-col">
               <UserName id={f.ownerId} />
               {f.targetDate && !closed && (
-                <span className={`mt-0.5 flex items-center gap-1 text-[11px] ${new Date(f.targetDate) < new Date() ? 'text-red-300' : 'text-subtle'}`}>
+                <span className={`mt-0.5 flex items-center gap-1 text-[11px] ${new Date(f.targetDate) < new Date() ? 'text-red-700' : 'text-subtle'}`}>
                   <Clock className="size-3" /> due {fmtDate(f.targetDate)}
                 </span>
               )}
@@ -181,7 +181,7 @@ export function FindingDetailPage() {
             <Brain /> AI Analysis
             {f.aiAnalysis?.reviewStatus === 'pending_review' && (
               <Tooltip content="Pending human review">
-                <span className="size-1.5 rounded-full bg-violet-400" />
+                <span className="size-1.5 rounded-full bg-violet-500" />
               </Tooltip>
             )}
           </TabsTrigger>

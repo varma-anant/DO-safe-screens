@@ -12,24 +12,24 @@ export const SEVERITY_COLOR: Record<Severity, string> = {
 }
 
 export const SEVERITY_CLASS: Record<Severity, string> = {
-  critical: 'bg-red-500/15 text-red-300 border-red-500/30',
-  high: 'bg-orange-500/15 text-orange-300 border-orange-500/30',
-  medium: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
-  low: 'bg-green-500/15 text-green-300 border-green-500/30',
-  informational: 'bg-slate-500/15 text-slate-300 border-slate-500/30',
+  critical: 'bg-red-500/15 text-red-700 border-red-500/30',
+  high: 'bg-orange-500/15 text-orange-700 border-orange-500/30',
+  medium: 'bg-amber-500/15 text-amber-700 border-amber-500/30',
+  low: 'bg-green-500/15 text-green-700 border-green-500/30',
+  informational: 'bg-slate-500/15 text-slate-600 border-slate-500/30',
 }
 
 export type Tone = 'red' | 'orange' | 'amber' | 'green' | 'violet' | 'sky' | 'slate' | 'emerald'
 
 export const TONE_CLASS: Record<Tone, string> = {
-  red: 'bg-red-500/12 text-red-300 border-red-500/25',
-  orange: 'bg-orange-500/12 text-orange-300 border-orange-500/25',
-  amber: 'bg-amber-500/12 text-amber-300 border-amber-500/25',
-  green: 'bg-green-500/12 text-green-300 border-green-500/25',
-  emerald: 'bg-emerald-500/12 text-emerald-300 border-emerald-500/25',
-  violet: 'bg-violet-500/12 text-violet-300 border-violet-500/25',
-  sky: 'bg-sky-500/12 text-sky-300 border-sky-500/25',
-  slate: 'bg-slate-500/12 text-slate-300 border-slate-500/25',
+  red: 'bg-red-500/12 text-red-700 border-red-500/25',
+  orange: 'bg-orange-500/12 text-orange-700 border-orange-500/25',
+  amber: 'bg-amber-500/12 text-amber-700 border-amber-500/25',
+  green: 'bg-green-500/12 text-green-700 border-green-500/25',
+  emerald: 'bg-emerald-500/12 text-emerald-700 border-emerald-500/25',
+  violet: 'bg-violet-500/12 text-violet-700 border-violet-500/25',
+  sky: 'bg-sky-500/12 text-sky-700 border-sky-500/25',
+  slate: 'bg-slate-500/12 text-slate-600 border-slate-500/25',
 }
 
 export const FINDING_STATUS: Record<FindingStatus, { label: string; tone: Tone; help: string }> = {

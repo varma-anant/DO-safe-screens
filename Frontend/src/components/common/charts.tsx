@@ -1,13 +1,13 @@
 import * as React from 'react'
 import type { TooltipContentProps } from 'recharts'
 
-/** Categorical order validated for the dark surface (#111522) with the dataviz palette validator. Fixed order — never cycled. */
-export const CATEGORICAL = ['#8b5cf6', '#0d9f74', '#2b8fd6', '#d97706', '#db2777', '#65a30d']
+/** Categorical order validated for the light surface (#ffffff) with the dataviz palette validator. Fixed order — never cycled. */
+export const CATEGORICAL = ['#7c4df5', '#0d9f74', '#2b8fd6', '#d97706', '#db2777', '#65a30d']
 /** Single-hue sequential ramp (violet), light → dark for magnitude. */
 export const SEQUENTIAL = ['#ddd6fe', '#c4b5fd', '#a78bfa', '#8b5cf6', '#7c3aed', '#6d28d9']
 
-export const AXIS = { stroke: '#2a3146', tick: { fill: '#94a3b8', fontSize: 11 }, tickLine: false, axisLine: false } as const
-export const GRID = { stroke: '#1f2638', vertical: false } as const
+export const AXIS = { stroke: '#d9d9e2', tick: { fill: '#6b6c80', fontSize: 11 }, tickLine: false, axisLine: false } as const
+export const GRID = { stroke: '#ececf1', vertical: false } as const
 
 type Fmt = (v: number, name?: string) => string
 
@@ -15,7 +15,7 @@ type Fmt = (v: number, name?: string) => string
 export function ChartTooltip({ active, payload, label, format, labelFormat }: Partial<TooltipContentProps<number, string>> & { format?: Fmt; labelFormat?: (l: string) => string }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="rounded-lg border border-border-strong bg-surface-3 px-3 py-2 text-xs shadow-xl">
+    <div className="rounded-lg border border-border bg-surface px-3 py-2 text-xs shadow-lg shadow-slate-900/10">
       {label !== undefined && label !== '' && <div className="mb-1 font-medium text-fg">{labelFormat ? labelFormat(String(label)) : String(label)}</div>}
       <div className="space-y-0.5">
         {payload.map((p, i) => (
@@ -55,7 +55,7 @@ export function BarList({ items, format = (v) => v.toLocaleString(), max }: { it
         <li key={idx}>
           <button type="button" onClick={it.onClick} disabled={!it.onClick} className="group w-full text-left enabled:cursor-pointer">
             <div className="mb-1 flex items-baseline justify-between gap-2 text-xs">
-              <span className="truncate text-fg group-enabled:group-hover:text-violet-200">{it.label}</span>
+              <span className="truncate text-fg group-enabled:group-hover:text-violet-700">{it.label}</span>
               <span className="num shrink-0 font-medium text-muted">{format(it.value)}</span>
             </div>
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-3">

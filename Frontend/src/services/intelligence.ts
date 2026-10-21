@@ -35,7 +35,7 @@ export interface IntelligenceProvider {
 
 export const SUGGESTED_QUESTIONS = [
   'What are our most critical vulnerabilities?',
-  'Which business service has the highest risk?',
+  'Which application has the highest risk?',
   'Which vendors require attention?',
   'Show unresolved critical findings.',
   'Which AI systems have configuration issues?',
@@ -113,7 +113,7 @@ const INTENTS: { name: string; match: RegExp; handle: Handler }[] = [
       return {
         intent: 'unresolved-critical',
         title: `${rows.length} unresolved critical findings`,
-        answer: [`There are ${rows.length} open critical findings across ${new Set(rows.map((r) => r.f.businessServiceId)).size} business services. ${rows.filter(isOverdueRow).length} are past their SLA target date.`, `${noTicket.length} have no remediation ticket; ${rows.filter((r) => r.f.status === 'in_remediation').length} are actively being remediated.`],
+        answer: [`There are ${rows.length} open critical findings across ${new Set(rows.map((r) => r.f.businessServiceId)).size} applications. ${rows.filter(isOverdueRow).length} are past their SLA target date.`, `${noTicket.length} have no remediation ticket; ${rows.filter((r) => r.f.status === 'in_remediation').length} are actively being remediated.`],
         records: rows.slice(0, 10).map((r) => fRec(r.f, `${r.service?.name} · ${FINDING_STATUS[r.f.status].label}${isOverdue(r.f) ? ' · overdue' : ''}`)),
         evidence: [{ label: 'Finding lifecycle data', detail: 'Status, owners and target dates from DO SAFE finding records.', provenance: 'observed' }],
         nextActions: [{ label: 'Open critical findings view', to: '/operations/findings?severity=critical&status=new,triaged,in_validation,validated,in_remediation,pending_verification' }, { label: 'Remediation Center', to: '/operations/remediation' }],
@@ -122,7 +122,7 @@ const INTENTS: { name: string; match: RegExp; handle: Handler }[] = [
   },
   {
     name: 'service-risk',
-    match: /business service.*(risk|highest)|highest risk.*service|which service/i,
+    match: /(business service|application).*(risk|highest)|highest risk.*service|which service/i,
     handle: (db) => {
       const rows = db.services.map((s) => {
         const ale = db.scenarios.filter((x) => x.businessServiceId === s.id).reduce((a, x) => a + computeScenario(x, db.findings).ale, 0)
@@ -132,11 +132,11 @@ const INTENTS: { name: string; match: RegExp; handle: Handler }[] = [
       const top = rows[0]
       return {
         intent: 'service-risk',
-        title: `Highest-risk business service: ${top.s.name}`,
+        title: `Highest-risk application: ${top.s.name}`,
         answer: [`${top.s.name} carries the highest illustrative estimated annual loss (${fmtMoney(top.ale)}), with ${top.crit} open critical and ${top.open} total open findings.`, `Ranking by open critical exposure alone would put ${[...rows].sort((a, b) => b.crit - a.crit)[0].s.name} first — financial ranking weights scenario likelihood and loss magnitude.`],
         records: rows.map((r) => ({ type: 'service' as const, id: r.s.id, label: r.s.name, meta: `ALE ${fmtMoney(r.ale)} · ${r.crit} critical · ${r.open} open` })),
         evidence: [{ label: 'CRQ scenarios', detail: 'Illustrative model: ALE = AEP × loss per event, adjusted for linked findings and controls.', provenance: 'inferred' }],
-        nextActions: [{ label: `Open ${top.s.name}`, to: `/services/${top.s.id}` }, { label: 'Risk scenarios', to: '/crq/scenarios' }],
+        nextActions: [{ label: `Open ${top.s.name}`, to: `/applications/${top.s.id}` }, { label: 'Risk scenarios', to: '/crq/scenarios' }],
       }
     },
   },

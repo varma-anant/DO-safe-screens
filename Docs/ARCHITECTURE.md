@@ -25,7 +25,7 @@ The `Frontend/` folder was empty; the prototype is a new Vite project there. No 
 6. The intelligence assistant is a **deterministic intent engine** over local data (`services/intelligence`), behind an `IntelligenceProvider` interface so an LLM backend can replace it.
 7. CRQ uses a documented **illustrative** model (see §7) — not an actuarial model.
 8. Vendor names, AI system names and AI providers are **fictional**, so the prototype never attaches simulated risk ratings to real companies.
-9. "Persona" switching (CISO, analyst, TPRM manager, AI security analyst, risk manager, admin) changes the acting user recorded in audit events and the default landing emphasis; it is not access control.
+9. *(Superseded in v2; see §9.)* Persona switching was replaced by sign-in and real role-based access.
 
 ## 3. Information architecture & navigation
 
@@ -113,3 +113,39 @@ Referential integrity is enforced in the seed generator (`src/data/seed/*`) and 
 0. Architecture (this doc) → 1. Design system & shell → 2. Data layer & seed → 3. Dashboard → 4. CTEM & vulnerability investigation → 5. Security operations → 6. TPRM → 7. AI-SPM → 8. CRQ → 9. Intelligence & agents → 10. Integrations & workflows → 11. QA. Progress is tracked in `Docs/FEATURE_COVERAGE.md`.
 
 **Status (2026-10-20):** all phases complete. `tsc` clean, production build passes, seed integrity validated, 69-route sweep and 82 Playwright interaction checks pass with zero console errors. See `Docs/FEATURE_COVERAGE.md` for per-feature status.
+
+## 9. v2 — Enterprise workspace structure
+
+Manager feedback on v1: the product must read as an enterprise application. That means sign-in first, then a landing page that asks the administrator what to secure, a guided asset → map → test run → full run journey, and a workspace-style left panel.
+
+**Shell.** Light theme. The left panel has three parts:
+* **Workspace:** Home, Dashboard, Requests, SAFE applications, Asset mapping, Ticket management, Prioritization, Notifications, User management.
+* **Projects:** the projects you can access, plus *New project*.
+* **Footer:** Integrations, Knowledge base, Help & Support, Settings, and the user card.
+
+The top bar has breadcrumbs, a project switcher, search, Ask DO SAFE, notifications and a role chip. The v1 security modules (exposures, operations, TPRM, CRQ, AI security, intelligence, analytics) render inside `SecurityLayout`, which has an inner module nav scoped to the selected project.
+
+**Routes added.**
+* Entry and workspace: `/login`, `/home`, `/requests`.
+* Applications and projects: `/applications`, `/applications/:id`, `/mapping`, `/projects`, `/projects/:id`, `/onboarding`.
+* User management (`/admin`): `people`, `invitations`, `roles`, `project-access`, `inspector`, `audit`, `identity`.
+* Help: `/support`, `/knowledge`.
+
+`/services/*` redirects to `/applications/*`.
+
+**Access model** (`utils/permissions.ts`).
+
+| Organization role | Capabilities |
+|---|---|
+| Administrator | All capabilities |
+| Security analyst | Scans, triage, tickets, vendors, AI governance, risk models; all projects |
+| Project owner | Create projects, onboard applications, run scans, tickets, decide access requests for owned projects |
+| Viewer | Read-only |
+
+Project roles are owner, contributor and viewer. Visibility follows project membership unless the role has `view_all_projects`. `useCollections` scopes every collection to the visible projects and the selected project. API mutations call `requireCap()`, so even screens that don't hide a button reject the action with an explanation.
+
+**Application lifecycle.** `draft → assets_declared → mapped → connected → test_failed | test_passed → active ⇄ paused`.
+* The **test run** is deterministic. It fails for an asset with no source, a source that isn't connected, or an internet-only scanner on an internal asset. It creates no findings.
+* The **full run** generates findings from the template library for the declared assets, adds a starter CRQ scenario, and notifies that the app "is now a SAFE application".
+
+**Workspaces.** `northstar` is the seeded mature tenant (`DB_VERSION` 6). `acme` is an empty tenant (`buildEmptyDatabase`) used for the first-run journey. Switching happens at sign-in, and reset keeps the current workspace.

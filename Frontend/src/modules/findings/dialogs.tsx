@@ -227,7 +227,7 @@ export function FalsePositiveDialog({ finding, open, onOpenChange }: { finding: 
             <Checkbox onCheckedChange={(c) => setValue('attest', (c === true) as true, { shouldValidate: true })} className="mt-0.5" />
             <span>I confirm I reviewed the evidence and that this decision is mine. It will be recorded in decision history (version {finding.fpReviews.length + 1}) and the audit log.</span>
           </label>
-          {formState.errors.attest && <p className="text-xs text-red-400">{formState.errors.attest.message}</p>}
+          {formState.errors.attest && <p className="text-xs text-red-600">{formState.errors.attest.message}</p>}
           <DialogFooter>
             <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
               Cancel

@@ -14,7 +14,7 @@ Prototype: `Frontend/` (React + TypeScript + Vite). All data is simulated.
 
 **Summary (last run 2026-10-20):** 57 / 57 features represented · **50 VERIFIED** · **7 IMPLEMENTED** · 0 in progress · 0 not started.
 
-Test suites referenced below: **W** = `tests/e2e/workflows.mjs` (Workflows A–H, agents, search, persistence), **I** = `tests/e2e/interactions.mjs`, **M** = `tests/e2e/modules.mjs`, **R** = route sweep.
+Test suites referenced below: **J** = `tests/e2e/journey.mjs` (v2 login, onboarding journey, roles), **W** = `tests/e2e/workflows.mjs` (Workflows A–H, agents, search, persistence), **I** = `tests/e2e/interactions.mjs`, **M** = `tests/e2e/modules.mjs`, **R** = route sweep.
 
 ---
 
@@ -135,11 +135,27 @@ Test suites referenced below: **W** = `tests/e2e/workflows.mjs` (Workflows A–H
 
 ---
 
+## Enterprise workspace (v2)
+
+| Capability | Where | Status |
+|---|---|---|
+| Sign-in page with workspace choice, simulated SSO and demo accounts; protected routes redirect to login | `/login`, `RequireAuth` | VERIFIED (J) |
+| Landing page that asks what to secure (empty workspace) or shows work and top risks (returning) | `/home` | VERIFIED (J) |
+| Onboarding journey: project → application → declare assets → map & link → connect sources → test run → full run | `/onboarding` | VERIFIED (J: fail → fix → pass → full run) |
+| SAFE applications (mapped, connected, under assessment) with detail, runs, pause/resume | `/applications` | VERIFIED (J: listing), IMPLEMENTED (pause/resume) |
+| Asset mapping with an editable React Flow map | `/mapping` | VERIFIED (J: suggested links saved) |
+| Projects in the sidebar, project switcher, project-scoped data | Shell, `/projects` | VERIFIED (J: viewer sees member projects only) |
+| Requests: access requests with justification, impact preview, approve/decline | `/requests` | IMPLEMENTED |
+| User management: people, invitations, roles matrix, project access, permission inspector, audit, identity policy | `/admin/*` | VERIFIED (J: role change, admin-only gate) |
+| Real role restrictions (Administrator, Security analyst, Project owner, Viewer), enforced in navigation, screens and API | `utils/permissions.ts`, `requireCap` | VERIFIED (J) |
+| Help & Support tickets with status stepper and conversation; service status | `/support` | IMPLEMENTED |
+| Knowledge base task guides with "where to go next" | `/knowledge` | IMPLEMENTED |
+
 ## Cross-cutting requirements from the build brief
 
 | Requirement | Where | Status |
 |---|---|---|
-| Application shell (grouped sidebar, breadcrumbs, title, ⌘K search, Ask DO SAFE, notifications, recent activity, workspace selector, persona menu, demo badge) | `layouts/AppShell.tsx` | VERIFIED (search W, notifications M, mobile nav I) |
+| Application shell (grouped sidebar, breadcrumbs, title, ⌘K search, Ask DO SAFE, notifications, recent activity, project switcher, user card, prototype badge) | `layouts/AppShell.tsx` | VERIFIED (search W, notifications M, mobile nav I) |
 | Global search across assets, findings, vendors, AI systems, incidents, tickets, knowledge | `layouts/GlobalSearch.tsx` | VERIFIED (W) |
 | Vulnerability detail with 8 tabs, header fields, FP workflow, reopen, "Not mapped" | `modules/findings/*` | VERIFIED (W-A, W-B, M) |
 | Workflows A–H | see Module rows | VERIFIED (W: 21 checks) |
@@ -156,7 +172,7 @@ Test suites referenced below: **W** = `tests/e2e/workflows.mjs` (Workflows A–H
 
 * Frontend prototype only: no backend, no real scanning, exploitation, connector APIs, LLM, file upload or remediation execution.
 * Persistence is per-browser `localStorage`. Reset regenerates the deterministic dataset.
-* Personas change the acting user, not permissions (RBAC is part of the planned enterprise package).
+* Roles and permissions are enforced in the browser only. A real deployment needs server-side authorization and a real identity provider.
 * EPSS values are illustrative; CVE/CWE/ATT&CK/OWASP summaries are a static snapshot of public sources.
 * CRQ, ROSI, vendor scoring and AI risk scores are documented illustrative models.
 * Workflow Center graphs are predefined; attack paths are seeded.

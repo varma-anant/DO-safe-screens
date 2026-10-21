@@ -1,30 +1,34 @@
 import type { BusinessService, Integration, User } from '@/types'
 
+export type ServiceSeed = Pick<BusinessService, 'id' | 'name' | 'description' | 'criticality' | 'ownerId' | 'revenueDependency' | 'dataClassification' | 'regulatoryScope' | 'rtoHours'>
+
 // Fictional people at the fictional "Northstar Financial Services". Email domain is a reserved example domain.
 export const USERS: User[] = [
-  { id: 'USR-001', name: 'Elena Marsh', role: 'CISO', team: 'Office of the CISO', email: 'elena.marsh@northstar.example', initials: 'EM', isPersona: true },
-  { id: 'USR-002', name: 'Priya Raman', role: 'Security Analyst', team: 'Vulnerability Management', email: 'priya.raman@northstar.example', initials: 'PR', isPersona: true },
-  { id: 'USR-003', name: 'Marcus Chen', role: 'TPRM Manager', team: 'Third-Party Risk', email: 'marcus.chen@northstar.example', initials: 'MC', isPersona: true },
-  { id: 'USR-004', name: 'Sofia Alvarez', role: 'AI Security Analyst', team: 'AI Governance', email: 'sofia.alvarez@northstar.example', initials: 'SA', isPersona: true },
-  { id: 'USR-005', name: 'David Okafor', role: 'Risk Manager', team: 'Enterprise Risk', email: 'david.okafor@northstar.example', initials: 'DO', isPersona: true },
-  { id: 'USR-006', name: 'Hannah Lee', role: 'Platform Administrator', team: 'Security Engineering', email: 'hannah.lee@northstar.example', initials: 'HL', isPersona: true },
-  { id: 'USR-007', name: 'Tomás Ribeiro', role: 'Vulnerability Manager', team: 'Vulnerability Management', email: 'tomas.ribeiro@northstar.example', initials: 'TR' },
-  { id: 'USR-008', name: 'Aisha Bello', role: 'Incident Responder', team: 'Security Operations Center', email: 'aisha.bello@northstar.example', initials: 'AB' },
-  { id: 'USR-009', name: 'Jonas Weber', role: 'Engineering Owner', team: 'Payments Platform', email: 'jonas.weber@northstar.example', initials: 'JW' },
-  { id: 'USR-010', name: 'Mei Tanaka', role: 'Engineering Owner', team: 'Identity Engineering', email: 'mei.tanaka@northstar.example', initials: 'MT' },
-  { id: 'USR-011', name: 'Ravi Shah', role: 'Engineering Owner', team: 'Digital Channels', email: 'ravi.shah@northstar.example', initials: 'RS' },
-  { id: 'USR-012', name: 'Grace Kim', role: 'Engineering Owner', team: 'Data Platform', email: 'grace.kim@northstar.example', initials: 'GK' },
-  { id: 'USR-013', name: 'Oliver Grant', role: 'Engineering Owner', team: 'Workplace Technology', email: 'oliver.grant@northstar.example', initials: 'OG' },
-  { id: 'USR-014', name: 'Leila Haddad', role: 'Engineering Owner', team: 'Fraud Analytics', email: 'leila.haddad@northstar.example', initials: 'LH' },
-  { id: 'USR-015', name: 'Noah Fischer', role: 'Engineering Owner', team: 'Customer Experience AI', email: 'noah.fischer@northstar.example', initials: 'NF' },
-  { id: 'USR-016', name: 'Isabel Moreno', role: 'Incident Responder', team: 'Security Operations Center', email: 'isabel.moreno@northstar.example', initials: 'IM' },
-  { id: 'USR-017', name: 'Kwame Asante', role: 'Engineering Owner', team: 'Cloud Infrastructure', email: 'kwame.asante@northstar.example', initials: 'KA' },
-  { id: 'USR-018', name: 'Sarah Novak', role: 'TPRM Manager', team: 'Third-Party Risk', email: 'sarah.novak@northstar.example', initials: 'SN' },
+  { id: 'USR-001', name: 'Elena Marsh', role: 'CISO', team: 'Office of the CISO', email: 'elena.marsh@northstar.example', initials: 'EM' , orgRole: 'admin', status: 'active', mfaEnabled: true },
+  { id: 'USR-002', name: 'Priya Raman', role: 'Security Analyst', team: 'Vulnerability Management', email: 'priya.raman@northstar.example', initials: 'PR' , orgRole: 'analyst', status: 'active', mfaEnabled: true, demoLogin: true },
+  { id: 'USR-003', name: 'Marcus Chen', role: 'TPRM Manager', team: 'Third-Party Risk', email: 'marcus.chen@northstar.example', initials: 'MC' , orgRole: 'analyst', status: 'active', mfaEnabled: true },
+  { id: 'USR-004', name: 'Sofia Alvarez', role: 'AI Security Analyst', team: 'AI Governance', email: 'sofia.alvarez@northstar.example', initials: 'SA' , orgRole: 'analyst', status: 'active', mfaEnabled: true },
+  { id: 'USR-005', name: 'David Okafor', role: 'Risk Manager', team: 'Enterprise Risk', email: 'david.okafor@northstar.example', initials: 'DO' , orgRole: 'analyst', status: 'active', mfaEnabled: true },
+  { id: 'USR-006', name: 'Hannah Lee', role: 'Platform Administrator', team: 'Security Engineering', email: 'hannah.lee@northstar.example', initials: 'HL' , orgRole: 'admin', status: 'active', mfaEnabled: true, demoLogin: true },
+  { id: 'USR-007', name: 'Tomás Ribeiro', role: 'Vulnerability Manager', team: 'Vulnerability Management', email: 'tomas.ribeiro@northstar.example', initials: 'TR' , orgRole: 'analyst', status: 'active', mfaEnabled: true },
+  { id: 'USR-008', name: 'Aisha Bello', role: 'Incident Responder', team: 'Security Operations Center', email: 'aisha.bello@northstar.example', initials: 'AB' , orgRole: 'analyst', status: 'active', mfaEnabled: true },
+  { id: 'USR-009', name: 'Jonas Weber', role: 'Engineering Owner', team: 'Payments Platform', email: 'jonas.weber@northstar.example', initials: 'JW' , orgRole: 'project_owner', status: 'active', mfaEnabled: true, demoLogin: true },
+  { id: 'USR-010', name: 'Mei Tanaka', role: 'Engineering Owner', team: 'Identity Engineering', email: 'mei.tanaka@northstar.example', initials: 'MT' , orgRole: 'project_owner', status: 'active', mfaEnabled: true },
+  { id: 'USR-011', name: 'Ravi Shah', role: 'Engineering Owner', team: 'Digital Channels', email: 'ravi.shah@northstar.example', initials: 'RS' , orgRole: 'viewer', status: 'active', mfaEnabled: true, demoLogin: true },
+  { id: 'USR-012', name: 'Grace Kim', role: 'Engineering Owner', team: 'Data Platform', email: 'grace.kim@northstar.example', initials: 'GK' , orgRole: 'project_owner', status: 'active', mfaEnabled: true },
+  { id: 'USR-013', name: 'Oliver Grant', role: 'Engineering Owner', team: 'Workplace Technology', email: 'oliver.grant@northstar.example', initials: 'OG' , orgRole: 'project_owner', status: 'active', mfaEnabled: true },
+  { id: 'USR-014', name: 'Leila Haddad', role: 'Engineering Owner', team: 'Fraud Analytics', email: 'leila.haddad@northstar.example', initials: 'LH' , orgRole: 'project_owner', status: 'active', mfaEnabled: true },
+  { id: 'USR-015', name: 'Noah Fischer', role: 'Engineering Owner', team: 'Customer Experience AI', email: 'noah.fischer@northstar.example', initials: 'NF' , orgRole: 'project_owner', status: 'active', mfaEnabled: true },
+  { id: 'USR-016', name: 'Isabel Moreno', role: 'Incident Responder', team: 'Security Operations Center', email: 'isabel.moreno@northstar.example', initials: 'IM' , orgRole: 'analyst', status: 'active', mfaEnabled: true },
+  { id: 'USR-017', name: 'Kwame Asante', role: 'Engineering Owner', team: 'Cloud Infrastructure', email: 'kwame.asante@northstar.example', initials: 'KA' , orgRole: 'project_owner', status: 'active', mfaEnabled: true },
+  { id: 'USR-018', name: 'Sarah Novak', role: 'TPRM Manager', team: 'Third-Party Risk', email: 'sarah.novak@northstar.example', initials: 'SN' , orgRole: 'analyst', status: 'active', mfaEnabled: true },
 ]
+
+USERS.push({ id: 'USR-019', name: 'Peter Lindqvist', role: 'Engineering Owner', team: 'Contractor (engagement ended)', email: 'peter.lindqvist@northstar.example', initials: 'PL', orgRole: 'viewer', status: 'deactivated', mfaEnabled: false })
 
 export const SYSTEM_ACTOR = 'SYSTEM'
 
-export const SERVICES: BusinessService[] = [
+export const SERVICES: ServiceSeed[] = [
   {
     id: 'SVC-PAY',
     name: 'Payment Processing',
@@ -100,6 +104,17 @@ export const SERVICES: BusinessService[] = [
     revenueDependency: 'Handles ~45% of inbound support contacts (illustrative)',
     dataClassification: 'Confidential',
     regulatoryScope: ['GLBA', 'UDAAP', 'EU AI Act (limited-risk transparency)'],
+    rtoHours: 8,
+  },
+  {
+    id: 'SVC-TRS',
+    name: 'Treasury Portal',
+    description: 'New corporate treasury portal for commercial clients — currently being onboarded to DO SAFE.',
+    criticality: 'tier-2',
+    ownerId: 'USR-009',
+    revenueDependency: 'Launching next quarter (commercial banking)',
+    dataClassification: 'Confidential',
+    regulatoryScope: ['GLBA', 'SOX'],
     rtoHours: 8,
   },
 ]

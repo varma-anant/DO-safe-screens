@@ -10,7 +10,7 @@ import { scoreAssessment } from '@/data/seed/tprm'
 import { AGENT_PLAYBOOKS } from '@/data/seed/agents'
 import { MODEL_ID, MODEL_VERSION } from '@/data/seed/findings'
 import { FINDING_STATUS } from '@/utils/labels'
-import { actor, audit, commit, DemoApiError, historyEntry, latency, mustFind, nextId, notify, now, replace, uid, userName, type CollectionKey, type CollectionMap } from './core'
+import { actor, audit, commit, DemoApiError, requireCap, historyEntry, latency, mustFind, nextId, notify, now, replace, uid, userName, type CollectionKey, type CollectionMap } from './core'
 
 export type { CollectionKey, CollectionMap }
 
@@ -57,6 +57,7 @@ function patchFinding(db: Database, id: string, fn: (f: Finding) => Finding): Da
 const moduleFor = (f: Finding) => (f.domain === 'ai' ? 'AI-SPM' : 'CTEM') as 'AI-SPM' | 'CTEM'
 
 export async function updateFinding(id: string, patch: Partial<Finding>, summary = 'Finding updated') {
+  requireCap('triage_findings')
   await latency()
   commit((db) => {
     const next = patchFinding(db, id, (f) => ({ ...f, ...patch, history: [...f.history, historyEntry('comment', summary)] }))
@@ -65,6 +66,7 @@ export async function updateFinding(id: string, patch: Partial<Finding>, summary
 }
 
 export async function assignFinding(id: string, ownerId: string, targetDate?: string) {
+  requireCap('triage_findings')
   await latency()
   commit((db) => {
     const f0 = mustFind(db.findings, id, 'Finding')
@@ -75,6 +77,7 @@ export async function assignFinding(id: string, ownerId: string, targetDate?: st
 }
 
 export async function changeFindingStatus(id: string, status: FindingStatus, note?: string) {
+  requireCap('triage_findings')
   await latency()
   commit((db) => {
     const f0 = mustFind(db.findings, id, 'Finding')
@@ -86,6 +89,7 @@ export async function changeFindingStatus(id: string, status: FindingStatus, not
 }
 
 export async function addInvestigationNote(id: string, text: string) {
+  requireCap('triage_findings')
   await latency(0.5)
   commit((db) => {
     const next = patchFinding(db, id, (f) => ({ ...f, rootCause: { ...f.rootCause, notes: [...f.rootCause.notes, { id: uid('N'), authorId: actor(), at: now(), text }] }, history: [...f.history, historyEntry('comment', 'Investigation note added', text)] }))
@@ -94,6 +98,7 @@ export async function addInvestigationNote(id: string, text: string) {
 }
 
 export async function addHypothesis(id: string, statement: string) {
+  requireCap('triage_findings')
   await latency(0.5)
   commit((db) => {
     const next = patchFinding(db, id, (f) => ({ ...f, rootCause: { ...f.rootCause, hypotheses: [...f.rootCause.hypotheses, { id: uid('RC'), statement, likelihood: 'possible', supportingEvidenceIds: [], status: 'open', provenance: 'human-reviewed' }] }, history: [...f.history, historyEntry('comment', 'Root-cause hypothesis added', statement)] }))
@@ -102,6 +107,7 @@ export async function addHypothesis(id: string, statement: string) {
 }
 
 export async function setHypothesisStatus(id: string, hypId: string, status: 'confirmed' | 'rejected' | 'open') {
+  requireCap('triage_findings')
   await latency(0.5)
   commit((db) => {
     let stmt = ''
@@ -119,6 +125,7 @@ export async function setHypothesisStatus(id: string, hypId: string, status: 'co
 }
 
 export async function reviewAIAnalysis(id: string, decision: 'accepted' | 'rejected' | 'needs_more_info', comment?: string) {
+  requireCap('triage_findings')
   await latency(0.5)
   commit((db) => {
     const next = patchFinding(db, id, (f) => ({ ...f, aiAnalysis: f.aiAnalysis ? { ...f.aiAnalysis, reviewStatus: decision, reviewedById: actor(), reviewedAt: now() } : f.aiAnalysis, history: [...f.history, historyEntry('ai_analysis', `AI analysis review: ${decision.replace(/_/g, ' ')}`, comment)] }))
@@ -128,6 +135,7 @@ export async function reviewAIAnalysis(id: string, decision: 'accepted' | 'rejec
 
 /** Simulated AI investigation refresh — produces a new versioned analysis and keeps the previous one. */
 export async function regenerateAIAnalysis(id: string) {
+  requireCap('triage_findings')
   await latency(4)
   commit((db) => {
     const next = patchFinding(db, id, (f) => {
@@ -161,6 +169,7 @@ export async function regenerateAIAnalysis(id: string) {
 }
 
 export async function submitFalsePositiveReview(id: string, input: { reason: FalsePositiveReason; supportingEvidence: string; analystNotes: string; reviewerId: string }) {
+  requireCap('triage_findings')
   await latency()
   commit((db) => {
     const f0 = mustFind(db.findings, id, 'Finding')
@@ -179,6 +188,7 @@ export async function submitFalsePositiveReview(id: string, input: { reason: Fal
 }
 
 export async function reopenFinding(id: string, reason: string) {
+  requireCap('triage_findings')
   await latency()
   commit((db) => {
     const f0 = mustFind(db.findings, id, 'Finding')
@@ -199,6 +209,7 @@ export async function reopenFinding(id: string, reason: string) {
 }
 
 export async function runValidation(id: string) {
+  requireCap('triage_findings')
   await latency(5)
   commit((db) => {
     const f0 = mustFind(db.findings, id, 'Finding')
@@ -224,6 +235,7 @@ export async function runValidation(id: string) {
 }
 
 export async function startValidation(id: string) {
+  requireCap('triage_findings')
   await latency(0.5)
   commit((db) => {
     const next = patchFinding(db, id, (f) => ({ ...f, status: 'in_validation', validation: { status: 'in_progress', method: 'Reachability analysis', provenance: 'simulated' }, history: [...f.history, historyEntry('status_change', 'Queued for exploitability validation')] }))
@@ -232,6 +244,7 @@ export async function startValidation(id: string) {
 }
 
 export async function requestRiskAcceptance(id: string, justification: string, expiresAt: string) {
+  requireCap('triage_findings')
   await latency()
   commit((db) => {
     const next = patchFinding(db, id, (f) => ({ ...f, riskAcceptance: { requestedById: actor(), requestedAt: now(), justification, expiresAt, status: 'pending' }, history: [...f.history, historyEntry('risk_acceptance', 'Risk acceptance requested', justification)] }))
@@ -241,6 +254,7 @@ export async function requestRiskAcceptance(id: string, justification: string, e
 }
 
 export async function decideRiskAcceptance(id: string, approve: boolean) {
+  requireCap('approve_high_impact')
   await latency()
   commit((db) => {
     const next = patchFinding(db, id, (f) => {
@@ -309,6 +323,7 @@ function linkTicket(db: Database, t: Ticket): Database {
 }
 
 export async function createTicket(input: CreateTicketInput) {
+  requireCap('manage_tickets')
   await latency()
   let created: Ticket | undefined
   commit((db) => {
@@ -319,6 +334,7 @@ export async function createTicket(input: CreateTicketInput) {
 }
 
 export async function updateTicket(id: string, patch: Partial<Ticket>, summary: string) {
+  requireCap('manage_tickets')
   await latency(0.6)
   commit((db) => {
     const t0 = mustFind(db.tickets, id, 'Ticket')
@@ -339,6 +355,7 @@ export async function updateTicket(id: string, patch: Partial<Ticket>, summary: 
 }
 
 export async function addTicketComment(id: string, text: string) {
+  requireCap('manage_tickets')
   await latency(0.4)
   commit((db) => {
     const t0 = mustFind(db.tickets, id, 'Ticket')
@@ -348,6 +365,7 @@ export async function addTicketComment(id: string, text: string) {
 }
 
 export async function submitVerification(ticketId: string, v: { evidence: string; method: NonNullable<Ticket['verification']>['method']; result: 'passed' | 'failed' }) {
+  requireCap('manage_tickets')
   await latency(1.5)
   commit((db) => {
     const t0 = mustFind(db.tickets, ticketId, 'Ticket')
@@ -391,6 +409,7 @@ export async function submitVerification(ticketId: string, v: { evidence: string
 }
 
 export async function recordVendorResponse(ticketId: string, status: NonNullable<Ticket['vendorResponse']>['status'], message: string) {
+  requireCap('manage_tickets')
   await latency(0.6)
   commit((db) => {
     const t0 = mustFind(db.tickets, ticketId, 'Ticket')
@@ -403,6 +422,7 @@ export async function recordVendorResponse(ticketId: string, status: NonNullable
 // ===================================================================== Events & incidents
 
 export async function updateEventStatus(id: string, status: EventStatus, assessment?: string) {
+  requireCap('triage_findings')
   await latency(0.6)
   commit((db) => {
     const e = mustFind(db.events, id, 'Event')
@@ -422,6 +442,7 @@ export interface CreateIncidentInput {
 }
 
 export async function createIncident(input: CreateIncidentInput) {
+  requireCap('triage_findings')
   await latency()
   let created: Incident | undefined
   commit((db) => {
@@ -458,26 +479,31 @@ function patchIncident(db: Database, id: string, fn: (i: Incident) => Incident) 
 }
 
 export async function updateIncident(id: string, patch: Partial<Incident>, summary: string) {
+  requireCap('triage_findings')
   await latency(0.6)
   commit((db) => audit(patchIncident(db, id, (i) => ({ ...i, ...patch, updatedAt: now(), timeline: [...i.timeline, historyEntry(patch.status ? 'status_change' : patch.investigatorId ? 'assigned' : 'comment', summary)] })), { action: 'incident updated', entityType: 'incident', entityId: id, details: summary, module: 'Operations' }))
 }
 
 export async function addIncidentNote(id: string, text: string) {
+  requireCap('triage_findings')
   await latency(0.4)
   commit((db) => audit(patchIncident(db, id, (i) => ({ ...i, updatedAt: now(), notes: [...i.notes, { id: uid('N'), authorId: actor(), at: now(), text }], timeline: [...i.timeline, historyEntry('comment', 'Investigation note added', text)] })), { action: 'incident note added', entityType: 'incident', entityId: id, details: text.slice(0, 80), module: 'Operations' }))
 }
 
 export async function addIncidentTask(id: string, task: Omit<IncidentTask, 'id' | 'status'>) {
+  requireCap('triage_findings')
   await latency(0.4)
   commit((db) => audit(patchIncident(db, id, (i) => ({ ...i, updatedAt: now(), tasks: [...i.tasks, { ...task, id: uid('T'), status: 'todo' }], timeline: [...i.timeline, historyEntry('comment', `Response task added: ${task.title}`, `Assigned to ${userName(task.assigneeId)}`)] })), { action: 'incident task added', entityType: 'incident', entityId: id, details: task.title, module: 'Operations' }))
 }
 
 export async function updateIncidentTask(id: string, taskId: string, status: IncidentTask['status']) {
+  requireCap('triage_findings')
   await latency(0.3)
   commit((db) => audit(patchIncident(db, id, (i) => ({ ...i, updatedAt: now(), tasks: i.tasks.map((t) => (t.id === taskId ? { ...t, status } : t)), timeline: [...i.timeline, historyEntry('comment', `Task "${i.tasks.find((t) => t.id === taskId)?.title}" → ${status.replace('_', ' ')}`)] })), { action: 'incident task updated', entityType: 'incident', entityId: id, details: status, module: 'Operations' }))
 }
 
 export async function closeIncident(id: string, resolutionSummary: string) {
+  requireCap('triage_findings')
   await latency()
   commit((db) => {
     const i0 = mustFind(db.incidents, id, 'Incident')
@@ -490,11 +516,13 @@ export async function closeIncident(id: string, resolutionSummary: string) {
 // ===================================================================== Assets
 
 export async function updateAsset(id: string, patch: Partial<Asset>, summary: string) {
+  requireCap('triage_findings')
   await latency(0.6)
   commit((db) => audit({ ...db, assets: replace(db.assets, { ...mustFind(db.assets, id, 'Asset'), ...patch }) }, { action: 'asset updated', entityType: 'asset', entityId: id, details: summary, module: 'CTEM' }))
 }
 
 export async function mergeAsset(duplicateId: string, intoId: string) {
+  requireCap('triage_findings')
   await latency()
   commit((db) => {
     const dup = mustFind(db.assets, duplicateId, 'Asset')
@@ -511,6 +539,7 @@ export async function mergeAsset(duplicateId: string, intoId: string) {
 }
 
 export async function dismissDuplicate(duplicateId: string) {
+  requireCap('triage_findings')
   await latency(0.6)
   commit((db) => {
     const next = { ...db, assets: db.assets.map((a) => (a.id === duplicateId ? { ...a, possibleDuplicateOfId: undefined, tags: a.tags.filter((t) => t !== 'reconciliation-candidate') } : a)), dataQuality: db.dataQuality.map((q) => (q.entityId === duplicateId && q.status === 'open' ? { ...q, status: 'ignored' as const } : q)) }
@@ -519,6 +548,7 @@ export async function dismissDuplicate(duplicateId: string) {
 }
 
 export async function setAttackPathStatus(id: string, status: 'active' | 'mitigated' | 'accepted', note: string) {
+  requireCap('triage_findings')
   await latency(0.6)
   commit((db) => {
     const p = mustFind(db.attackPaths, id, 'Attack path')
@@ -550,6 +580,7 @@ export function computeInherentRisk(input: Pick<OnboardVendorInput, 'tier' | 'da
 }
 
 export async function onboardVendor(input: OnboardVendorInput) {
+  requireCap('manage_vendors')
   await latency()
   let created: Vendor | undefined
   commit((db) => {
@@ -595,6 +626,7 @@ export async function onboardVendor(input: OnboardVendorInput) {
 }
 
 export async function updateVendor(id: string, patch: Partial<Vendor>, summary: string) {
+  requireCap('manage_vendors')
   await latency(0.6)
   commit((db) => {
     const v0 = mustFind(db.vendors, id, 'Vendor')
@@ -607,6 +639,7 @@ export async function setVendorLifecycle(id: string, lifecycle: VendorLifecycle)
 }
 
 export async function createAssessment(vendorId: string, type: Assessment['type'], dueInDays = 21) {
+  requireCap('manage_vendors')
   await latency()
   let created: Assessment | undefined
   commit((db) => {
@@ -621,6 +654,7 @@ export async function createAssessment(vendorId: string, type: Assessment['type'
 }
 
 export async function saveAssessmentAnswers(id: string, answers: AssessmentAnswer[]) {
+  requireCap('manage_vendors')
   await latency(0.5)
   commit((db) => {
     const a = mustFind(db.assessments, id, 'Assessment')
@@ -631,6 +665,7 @@ export async function saveAssessmentAnswers(id: string, answers: AssessmentAnswe
 }
 
 export async function submitAssessment(id: string, answers: AssessmentAnswer[]) {
+  requireCap('manage_vendors')
   await latency()
   commit((db) => {
     const a = mustFind(db.assessments, id, 'Assessment')
@@ -640,6 +675,7 @@ export async function submitAssessment(id: string, answers: AssessmentAnswer[]) 
 
 /** Simulated assessment analysis — deterministic scoring of questionnaire answers plus evidence coverage. */
 export async function generateAssessmentResult(id: string) {
+  requireCap('manage_vendors')
   await latency(3)
   commit((db) => {
     const a = mustFind(db.assessments, id, 'Assessment')
@@ -657,6 +693,7 @@ export async function generateAssessmentResult(id: string) {
 }
 
 export async function createVendorRemediation(assessmentId: string, questionIds: string[]) {
+  requireCap('manage_vendors')
   await latency()
   commit((db) => {
     const a = mustFind(db.assessments, assessmentId, 'Assessment')
@@ -673,6 +710,7 @@ export async function createVendorRemediation(assessmentId: string, questionIds:
 }
 
 export async function uploadEvidence(vendorId: string, doc: { name: string; type: EvidenceDoc['type']; expiresAt?: string }) {
+  requireCap('manage_vendors')
   await latency()
   commit((db) => {
     const v = mustFind(db.vendors, vendorId, 'Vendor')
@@ -682,6 +720,7 @@ export async function uploadEvidence(vendorId: string, doc: { name: string; type
 }
 
 export async function analyzeEvidence(vendorId: string, docId: string) {
+  requireCap('manage_vendors')
   await latency(4)
   commit((db) => {
     const v = mustFind(db.vendors, vendorId, 'Vendor')
@@ -691,6 +730,7 @@ export async function analyzeEvidence(vendorId: string, docId: string) {
 }
 
 export async function setEvidenceStatus(vendorId: string, docId: string, status: EvidenceDoc['status']) {
+  requireCap('manage_vendors')
   await latency(0.5)
   commit((db) => {
     const v = mustFind(db.vendors, vendorId, 'Vendor')
@@ -700,6 +740,7 @@ export async function setEvidenceStatus(vendorId: string, docId: string, status:
 }
 
 export async function updateAlertStatus(id: string, status: 'open' | 'acknowledged' | 'resolved') {
+  requireCap('manage_vendors')
   await latency(0.5)
   commit((db) => {
     const a = mustFind(db.monitoringAlerts, id, 'Alert')
@@ -708,6 +749,7 @@ export async function updateAlertStatus(id: string, status: 'open' | 'acknowledg
 }
 
 export async function setMilestoneStatus(vendorId: string, milestoneId: string, status: 'met' | 'missed' | 'at_risk' | 'upcoming') {
+  requireCap('manage_vendors')
   await latency(0.5)
   commit((db) => {
     const v = mustFind(db.vendors, vendorId, 'Vendor')
@@ -719,6 +761,7 @@ export async function setMilestoneStatus(vendorId: string, milestoneId: string, 
 const OFFBOARDING_ITEMS = ['Revoke SSO / guest accounts', 'Remove network and API access (keys, IP allow-lists)', 'Confirm data return or certified destruction', 'Retrieve physical assets / badges', 'Close open remediation items or record residual risk', 'Final invoice and contract closure', 'Archive due-diligence record for audit']
 
 export async function startOffboarding(vendorId: string) {
+  requireCap('manage_vendors')
   await latency()
   commit((db) => {
     const v = mustFind(db.vendors, vendorId, 'Vendor')
@@ -727,6 +770,7 @@ export async function startOffboarding(vendorId: string) {
 }
 
 export async function toggleOffboardingItem(vendorId: string, itemId: string, done: boolean) {
+  requireCap('manage_vendors')
   await latency(0.3)
   commit((db) => {
     const v = mustFind(db.vendors, vendorId, 'Vendor')
@@ -737,6 +781,7 @@ export async function toggleOffboardingItem(vendorId: string, itemId: string, do
 }
 
 export async function completeOffboarding(vendorId: string, residualRiskNote: string) {
+  requireCap('manage_vendors')
   await latency()
   commit((db) => {
     const v = mustFind(db.vendors, vendorId, 'Vendor')
@@ -750,6 +795,7 @@ export async function completeOffboarding(vendorId: string, residualRiskNote: st
 // ===================================================================== AI security
 
 export async function updateAISystem(id: string, patch: Partial<AISystem>, summary: string) {
+  requireCap('manage_ai_governance')
   await latency(0.6)
   commit((db) => {
     const a = mustFind(db.aiSystems, id, 'AI system')
@@ -762,6 +808,7 @@ export async function setAIApproval(id: string, approval: AIApproval, rationale:
 }
 
 export async function createGovernanceReview(input: { aiSystemId: string; findingId?: string; title: string; type: GovernanceReview['type']; reviewerId?: string; policyRefs: string[]; note?: string }) {
+  requireCap('manage_ai_governance')
   await latency()
   let created: GovernanceReview | undefined
   commit((db) => {
@@ -778,6 +825,7 @@ export async function createGovernanceReview(input: { aiSystemId: string; findin
 }
 
 export async function decideGovernanceReview(id: string, status: GovernanceReview['status'], decision: string, conditions: string[], approval?: AIApproval) {
+  requireCap('approve_high_impact')
   await latency()
   commit((db) => {
     const g = mustFind(db.governanceReviews, id, 'Governance review')
@@ -788,6 +836,7 @@ export async function decideGovernanceReview(id: string, status: GovernanceRevie
 }
 
 export async function addGovernanceNote(id: string, text: string) {
+  requireCap('manage_ai_governance')
   await latency(0.4)
   commit((db) => {
     const g = mustFind(db.governanceReviews, id, 'Governance review')
@@ -798,6 +847,7 @@ export async function addGovernanceNote(id: string, text: string) {
 // ===================================================================== CRQ
 
 export async function saveScenarioSimulation(id: string, name: string, params: ScenarioParams, ale: number, baselineAle: number) {
+  requireCap('edit_risk_models')
   await latency()
   commit((db) => {
     const s = mustFind(db.scenarios, id, 'Scenario')
@@ -806,11 +856,13 @@ export async function saveScenarioSimulation(id: string, name: string, params: S
 }
 
 export async function applyScenarioParams(id: string, params: ScenarioParams) {
+  requireCap('edit_risk_models')
   await latency()
   commit((db) => audit({ ...db, scenarios: replace(db.scenarios, { ...mustFind(db.scenarios, id, 'Scenario'), params }) }, { action: 'scenario assumptions updated', entityType: 'scenario', entityId: id, details: 'Baseline parameters changed', module: 'CRQ' }))
 }
 
 export async function updateControl(id: string, patch: Partial<Control>, summary: string) {
+  requireCap('edit_risk_models')
   await latency(0.6)
   commit((db) => {
     const c = mustFind(db.controls, id, 'Control')
@@ -824,6 +876,7 @@ export async function updateControl(id: string, patch: Partial<Control>, summary
 // ===================================================================== Agents (simulated)
 
 export async function setAgentEnabled(id: string, enabled: boolean) {
+  requireCap('manage_settings')
   await latency(0.4)
   commit((db) => {
     const a = mustFind(db.agents, id, 'Agent')
@@ -833,6 +886,7 @@ export async function setAgentEnabled(id: string, enabled: boolean) {
 
 /** Starts a simulated agent run. Steps advance on timers; nothing is scanned or changed outside demo state. */
 export async function runAgentDemo(agentId: string) {
+  requireCap('run_scans')
   await latency(0.3)
   const db0 = getDb()
   const agent = mustFind(db0.agents, agentId, 'Agent')
@@ -891,6 +945,7 @@ export async function runAgentDemo(agentId: string) {
 }
 
 export async function decideExecution(executionId: string, approve: boolean) {
+  requireCap('approve_high_impact')
   await latency()
   commit((db) => {
     const e = mustFind(db.executions, executionId, 'Execution')
@@ -921,6 +976,7 @@ export async function decideExecution(executionId: string, approve: boolean) {
 // ===================================================================== Integrations (simulated)
 
 export async function configureIntegration(id: string, config: NonNullable<Integration['config']>) {
+  requireCap('manage_integrations')
   await latency()
   commit((db) => {
     const i = mustFind(db.integrations, id, 'Integration')
@@ -929,6 +985,7 @@ export async function configureIntegration(id: string, config: NonNullable<Integ
 }
 
 export async function testIntegration(id: string) {
+  requireCap('manage_integrations')
   await latency(4)
   let ok = false
   commit((db) => {
@@ -948,6 +1005,28 @@ const IMPORT_TEMPLATES: Partial<Record<Integration['category'], string[]>> = {
   'Attack surface': ['tls-expired', 'db-public'],
 }
 
+/** Creates a finding for an asset from a detection template. Used by connector imports and full runs. */
+export function buildFindingFromTemplate(db: Database, t: (typeof FINDING_TEMPLATES)[number], asset: Asset, source: { id: string; name: string }, origin: string, tags: string[]): Finding {
+  const id = nextId(db.findings, 'FND')
+  const cve = t.cveId ? db.knowledge.find((k) => k.externalId === t.cveId) : undefined
+  const ts = now()
+  const rid = `demo-${source.id.slice(4).toLowerCase()}-${Math.floor(Math.random() * 1e6).toString(16)}`
+  const ev = t.evidence({ asset, host: asset.fqdn ?? asset.name, ip: asset.ipAddress ?? '—', date: ts, rid })
+  return {
+    id, title: t.title, domain: t.domain, category: t.category, severity: t.severity, status: 'new', assetId: asset.id, businessServiceId: asset.businessServiceId, templateKey: t.key,
+    description: t.description, executiveSummary: `${t.title} on ${asset.name} — ${origin}. ${t.businessImpact}`, businessImpact: t.businessImpact,
+    cveId: t.cveId, cweIds: t.cweIds, attackIds: t.attackIds, owaspIds: t.owaspIds, cvss: cve?.cvss ? { version: cve.cvss.version, score: cve.cvss.score, vector: cve.cvss.vector } : undefined, epss: cve?.epss ? { score: cve.epss.score, percentile: cve.epss.percentile } : undefined, kev: !!cve?.kev,
+    exploitAvailable: t.exploitMaturity !== 'none', exploitMaturity: t.exploitMaturity, classificationConfidence: t.confidence, mappingRationale: t.rationale, firstDetected: ts, lastObserved: ts, ownerId: asset.ownerId, targetDate: addDays(ts, SLA()[t.severity]),
+    sourceIntegrationId: source.id, sourceRecordId: rid, additionalSourceIds: [], detectionMethod: t.detectionMethod,
+    evidence: ev.map((e, k) => ({ ...e, id: uid('EV') + k, collectedAt: ts, sourceIntegrationId: source.id, provenance: 'simulated' as const })), missingEvidence: t.missingEvidence,
+    rootCause: { hypotheses: t.rootCauses.map((r) => ({ id: uid('RC'), statement: r.statement, likelihood: r.likelihood, supportingEvidenceIds: [], status: 'open' as const, provenance: 'inferred' as const })), relatedConfigIssues: t.configIssues, relatedWeaknesses: t.weaknesses, notes: [] },
+    remediation: { recommended: t.recommended, steps: t.steps, vendorFix: t.vendorFix, compensatingControls: t.compensating, status: 'not_started', verificationRequirements: t.verification, similarResolutions: t.similar },
+    validation: { status: 'not_started', provenance: 'observed' },
+    history: [historyEntry('discovered', `Detected by ${source.name} (${origin})`, undefined, 'SYSTEM'), historyEntry('enriched', 'Enriched with knowledge library references', [t.cveId, ...t.cweIds, ...t.attackIds].filter(Boolean).join(', ') || 'No mapping applicable', 'SYSTEM')],
+    fpReviews: [], ticketIds: [], incidentIds: [], eventIds: [], relatedFindingIds: db.findings.filter((x) => x.templateKey === t.key).slice(0, 3).map((x) => x.id), compensatingControlsInPlace: 0, attackPathIds: [], tags: [...tags, ...(asset.internetExposed ? ['internet-facing'] : [])],
+  }
+}
+
 function importFindings(db: Database, integration: Integration): { db: Database; ids: string[] } {
   const keys = IMPORT_TEMPLATES[integration.category] ?? []
   let next = db
@@ -959,29 +1038,15 @@ function importFindings(db: Database, integration: Integration): { db: Database;
     const asset = next.assets.find((a) => !a.possibleDuplicateOfId && !a.duplicateOfId && (!t.assetTypes || t.assetTypes.includes(a.type)) && !used.has(a.id) && (integration.id !== 'INT-MSD' || a.cloud === 'Azure'))
       ?? next.assets.find((a) => !a.possibleDuplicateOfId && (!t.assetTypes || t.assetTypes.includes(a.type)) && !used.has(a.id))
     if (!asset) continue
-    const id = nextId(next.findings, 'FND')
-    const cve = t.cveId ? next.knowledge.find((k) => k.externalId === t.cveId) : undefined
-    const ts = now()
-    const ev = t.evidence({ asset, host: asset.fqdn ?? asset.name, ip: asset.ipAddress ?? '—', date: ts, rid: `demo-${integration.id.slice(4).toLowerCase()}-${Math.floor(Math.random() * 1e6).toString(16)}` })
-    const f: Finding = {
-      id, title: t.title, domain: t.domain, category: t.category, severity: t.severity, status: 'new', assetId: asset.id, businessServiceId: asset.businessServiceId, templateKey: t.key,
-      description: t.description, executiveSummary: `${t.title} on ${asset.name} — imported by simulated ${integration.name} connector run. ${t.businessImpact}`, businessImpact: t.businessImpact,
-      cveId: t.cveId, cweIds: t.cweIds, attackIds: t.attackIds, owaspIds: t.owaspIds, cvss: cve?.cvss ? { version: cve.cvss.version, score: cve.cvss.score, vector: cve.cvss.vector } : undefined, epss: cve?.epss ? { score: cve.epss.score, percentile: cve.epss.percentile } : undefined, kev: !!cve?.kev,
-      exploitAvailable: t.exploitMaturity !== 'none', exploitMaturity: t.exploitMaturity, classificationConfidence: t.confidence, mappingRationale: t.rationale, firstDetected: ts, lastObserved: ts, ownerId: asset.ownerId, targetDate: addDays(ts, SLA()[t.severity]),
-      sourceIntegrationId: integration.id, sourceRecordId: `demo-${integration.id.slice(4).toLowerCase()}-${Math.floor(Math.random() * 1e6).toString(16)}`, additionalSourceIds: [], detectionMethod: t.detectionMethod,
-      evidence: ev.map((e, k) => ({ ...e, id: uid('EV') + k, collectedAt: ts, sourceIntegrationId: integration.id, provenance: 'simulated' as const })), missingEvidence: t.missingEvidence,
-      rootCause: { hypotheses: t.rootCauses.map((r) => ({ id: uid('RC'), statement: r.statement, likelihood: r.likelihood, supportingEvidenceIds: [], status: 'open' as const, provenance: 'inferred' as const })), relatedConfigIssues: t.configIssues, relatedWeaknesses: t.weaknesses, notes: [] },
-      remediation: { recommended: t.recommended, steps: t.steps, vendorFix: t.vendorFix, compensatingControls: t.compensating, status: 'not_started', verificationRequirements: t.verification, similarResolutions: t.similar },
-      validation: { status: 'not_started', provenance: 'observed' }, history: [historyEntry('discovered', `Imported by ${integration.name} (simulated connector run)`, undefined, 'SYSTEM'), historyEntry('enriched', 'Enriched with knowledge library references', [t.cveId, ...t.cweIds, ...t.attackIds].filter(Boolean).join(', ') || 'No mapping applicable', 'SYSTEM')],
-      fpReviews: [], ticketIds: [], incidentIds: [], eventIds: [], relatedFindingIds: next.findings.filter((x) => x.templateKey === key).slice(0, 3).map((x) => x.id), compensatingControlsInPlace: 0, attackPathIds: [], tags: ['imported-demo', ...(asset.internetExposed ? ['internet-facing'] : [])],
-    }
+    const f = buildFindingFromTemplate(next, t, asset, integration, 'imported by a simulated connector run', ['imported-demo'])
     next = { ...next, findings: [f, ...next.findings] }
-    ids.push(id)
+    ids.push(f.id)
   }
   return { db: next, ids }
 }
 
 export async function enableIntegration(id: string) {
+  requireCap('manage_integrations')
   await latency(2)
   let created: string[] = []
   commit((db) => {
@@ -999,6 +1064,7 @@ export async function enableIntegration(id: string) {
 }
 
 export async function syncIntegration(id: string) {
+  requireCap('manage_integrations')
   await latency(2)
   commit((db) => {
     const i = mustFind(db.integrations, id, 'Integration')
@@ -1010,6 +1076,7 @@ export async function syncIntegration(id: string) {
 }
 
 export async function setIntegrationStatus(id: string, status: Integration['status']) {
+  requireCap('manage_integrations')
   await latency()
   commit((db) => {
     const i = mustFind(db.integrations, id, 'Integration')
@@ -1018,6 +1085,7 @@ export async function setIntegrationStatus(id: string, status: Integration['stat
 }
 
 export async function resolveDataQuality(id: string, status: 'resolved' | 'ignored' | 'open') {
+  requireCap('manage_integrations')
   await latency(0.4)
   commit((db) => {
     const q = mustFind(db.dataQuality, id, 'Data quality issue')
@@ -1032,6 +1100,8 @@ export async function markNotificationRead(id: string | 'all') {
 }
 
 export async function updateSettings(patch: Partial<DemoSettings>, summary = 'Settings updated') {
+  if (patch.weights) requireCap('edit_risk_models')
+  if (patch.slaDays || patch.identity) requireCap('manage_settings')
   // Demo controls must always work, even while simulated API errors are enabled.
   await latency(0.3, false)
   commit((db) => audit({ ...db, settings: { ...db.settings, ...patch } }, { action: 'settings updated', entityType: 'settings', entityId: 'settings', details: summary, module: 'Platform' }))
@@ -1052,3 +1122,5 @@ export function resetDemo() {
 }
 
 export type { Agent }
+
+export * from './platform'

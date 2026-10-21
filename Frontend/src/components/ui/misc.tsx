@@ -28,7 +28,7 @@ export const DropdownMenuTrigger = DM.Trigger
 export function DropdownMenuContent({ className, align = 'end', ...props }: React.ComponentPropsWithoutRef<typeof DM.Content>) {
   return (
     <DM.Portal>
-      <DM.Content align={align} sideOffset={6} className={cn('z-[60] min-w-[180px] rounded-lg border border-border-strong bg-surface-2 p-1 shadow-xl shadow-black/40', className)} {...props} />
+      <DM.Content align={align} sideOffset={6} className={cn('z-[60] min-w-[180px] rounded-lg border border-border-strong bg-surface-2 p-1 shadow-xl shadow-slate-900/10', className)} {...props} />
     </DM.Portal>
   )
 }
@@ -44,7 +44,7 @@ export function DropdownMenuCheckboxItem({ className, children, ...props }: Reac
     <DM.CheckboxItem className={cn('flex cursor-pointer select-none items-center gap-2 rounded-md px-2.5 py-1.5 text-[13px] outline-none data-[highlighted]:bg-surface-3', className)} {...props}>
       <span className="flex size-4 items-center justify-center rounded border border-border-strong">
         <DM.ItemIndicator>
-          <Check className="size-3 text-violet-300" />
+          <Check className="size-3 text-violet-700" />
         </DM.ItemIndicator>
       </span>
       {children}
@@ -57,7 +57,7 @@ export const PopoverTrigger = Pop.Trigger
 export function PopoverContent({ className, align = 'end', ...props }: React.ComponentPropsWithoutRef<typeof Pop.Content>) {
   return (
     <Pop.Portal>
-      <Pop.Content align={align} sideOffset={8} className={cn('z-[60] rounded-xl border border-border-strong bg-surface-2 shadow-2xl shadow-black/50 focus:outline-none', className)} {...props} />
+      <Pop.Content align={align} sideOffset={8} className={cn('z-[60] rounded-xl border border-border-strong bg-surface-2 shadow-2xl shadow-slate-900/10 focus:outline-none', className)} {...props} />
     </Pop.Portal>
   )
 }

@@ -73,8 +73,8 @@ export function RiskOverview() {
             ))}
           </div>
         </Section>
-        <Section title="ALE by business service">
-          <BarList items={bySvc.map((b, i) => ({ label: b.name, value: b.value, color: CATEGORICAL[i % CATEGORICAL.length], onClick: () => navigate(`/services/${b.id}`) }))} format={(v) => fmtMoney(v)} />
+        <Section title="ALE by application">
+          <BarList items={bySvc.map((b, i) => ({ label: b.name, value: b.value, color: CATEGORICAL[i % CATEGORICAL.length], onClick: () => navigate(`/applications/${b.id}`) }))} format={(v) => fmtMoney(v)} />
         </Section>
       </div>
     </div>
@@ -90,7 +90,7 @@ export function ScenariosPage() {
   if (isLoading || !data) return <LoadingState rows={8} />
   return (
     <div className="space-y-5">
-      <PageHeader title="Risk Scenarios" icon={<Layers />} description="Plausible cybersecurity loss scenarios linked to business services, exposures, vendors, AI systems and controls." />
+      <PageHeader title="Risk Scenarios" icon={<Layers />} description="Plausible cybersecurity loss scenarios linked to applications, exposures, vendors, AI systems and controls." />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {data.scenarios.map((s) => {
           const r = computeScenario(s, data.findings)
@@ -121,7 +121,7 @@ export function ScenariosPage() {
 export function ScenarioDetail() {
   const { id } = useParams()
   const me = useCurrentUser()
-  const { data, isLoading, error, retry } = useCollections(['scenarios', 'findings', 'controls', 'services', 'vendors', 'aiSystems', 'assets'] as const)
+  const { data, isLoading, error, retry } = useCollections(['scenarios', 'findings', 'controls', 'services', 'vendors', 'aiSystems', 'assets'] as const, { ignoreProjectFilter: true })
   const s = data?.scenarios.find((x) => x.id === id)
   usePage(s?.name ?? 'Scenario', [{ label: 'Risk Quantification' }, { label: 'Risk Scenarios', to: '/crq/scenarios' }, { label: id ?? '' }])
   const [params, setParams] = React.useState<ScenarioParams | null>(null)
@@ -222,7 +222,7 @@ export function ScenarioDetail() {
         </Section>
         <Section title="Assumptions" actions={<InfoHint text="Assumptions are documented so business stakeholders can challenge them." />}>
           <ul className="space-y-1.5 text-xs">
-            {s.assumptions.map((a) => <li key={a} className="flex gap-1.5"><Info className="mt-0.5 size-3 shrink-0 text-sky-300" /> {a}</li>)}
+            {s.assumptions.map((a) => <li key={a} className="flex gap-1.5"><Info className="mt-0.5 size-3 shrink-0 text-sky-700" /> {a}</li>)}
           </ul>
           <div className="label-xs mb-1.5 mt-4">Loss components</div>
           {s.lossComponents.map((c) => (
@@ -318,7 +318,7 @@ export function FinancialImpact() {
           <div className="h-64">
             <ResponsiveContainer>
               <PieChart>
-                <Pie data={byType} dataKey="value" nameKey="name" innerRadius={55} outerRadius={90} paddingAngle={2} stroke="#111522" strokeWidth={2}>
+                <Pie data={byType} dataKey="value" nameKey="name" innerRadius={55} outerRadius={90} paddingAngle={2} stroke="#ffffff" strokeWidth={2}>
                   {byType.map((b, i) => <Cell key={b.name} fill={CATEGORICAL[i % CATEGORICAL.length]} />)}
                 </Pie>
                 <RTooltip content={<ChartTooltip format={(v) => fmtMoney(v)} />} />
@@ -341,7 +341,7 @@ export function FinancialImpact() {
               <RTooltip content={<ChartTooltip format={(v) => fmtMoney(v)} />} />
               <Bar dataKey="current" name="Current ALE" fill={CATEGORICAL[0]} radius={[4, 4, 0, 0]} onClick={(d) => navigate(`/crq/scenarios/${(d as unknown as { id: string }).id}`)} className="cursor-pointer" />
               <Bar dataKey="remediated" name="After remediation" fill={CATEGORICAL[1]} radius={[4, 4, 0, 0]} onClick={(d) => navigate(`/crq/scenarios/${(d as unknown as { id: string }).id}`)} className="cursor-pointer" />
-              <RLegend wrapperStyle={{ fontSize: 11, color: '#94a3b8' }} />
+              <RLegend wrapperStyle={{ fontSize: 11, color: '#6b6c80' }} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -400,7 +400,7 @@ export function ControlsPage() {
                   <YAxis type="number" dataKey="y" name="Effectiveness" unit="%" domain={[30, 100]} {...AXIS} />
                   <ZAxis type="number" dataKey="z" range={[60, 320]} />
                   <RTooltip content={({ active, payload }) => (active && payload?.[0] ? <div className="rounded-lg border border-border-strong bg-surface-3 px-3 py-2 text-xs"><div className="font-medium">{(payload[0].payload as { name: string }).name}</div><div className="text-muted">coverage {(payload[0].payload as { x: number }).x}% · effectiveness {(payload[0].payload as { y: number }).y}%</div></div> : null)} />
-                  <Scatter data={scatter} fill={CATEGORICAL[0]} fillOpacity={0.7} stroke="#111522" strokeWidth={2} />
+                  <Scatter data={scatter} fill={CATEGORICAL[0]} fillOpacity={0.7} stroke="#ffffff" strokeWidth={2} />
                 </ScatterChart>
               </ResponsiveContainer>
             </div>
@@ -465,7 +465,7 @@ export function InvestmentsPage() {
                 </div>
                 <Stat label="ALE reduction / yr" value={fmtMoney(r.reduction)} />
                 <Stat label="Annualized cost" value={fmtMoney(r.yearCost)} />
-                <Stat label="ROSI" value={<span className={r.rosi > 0 ? 'text-emerald-300' : 'text-red-300'}>{r.rosi > 0 ? '+' : ''}{fmtPct(r.rosi)}</span>} />
+                <Stat label="ROSI" value={<span className={r.rosi > 0 ? 'text-emerald-700' : 'text-red-700'}>{r.rosi > 0 ? '+' : ''}{fmtPct(r.rosi)}</span>} />
               </button>
             ))}
           </div>
@@ -477,7 +477,7 @@ export function InvestmentsPage() {
             {s.impact.map((x) => (
               <Link key={x.s.id} to={`/crq/scenarios/${x.s.id}`} className="block rounded-lg bg-surface-2 px-3 py-2 text-xs hover:bg-surface-3">
                 <div className="font-medium">{x.s.name}</div>
-                <div className="mt-0.5 flex items-center gap-2 text-muted"><TrendingDown className="size-3 text-emerald-300" /> {fmtMoney(x.before)} → {fmtMoney(x.after)} (−{fmtMoney(x.reduction)})</div>
+                <div className="mt-0.5 flex items-center gap-2 text-muted"><TrendingDown className="size-3 text-emerald-700" /> {fmtMoney(x.before)} → {fmtMoney(x.after)} (−{fmtMoney(x.reduction)})</div>
               </Link>
             ))}
           </div>
@@ -558,7 +558,7 @@ export function RiskReport() {
           <tbody>
             {rows.slice(0, 6).map(({ s, r }) => (
               <tr key={s.id} className="border-b border-border/50">
-                <td className="py-2"><Link to={`/crq/scenarios/${s.id}`} className="text-violet-300">{s.name}</Link></td>
+                <td className="py-2"><Link to={`/crq/scenarios/${s.id}`} className="text-violet-700">{s.name}</Link></td>
                 <td className="text-muted">{services.find((x) => x.id === s.businessServiceId)?.name}</td>
                 <td className="text-right">{fmtPct(r.aep, 1)}</td>
                 <td className="text-right font-semibold">{fmtMoney(r.ale)}</td>
@@ -576,7 +576,7 @@ export function RiskReport() {
         <h3 className="mt-8 text-base font-semibold">3. Recommended investments</h3>
         <ul className="mt-2 space-y-2 text-[13px]">
           {inv.map(({ i, red }) => (
-            <li key={i.id} className="rounded-lg bg-surface-2 px-3 py-2"><span className="font-medium">{i.name}</span> — estimated ALE reduction <span className="text-emerald-300">{fmtMoney(red)}/yr</span> for {fmtMoney(i.oneTimeCost)} one-time + {fmtMoney(i.annualCost)}/yr.</li>
+            <li key={i.id} className="rounded-lg bg-surface-2 px-3 py-2"><span className="font-medium">{i.name}</span> — estimated ALE reduction <span className="text-emerald-700">{fmtMoney(red)}/yr</span> for {fmtMoney(i.oneTimeCost)} one-time + {fmtMoney(i.annualCost)}/yr.</li>
           ))}
         </ul>
         <h3 className="mt-8 text-base font-semibold">4. Methodology</h3>
