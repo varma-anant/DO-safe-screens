@@ -14,6 +14,8 @@ export const PROJECT_SEEDS: Omit<Project, 'createdAt'>[] = [
       { userId: 'USR-014', role: 'contributor', addedAt: '' },
       { userId: 'USR-017', role: 'contributor', addedAt: '' },
       { userId: 'USR-011', role: 'viewer', addedAt: '' },
+      { userId: 'USR-002', role: 'contributor', addedAt: '' },
+      { userId: 'USR-007', role: 'contributor', addedAt: '' },
     ],
   },
   {
@@ -22,7 +24,7 @@ export const PROJECT_SEEDS: Omit<Project, 'createdAt'>[] = [
     description: 'Customer data platform, data lake and analytics pipelines.',
     ownerId: 'USR-012',
     createdById: 'USR-006',
-    members: [{ userId: 'USR-017', role: 'contributor', addedAt: '' }],
+    members: [{ userId: 'USR-017', role: 'contributor', addedAt: '' }, { userId: 'USR-002', role: 'contributor', addedAt: '' }],
   },
   {
     id: 'PRJ-03',
@@ -30,7 +32,7 @@ export const PROJECT_SEEDS: Omit<Project, 'createdAt'>[] = [
     description: 'Collaboration suite, internal tools and the AI customer-support platform.',
     ownerId: 'USR-015',
     createdById: 'USR-006',
-    members: [{ userId: 'USR-013', role: 'owner', addedAt: '' }],
+    members: [{ userId: 'USR-013', role: 'owner', addedAt: '' }, { userId: 'USR-002', role: 'contributor', addedAt: '' }],
   },
   {
     id: 'PRJ-04',

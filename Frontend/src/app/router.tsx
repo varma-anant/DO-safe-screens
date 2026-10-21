@@ -3,6 +3,7 @@ import { AppShell } from '@/layouts/AppShell'
 import { SecurityLayout } from '@/layouts/SecurityLayout'
 import { Button } from '@/components/ui/button'
 import { AppLoading } from '@/components/common/layout'
+import { RequireCap } from '@/components/common/RequireCap'
 
 function RouteError({ forceNotFound }: { forceNotFound?: boolean }) {
   const err = useRouteError() as (Error & { status?: number }) | undefined
@@ -54,7 +55,7 @@ export const router = createBrowserRouter([
       { errorElement: <RouteError />, children: [
         { index: true, element: <Navigate to="/home" replace /> },
         { path: 'home', ...page(home, 'HomePage') },
-        { path: 'dashboard', ...page(dash, 'ExecutiveDashboard') },
+        { element: <RequireCap cap="view_financial_risk" area="The executive dashboard" />, children: [{ path: 'dashboard', ...page(dash, 'ExecutiveDashboard') }] },
         { path: 'requests', ...page(requests, 'RequestsPage') },
         { path: 'applications', ...page(apps, 'ApplicationsPage') },
         { path: 'applications/:id', ...page(apps, 'ApplicationDetail') },
@@ -82,6 +83,7 @@ export const router = createBrowserRouter([
         },
 
         { element: <SecurityLayout />, children: [
+        { element: <RequireCap cap="view_findings" area="Security problems" />, children: [
         { path: 'analytics', ...page(dash, 'RiskAnalytics') },
         { path: 'exposures', ...page(ctem, 'ExposureInventory') },
         { path: 'exposures/assets', ...page(ctem, 'AssetsPage') },
@@ -92,19 +94,25 @@ export const router = createBrowserRouter([
         { path: 'exposures/attack-paths/:id', ...page(ctem, 'AttackPathDetail') },
         { path: 'exposures/prioritization', ...page(ctem, 'PrioritizationPage') },
         { path: 'exposures/validation', ...page(ctem, 'ValidationPage') },
+        ] },
 
+        { element: <RequireCap cap="view_findings" area="Security problems" />, children: [
         { path: 'operations/findings', ...page(ops, 'FindingsPage') },
         { path: 'operations/findings/:id', ...page(finding, 'FindingDetailPage') },
+        { path: 'operations/remediation', ...page(ops, 'RemediationCenter') },
+        { path: 'operations/verification', ...page(ops, 'VerificationPage') },
+        { path: 'operations/workflows', ...page(ops, 'WorkflowCenter') },
+        ] },
+        { element: <RequireCap cap="view_incidents" area="Incidents & events" />, children: [
         { path: 'operations/events', ...page(ops, 'EventsPage') },
         { path: 'operations/incidents', ...page(ops, 'IncidentsPage') },
         { path: 'operations/incidents/:id', ...page(ops, 'IncidentDetail') },
+        ] },
         { path: 'operations/tickets', ...page(ops, 'TicketsPage') },
         { path: 'operations/tickets/:id', ...page(ops, 'TicketDetail') },
-        { path: 'operations/remediation', ...page(ops, 'RemediationCenter') },
-        { path: 'operations/verification', ...page(ops, 'VerificationPage') },
         { path: 'operations/approvals', ...page(ops, 'ApprovalsPage') },
-        { path: 'operations/workflows', ...page(ops, 'WorkflowCenter') },
 
+        { element: <RequireCap cap="view_vendor_risk" area="Vendor risk" />, children: [
         { path: 'tprm', ...page(tprm, 'VendorOverview') },
         { path: 'tprm/vendors', ...page(tprm, 'VendorInventory') },
         { path: 'tprm/vendors/:id', ...page(tprm, 'VendorDetail') },
@@ -115,7 +123,9 @@ export const router = createBrowserRouter([
         { path: 'tprm/contracts', ...page(tprm, 'ContractsPage') },
         { path: 'tprm/remediation', ...page(tprm, 'VendorRemediationPage') },
         { path: 'tprm/offboarding', ...page(tprm, 'OffboardingPage') },
+        ] },
 
+        { element: <RequireCap cap="view_financial_risk" area="Financial risk" />, children: [
         { path: 'crq', ...page(crq, 'RiskOverview') },
         { path: 'crq/scenarios', ...page(crq, 'ScenariosPage') },
         { path: 'crq/scenarios/:id', ...page(crq, 'ScenarioDetail') },
@@ -123,7 +133,9 @@ export const router = createBrowserRouter([
         { path: 'crq/controls', ...page(crq, 'ControlsPage') },
         { path: 'crq/investments', ...page(crq, 'InvestmentsPage') },
         { path: 'crq/report', ...page(crq, 'RiskReport') },
+        ] },
 
+        { element: <RequireCap cap="view_ai_governance" area="AI security" />, children: [
         { path: 'ai-security', ...page(ai, 'AIOverview') },
         { path: 'ai-security/inventory', ...page(ai, 'AIInventory') },
         { path: 'ai-security/systems/:id', ...page(ai, 'AISystemDetail') },
@@ -133,7 +145,9 @@ export const router = createBrowserRouter([
         { path: 'ai-security/governance', ...page(ai, 'GovernancePage') },
         { path: 'ai-security/governance/:id', ...page(ai, 'GovernanceDetail') },
         { path: 'ai-security/findings/:id', ...page(finding, 'FindingDetailPage') },
+        ] },
 
+        { element: <RequireCap cap="view_findings" area="Security intelligence" />, children: [
         { path: 'intelligence', ...page(intel, 'AssistantPage') },
         { path: 'intelligence/library', ...page(intel, 'LibraryPage') },
         { path: 'intelligence/library/:id', ...page(intel, 'KnowledgeDetail') },
@@ -141,14 +155,18 @@ export const router = createBrowserRouter([
         { path: 'intelligence/investigation', ...page(intel, 'InvestigationPage') },
         { path: 'intelligence/agents', ...page(intel, 'AgentsPage') },
         { path: 'intelligence/agents/:id', ...page(intel, 'AgentDetail') },
+        ] },
 
         ] },
 
+        { element: <RequireCap cap="manage_integrations" area="Integrations" />, children: [
         { path: 'integrations', ...page(integ, 'MarketplacePage') },
         { path: 'integrations/connected', ...page(integ, 'ConnectedPage') },
         { path: 'integrations/pipelines', ...page(integ, 'PipelinesPage') },
         { path: 'integrations/monitoring', ...page(integ, 'IngestionMonitoringPage') },
         { path: 'integrations/:id', ...page(integ, 'IntegrationDetail') },
+
+        ] },
 
         { path: 'platform/audit', ...page(platform, 'AuditPage') },
         { path: 'platform/notifications', ...page(platform, 'NotificationsPage') },

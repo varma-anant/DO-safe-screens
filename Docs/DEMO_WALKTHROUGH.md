@@ -8,17 +8,20 @@
 2. Pick a workspace on the sign-in page:
    * **Northstar Financial Services**: a mature customer with 4 projects, 7 applications (6 protected, 1 mid-onboarding) and a full history. Use it for Demos 1–10.
    * **Acme Corporation**: a brand-new, empty customer. Use it for Demo 0, the first-run onboarding journey.
-3. Sign in with a **demo account** button. You can also type any active person's email with any password of 4+ characters (for example `elena.marsh@northstar.example`). Roles are enforced, so each demo names the person to sign in as.
+3. Sign in with a **demo account** button. You can also type any active person's email with any password of 4+ characters. Each person has a **job** (which decides their home, menu and the areas they can see) and an **access role** (which decides what they can change), so each demo names the person to sign in as.
 4. **Settings → Demo controls → Reset demo data** restores the deterministic dataset, so the record IDs below match. Set **Simulated API latency → 0 ms** for snappy transitions.
 5. Use a 1440×900 or larger window. The **Interactive prototype** pill in the top bar is your answer to "is this real?".
 
-| Demo account | Organization role | What it shows |
+| Demo account | Job · access role | What they see first |
 |---|---|---|
-| Hannah Lee | Administrator | Everything, including User management and integrations |
-| Priya Raman | Security analyst | All projects; triage, tickets, scans. No onboarding or user management |
-| Jonas Weber | Project owner | Only *Core Banking & Payments* and *Treasury Portal Launch*; can onboard there and decide access requests |
-| Ravi Shah | Viewer | Read-only, member projects only |
-| Alex Rivera (Acme) | Administrator | Empty workspace → first-run journey |
+| Elena Marsh | Executive · Executive | Are we protected, where the business is exposed, is risk improving, decisions waiting. Business view of problems (no raw evidence). |
+| Hannah Lee | Platform administrator · Administrator | Data-source health, tools needing attention, blocked setups, people & access. Full workspace menu. |
+| Priya Raman | Security analyst · Security Analyst | A work queue ("Start with the highest-priority issue"). Only the 3 projects she works on; no financial, vendor or AI areas. |
+| Jonas Weber | Application owner · Project Owner | "Your Payment Processing is 100% protected", problems needing action, fix tasks. |
+| Ravi Shah | Employee · Viewer | Only the security tasks assigned to him. Three-item menu. |
+| Alex Rivera (Acme) | Platform administrator · Administrator | Empty workspace → first-run journey |
+
+Other jobs sign in by typing their email (any 4+ character password): `aisha.bello@` (incident responder), `marcus.chen@` (vendor risk), `sofia.alvarez@` (AI governance), `david.okafor@` (risk manager), all `@northstar.example`.
 
 Record IDs below come from the deterministic seed after a reset. If a demo has already been run without resetting, the same steps still work on any equivalent record.
 
@@ -60,6 +63,26 @@ Record IDs below come from the deterministic seed after a reset. If a demo has a
 
 **Data changes:** project, application, 7 parts, map, read-only tool connections scoped to the application, two test runs, a full run, about 10 problems, notifications and audit events.
 **Final outcome:** a non-specialist finishes setup without meeting unexplained jargon. They know what was connected and what it can access, and they end on an unmistakable "Protection is on" with a short list of what to do next.
+
+---
+
+## Demo 0c — One product, a different experience for each job
+
+| | |
+|---|---|
+| **Sign in as** | Elena → Hannah → Priya → Jonas → Ravi (Northstar), signing out between each |
+| **Objective** | Show that personas are real: each job gets its own home, menu and level of detail, and areas outside a job stay closed even if you type the URL. |
+
+**Click sequence**
+1. **Elena (Executive):** the home leads with decisions waiting, "Is risk improving?", high-risk suppliers, unapproved AI, and *Where is the business most exposed?* (applications by expected yearly loss). The menu has Dashboard but no Asset mapping or User management. Open any problem: it shows a **Business view**, and the evidence and root-cause tabs are hidden.
+2. Click the **Executive** chip in the top bar. *What you can see and why* lists the projects she can see, the areas with ✓ or –, and the reason for each.
+3. **Hannah (Platform administrator):** the home leads with data-source health, tools needing attention (with *Fix platform health*), blocked setups, and people and access. Her menu is the full workspace.
+4. **Priya (Security analyst):** the home is a work queue (needs triage, being exploited, overdue, tool failures, waiting for verification) with **Start with the highest-priority issue**. The Projects list shows only her 3 projects. Type `/crq` in the address bar: *"Financial risk isn't part of your job"*, with which jobs do have it. Ask DO SAFE "What is our annual loss exposure?" and it declines. Search for "Orbit" (a supplier) and nothing comes back.
+5. **Jonas (Application owner):** "Your Payment Processing is 100% protected", problems needing action, and his fix tasks.
+6. **Ravi (Employee):** "Here are the 6 security tasks assigned to you", plus help links. The menu has just Home, Requests and Notifications. `/operations/findings` is closed.
+7. Back as **Hannah** → **User management → People**: change Tomás Ribeiro's **Job** to *Vendor risk manager*. Sign in as `tomas.ribeiro@northstar.example`: his home is now the supplier workspace. **Roles & permissions** shows both matrices (what each access role may do, and what each job sees).
+
+**Final outcome:** access role and job are separate. Each job's experience is shaped to its work, and restrictions are enforced in the data layer (search, assistant, typed URLs), not just hidden in the menu.
 
 ---
 

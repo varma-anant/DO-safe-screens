@@ -14,7 +14,9 @@ import { can, type Capability } from '@/utils/permissions'
  * to the project selected in the top bar.
  */
 export function useCollections<K extends CollectionKey>(keys: readonly K[], opts: { ignoreProjectFilter?: boolean } = {}) {
-  const results = useQueries({ queries: keys.map((k) => ({ queryKey: [k], queryFn: () => api.list(k) })) })
+  // Keyed by user too: what a collection contains depends on who is asking.
+  const uid = useDbStore((s) => s.db.settings.currentUserId)
+  const results = useQueries({ queries: keys.map((k) => ({ queryKey: [k, uid], queryFn: () => api.list(k) })) })
   const isLoading = results.some((r) => r.isPending)
   const error = results.find((r) => r.error)?.error as Error | undefined
   const scopeKey = useDbStore((s) => `${s.db.settings.currentUserId}|${s.db.settings.currentProjectId}|${s.db.projects.length}|${s.db.services.length}`)

@@ -175,3 +175,27 @@ Goal: someone with no security background can set up and run DO SAFE without hel
   * notifications appear top-right so they never cover the primary action
   * the app shell shows a skeleton while loading
   * errors say what happened, that data is safe, and how to get help
+
+## 11. Access role vs job
+
+People have two independent settings (`utils/permissions.ts`):
+
+| | Decides | Values |
+|---|---|---|
+| **Access role** (`orgRole`) | Which actions are allowed; whether every project is visible | Administrator, Executive, Security analyst, Project owner, Viewer |
+| **Job** (`job`) | Which areas are visible (`view_*` capabilities), the home page, the menu order and the level of detail | Executive, Platform administrator, Security analyst, Incident responder, Application owner, Vendor risk manager, AI governance, Risk manager, Employee |
+
+`can(user, cap)` combines them:
+* View capabilities come from the job (administrators see every area; they manage roles, so hiding data from them adds no security).
+* Actions come from the access role.
+* Managing a domain also requires seeing it (e.g. `manage_vendors` needs `view_vendor_risk`).
+* Org-wide jobs (vendor, AI, risk, incident response) see every project; other jobs see only member projects.
+* `explain(user, cap)` gives the plain-language reason shown in the UI.
+
+**Enforcement:**
+* **Data layer:** `services/visibility.ts` drops whole collections the job may not see, strips raw evidence for people without `view_evidence`, and filters supplier and AI fix tasks.
+* **Query cache:** keys include the user, and any change to `users` invalidates all queries, so a job change takes effect immediately.
+* **Routes:** route groups are wrapped in `RequireCap`, so typed URLs show an explanation instead of data.
+* **Search and assistant:** global search and the assistant read through `viewerDb()`, and assistant intents declare the area they need.
+
+**Experience:** `JOB_INFO` lists each job's main-navigation items and focus groups. `mainNavFor()` and `securityNavFor()` build the menus, with other permitted areas under "More tools". Home renders a shared header and status strip, then the job's sections from `modules/home/roles.tsx`.

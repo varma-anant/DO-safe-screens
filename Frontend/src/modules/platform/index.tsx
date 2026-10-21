@@ -16,7 +16,7 @@ import { Slider, Switch } from '@/components/ui/misc'
 import { ResetDialog } from '@/layouts/AppShell'
 import * as api from '@/services/api'
 import { getDb, useDbStore } from '@/stores/db'
-import { can, CAPABILITY_LABEL, ROLE_INFO, visibleProjectIds } from '@/utils/permissions'
+import { can, CAPABILITY_LABEL, JOB_INFO, jobOf, ROLE_INFO, VIEW_AREA, VIEW_CAPS, visibleProjectIds } from '@/utils/permissions'
 import { cn, downloadText, fmtDateTime } from '@/utils/format'
 
 const auditCol = createColumnHelper<AuditEvent & { actor: string }>()
@@ -98,17 +98,24 @@ export function SettingsPage() {
               <div className="text-[14px] font-semibold">{me.name}</div>
               <div className="text-xs text-muted">{me.email} · {me.team}</div>
             </div>
-            <Badge className="ml-auto" tone="violet">{ROLE_INFO[me.orgRole].label}</Badge>
+            <Badge className="ml-auto" tone="violet">{JOB_INFO[jobOf(me)].label}</Badge>
           </div>
           <KeyValue className="mt-4" cols={2} items={[
+            { label: 'Job', value: JOB_INFO[jobOf(me)].label },
+            { label: 'Access role', value: ROLE_INFO[me.orgRole].label },
             { label: 'Workspace', value: settings.orgName },
             { label: 'Sign-in', value: settings.identity.provider },
             { label: 'MFA', value: me.mfaEnabled ? 'Enabled' : 'Not enabled' },
             { label: 'Projects', value: can(me, 'view_all_projects') ? 'All projects' : `${myProjects.length} project${myProjects.length === 1 ? '' : 's'}` },
           ]} />
+          <div className="mt-4 text-xs font-medium text-muted">Areas you can see</div>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {VIEW_CAPS.filter((v) => can(me, v)).map((v) => <Badge key={v} tone="emerald">{VIEW_AREA[v]}</Badge>)}
+            {!VIEW_CAPS.some((v) => can(me, v)) && <span className="text-xs text-subtle">Only your assigned tasks.</span>}
+          </div>
           <div className="mt-4 text-xs font-medium text-muted">What you can do</div>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {ROLE_INFO[me.orgRole].caps.map((c) => <Badge key={c}>{CAPABILITY_LABEL[c]}</Badge>)}
+            {ROLE_INFO[me.orgRole].caps.filter((c) => can(me, c)).map((c) => <Badge key={c}>{CAPABILITY_LABEL[c]}</Badge>)}
             {!ROLE_INFO[me.orgRole].caps.length && <span className="text-xs text-subtle">Read-only access to your projects.</span>}
           </div>
           <div className="mt-4 flex gap-2">

@@ -1,10 +1,11 @@
 import * as React from 'react'
 import { useLocation, useParams } from 'react-router'
 import { BookOpen, Brain, ChevronDown, Clock, FileSearch, GitBranch, History, LayoutGrid, Link2, MoreHorizontal, RotateCcw, ShieldCheck, ShieldOff, Siren, Ticket, UserPlus, Wrench, Download, Scale, CheckCircle2 } from 'lucide-react'
-import { useCollections, useAction, useSettings } from '@/hooks/queries'
+import { useCollections, useAction, useCurrentUser, useSettings } from '@/hooks/queries'
+import { can, explain } from '@/utils/permissions'
 import { usePage } from '@/hooks/usePage'
 import { assetLabel, findingPlain, SEVERITY_PLAIN } from '@/utils/plain'
-import { ErrorState, LoadingState, NotFound, PageHeader } from '@/components/common/layout'
+import { Callout, ErrorState, LoadingState, NotFound, PageHeader } from '@/components/common/layout'
 import { Badge, FindingStatusBadge, KevBadge, RiskScore, SeverityBadge } from '@/components/common/badges'
 import { EntityLink, RelTime, UserName } from '@/components/common/entities'
 import { Button } from '@/components/ui/button'
@@ -28,6 +29,7 @@ export function FindingDetailPage() {
   const { id } = useParams()
   const location = useLocation()
   const settings = useSettings()
+  const me = useCurrentUser()
   const sec = sectionFor(location.pathname)
   const { data, isLoading, error, retry } = useCollections(['findings', 'assets', 'services', 'knowledge', 'integrations', 'tickets', 'incidents', 'events', 'attackPaths', 'aiSystems', 'vendors'] as const, { ignoreProjectFilter: true })
   const f = data?.findings.find((x) => x.id === id)
@@ -69,6 +71,7 @@ export function FindingDetailPage() {
     onRiskAcceptance: () => setDialog('risk'),
   }
   const closed = ['resolved', 'false_positive', 'risk_accepted'].includes(f.status)
+  const technical = can(me, 'view_evidence')
   const statusTargets: FindingStatus[] = (['triaged', 'in_validation', 'validated', 'in_remediation', 'pending_verification'] as FindingStatus[]).filter((s) => s !== f.status)
 
   return (
@@ -186,32 +189,37 @@ export function FindingDetailPage() {
       </div>
 
       <LifecycleStepper f={f} />
+      {!technical && (
+        <Callout tone="info" title="Business view">
+          You’re seeing the business summary — impact, owner, deadline and progress. Raw technical evidence and root-cause analysis are for the security team. <span className="text-muted">{explain(me, 'view_evidence')}</span>
+        </Callout>
+      )}
 
-      <Tabs value={tab} onValueChange={setTab}>
+      <Tabs value={!technical && ['evidence', 'rootcause', 'ai'].includes(tab) ? 'overview' : tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="overview"><LayoutGrid /> Overview</TabsTrigger>
           <TabsTrigger value="classification"><BookOpen /> Classification</TabsTrigger>
-          <TabsTrigger value="evidence"><FileSearch /> Source & Evidence <span className="text-subtle">({f.evidence.length})</span></TabsTrigger>
-          <TabsTrigger value="rootcause"><GitBranch /> Root Cause</TabsTrigger>
+          {technical && <TabsTrigger value="evidence"><FileSearch /> Source & Evidence <span className="text-subtle">({f.evidence.length})</span></TabsTrigger>}
+          {technical && <TabsTrigger value="rootcause"><GitBranch /> Root Cause</TabsTrigger>}
           <TabsTrigger value="remediation"><Wrench /> Remediation {f.ticketIds.length > 0 && <span className="text-subtle">({f.ticketIds.length})</span>}</TabsTrigger>
           <TabsTrigger value="history"><History /> History</TabsTrigger>
-          <TabsTrigger value="ai">
+          {technical && <TabsTrigger value="ai">
             <Brain /> AI Analysis
             {f.aiAnalysis?.reviewStatus === 'pending_review' && (
               <Tooltip content="Pending human review">
                 <span className="size-1.5 rounded-full bg-violet-500" />
               </Tooltip>
             )}
-          </TabsTrigger>
+          </TabsTrigger>}
           <TabsTrigger value="related"><Link2 /> Related Records</TabsTrigger>
         </TabsList>
         <TabsContent value="overview"><OverviewTab ctx={ctx} /></TabsContent>
         <TabsContent value="classification"><ClassificationTab ctx={ctx} /></TabsContent>
-        <TabsContent value="evidence"><EvidenceTab ctx={ctx} /></TabsContent>
-        <TabsContent value="rootcause"><RootCauseTab ctx={ctx} /></TabsContent>
+        {technical && <TabsContent value="evidence"><EvidenceTab ctx={ctx} /></TabsContent>}
+        {technical && <TabsContent value="rootcause"><RootCauseTab ctx={ctx} /></TabsContent>}
         <TabsContent value="remediation"><RemediationTab ctx={ctx} /></TabsContent>
         <TabsContent value="history"><HistoryTab ctx={ctx} /></TabsContent>
-        <TabsContent value="ai"><AIAnalysisTab ctx={ctx} /></TabsContent>
+        {technical && <TabsContent value="ai"><AIAnalysisTab ctx={ctx} /></TabsContent>}
         <TabsContent value="related"><RelatedTab ctx={ctx} /></TabsContent>
       </Tabs>
 

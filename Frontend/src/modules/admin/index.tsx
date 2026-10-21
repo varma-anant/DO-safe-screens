@@ -2,7 +2,7 @@ import * as React from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 import { Check, ClipboardCheck, FileSearch, Fingerprint, Inbox, LayoutGrid, Mail, ScrollText, ShieldCheck, ShieldHalf, UserPlus, Users, X, FolderKanban } from 'lucide-react'
-import type { OrgRole, ProjectRole, User } from '@/types'
+import type { JobRole, OrgRole, ProjectRole, User } from '@/types'
 import { useAction, useCan, useCollections, useCurrentUser, useSettings } from '@/hooks/queries'
 import { usePage } from '@/hooks/usePage'
 import { Callout, ErrorState, KeyValue, KpiCard, LoadingState, PageHeader, Section } from '@/components/common/layout'
@@ -17,7 +17,7 @@ import { Checkbox, Switch } from '@/components/ui/misc'
 import * as api from '@/services/api'
 import { useDbStore } from '@/stores/db'
 import { cn, fmtDateTime } from '@/utils/format'
-import { can, CAPABILITY_LABEL, projectRoleOf, ROLE_INFO, visibleProjectIds, type Capability } from '@/utils/permissions'
+import { can, CAPABILITY_LABEL, explain, JOB_INFO, projectRoleOf, ROLE_INFO, VIEW_AREA, VIEW_CAPS, visibleProjectIds, type ActionCap, type Capability } from '@/utils/permissions'
 
 const ADMIN_NAV = [
   { group: 'Workspace', items: [
@@ -152,7 +152,7 @@ export function PeoplePage() {
     pCol.accessor('name', { header: 'Person', cell: (c) => <div className="flex items-center gap-2.5"><span className="flex size-8 items-center justify-center rounded-full bg-[#ece9fb] text-[11px] font-semibold text-primary">{c.row.original.initials}</span><div><div className="font-medium">{c.getValue()}</div><div className="text-[11.5px] text-subtle">{c.row.original.email}</div></div></div> }),
     pCol.accessor('team', { header: 'Team', cell: (c) => <span className="text-muted">{c.getValue()}</span> }),
     pCol.accessor('orgRole', {
-      header: 'Organization role',
+      header: 'Access role',
       filterFn: 'multi',
       cell: (c) =>
         c.row.original.id === me.id || c.row.original.status !== 'active' ? (
@@ -167,6 +167,18 @@ export function PeoplePage() {
           </NativeSelect>
         ),
     }),
+    pCol.accessor('job', {
+      header: 'Job',
+      filterFn: 'multi',
+      cell: (c) =>
+        c.row.original.status !== 'active' ? (
+          <span className="text-muted">{JOB_INFO[c.getValue()].label}</span>
+        ) : (
+          <NativeSelect value={c.getValue()} onClick={(e) => e.stopPropagation()} onChange={(e) => run(() => api.changeUserJob(c.row.original.id, e.target.value as JobRole), `Job changed to ${JOB_INFO[e.target.value as JobRole].label}`)} className="h-8 w-44 text-xs" aria-label={`Job for ${c.row.original.name}`}>
+            {(Object.keys(JOB_INFO) as JobRole[]).map((j) => <option key={j} value={j}>{JOB_INFO[j].label}</option>)}
+          </NativeSelect>
+        ),
+    }),
     pCol.accessor('projects', { header: 'Projects', cell: (c) => (can(c.row.original, 'view_all_projects') ? <span className="text-muted">All</span> : c.getValue()) }),
     pCol.accessor('mfaEnabled', { header: 'MFA', cell: (c) => (c.getValue() ? <Check className="size-4 text-emerald-600" /> : <X className="size-4 text-red-600" />) }),
     pCol.accessor('status', { header: 'Status', filterFn: 'multi', cell: (c) => <Badge tone={c.getValue() === 'active' ? 'emerald' : 'slate'}>{c.getValue()}</Badge> }),
@@ -178,11 +190,11 @@ export function PeoplePage() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="text-lg font-semibold">People</h2>
-          <p className="text-[13px] text-muted">Organization roles decide what someone can do; project membership decides where.</p>
+          <p className="text-[13px] text-muted">Access role decides what someone may do. Job decides what they see first and which areas they need. Project membership decides where.</p>
         </div>
         <Button onClick={() => setInvite(true)}><UserPlus /> Invite people</Button>
       </div>
-      <DataTable tableId="people" data={rows} columns={columns} getRowId={(u) => u.id} searchPlaceholder="Search people…" facets={[{ columnId: 'orgRole', label: 'Role', options: (Object.keys(ROLE_INFO) as OrgRole[]).map((r) => ({ value: r, label: ROLE_INFO[r].label })) }, { columnId: 'status', label: 'Status' }]} selectable={false} exportName="do-safe-people" />
+      <DataTable tableId="people" data={rows} columns={columns} getRowId={(u) => u.id} searchPlaceholder="Search people…" facets={[{ columnId: 'orgRole', label: 'Access role', options: (Object.keys(ROLE_INFO) as OrgRole[]).map((r) => ({ value: r, label: ROLE_INFO[r].label })) }, { columnId: 'job', label: 'Job', options: (Object.keys(JOB_INFO) as JobRole[]).map((j) => ({ value: j, label: JOB_INFO[j].label })) }, { columnId: 'status', label: 'Status' }]} selectable={false} exportName="do-safe-people" />
       <InviteDialog open={invite} onOpenChange={setInvite} />
     </div>
   )
@@ -191,7 +203,7 @@ export function PeoplePage() {
 function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const projects = useDbStore((s) => s.db.projects)
   const { run, pending } = useAction()
-  const [f, setF] = React.useState({ name: '', email: '', orgRole: 'analyst' as OrgRole, projectIds: [] as string[] })
+  const [f, setF] = React.useState({ name: '', email: '', orgRole: 'analyst' as OrgRole, job: 'security_analyst' as JobRole, projectIds: [] as string[] })
   const valid = f.name.trim().length > 1 && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -201,7 +213,12 @@ function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v:
             <Field label="Full name" required><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
             <Field label="Work email" required error={f.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.email) ? 'Enter a valid email' : undefined}><Input value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>
           </div>
-          <Field label="Organization role" hint={ROLE_INFO[f.orgRole].summary}>
+          <Field label="Job" hint={JOB_INFO[f.job].summary}>
+            <NativeSelect value={f.job} onChange={(e) => { const job = e.target.value as JobRole; setF({ ...f, job, orgRole: JOB_INFO[job].defaultRole }) }}>
+              {(Object.keys(JOB_INFO) as JobRole[]).map((j) => <option key={j} value={j}>{JOB_INFO[j].label}</option>)}
+            </NativeSelect>
+          </Field>
+          <Field label="Access role" hint={ROLE_INFO[f.orgRole].summary}>
             <NativeSelect value={f.orgRole} onChange={(e) => setF({ ...f, orgRole: e.target.value as OrgRole })}>
               {(Object.keys(ROLE_INFO) as OrgRole[]).map((r) => <option key={r} value={r}>{ROLE_INFO[r].label}</option>)}
             </NativeSelect>
@@ -220,7 +237,7 @@ function InviteDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v:
         </div>
         <DialogFooter>
           <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button disabled={!valid} loading={pending} onClick={async () => { await run(() => api.inviteUser({ ...f, name: f.name.trim(), email: f.email.trim() }), `Invitation sent to ${f.email}`); onOpenChange(false); setF({ name: '', email: '', orgRole: 'analyst', projectIds: [] }) }}>Send invitation</Button>
+          <Button disabled={!valid} loading={pending} onClick={async () => { await run(() => api.inviteUser({ ...f, name: f.name.trim(), email: f.email.trim() }), `Invitation sent to ${f.email}`); onOpenChange(false); setF({ name: '', email: '', orgRole: 'analyst', job: 'security_analyst', projectIds: [] }) }}>Send invitation</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -271,40 +288,71 @@ export function InvitationsPage() {
 
 export function RolesPage() {
   usePage('Roles & permissions', [{ label: 'User management', to: '/admin' }, { label: 'Roles & permissions' }])
-  const caps = Object.keys(CAPABILITY_LABEL) as Capability[]
+  const actions = (Object.keys(CAPABILITY_LABEL) as Capability[]).filter((c) => !(VIEW_CAPS as string[]).includes(c)) as ActionCap[]
   const roles = Object.keys(ROLE_INFO) as OrgRole[]
+  const jobs = Object.keys(JOB_INFO) as JobRole[]
+  const th = 'px-3 py-3 text-center text-[12px] font-semibold'
   return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Platform roles</h2>
-        <p className="text-[13px] text-muted">Built-in organization roles. Project roles (Owner, Contributor, Viewer) further limit what someone can do inside a project.</p>
-      </div>
-      <Card className="overflow-x-auto">
-        <table className="w-full text-[13px]">
-          <thead className="border-b border-border bg-surface-2">
-            <tr>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-subtle">Capability</th>
-              {roles.map((r) => <th key={r} className="px-3 py-3 text-center text-[12px] font-semibold">{ROLE_INFO[r].label}</th>)}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {caps.map((c) => (
-              <tr key={c}>
-                <td className="px-4 py-2.5">{CAPABILITY_LABEL[c]}</td>
-                {roles.map((r) => <td key={r} className="px-3 py-2.5 text-center">{ROLE_INFO[r].caps.includes(c) ? <Check className="mx-auto size-4 text-emerald-600" /> : <span className="text-subtle">—</span>}</td>)}
+    <div className="space-y-6">
+      <Callout tone="info" icon={<ShieldCheck />} title="Two separate settings per person">
+        <strong className="font-medium">Access role</strong> decides what someone may do. <strong className="font-medium">Job</strong> decides which areas they see and what their home and menus focus on. Administrators see every area — they manage roles, so hiding data from them would add no security.
+      </Callout>
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold">Access roles — what people may do</h2>
+          <p className="text-[13px] text-muted">Project roles (Owner, Contributor, Viewer) further limit actions inside a project.</p>
+        </div>
+        <Card className="overflow-x-auto">
+          <table className="w-full text-[13px]">
+            <thead className="border-b border-border bg-surface-2">
+              <tr><th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-subtle">Action</th>{roles.map((r) => <th key={r} className={th}>{ROLE_INFO[r].label}</th>)}</tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {actions.map((c) => (
+                <tr key={c}>
+                  <td className="px-4 py-2.5">{CAPABILITY_LABEL[c]}</td>
+                  {roles.map((r) => <td key={r} className="px-3 py-2.5 text-center">{ROLE_INFO[r].caps.includes(c) ? <Check className="mx-auto size-4 text-emerald-600" aria-label="Allowed" /> : <span className="text-subtle" aria-label="Not allowed">—</span>}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Card>
+      </section>
+      <section className="space-y-3">
+        <div>
+          <h2 className="text-lg font-semibold">Jobs — what people see</h2>
+          <p className="text-[13px] text-muted">Each job gets its own home page and menu, and only the areas its work needs. Managing an area (for example vendors) also requires seeing it.</p>
+        </div>
+        <Card className="overflow-x-auto">
+          <table className="w-full text-[13px]">
+            <thead className="border-b border-border bg-surface-2">
+              <tr><th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-subtle">Area</th>{jobs.map((j) => <th key={j} className={th}>{JOB_INFO[j].label}</th>)}</tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {VIEW_CAPS.map((v) => (
+                <tr key={v}>
+                  <td className="px-4 py-2.5">{VIEW_AREA[v]}</td>
+                  {jobs.map((j) => <td key={j} className="px-3 py-2.5 text-center">{JOB_INFO[j].views.includes(v) || j === 'platform_admin' ? <Check className="mx-auto size-4 text-emerald-600" aria-label="Visible" /> : <span className="text-subtle" aria-label="Hidden">—</span>}</td>)}
+                </tr>
+              ))}
+              <tr>
+                <td className="px-4 py-2.5">Every project</td>
+                {jobs.map((j) => <td key={j} className="px-3 py-2.5 text-center text-[12px] text-muted">{JOB_INFO[j].orgWide || j === 'platform_admin' ? 'Yes' : 'Member projects'}</td>)}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
-      <div className="grid gap-3 md:grid-cols-2">
-        {roles.map((r) => (
-          <Card key={r} className="p-4">
-            <div className="flex items-center gap-2"><ShieldCheck className="size-4 text-primary" /><span className="font-semibold">{ROLE_INFO[r].label}</span><Badge>{ROLE_INFO[r].caps.length} capabilities</Badge></div>
-            <p className="mt-1 text-xs text-muted">{ROLE_INFO[r].summary}</p>
-          </Card>
-        ))}
-      </div>
+            </tbody>
+          </table>
+        </Card>
+        <p className="text-[11.5px] text-subtle">Platform administrators are usually given the Administrator access role, which sees every area.</p>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {jobs.map((j) => (
+            <Card key={j} className="p-4">
+              <div className="font-semibold">{JOB_INFO[j].label}</div>
+              <p className="mt-1 text-xs text-muted">{JOB_INFO[j].summary}</p>
+              <div className="mt-2 text-[11.5px] text-subtle">Usual access role: {ROLE_INFO[JOB_INFO[j].defaultRole].label}</div>
+            </Card>
+          ))}
+        </div>
+      </section>
     </div>
   )
 }
@@ -338,16 +386,16 @@ export function ProjectAccessPage() {
       <Card className="overflow-x-auto">
         <table className="w-full text-[13px]">
           <thead className="border-b border-border bg-surface-2 text-left text-[11px] uppercase tracking-wide text-subtle">
-            <tr><th className="px-4 py-2.5">Person</th><th className="px-4 py-2.5">Organization role</th><th className="px-4 py-2.5">Project role</th><th className="px-4 py-2.5">Effective capabilities</th><th className="px-4 py-2.5" /></tr>
+            <tr><th className="px-4 py-2.5">Person</th><th className="px-4 py-2.5">Access role · job</th><th className="px-4 py-2.5">Project role</th><th className="px-4 py-2.5">Effective capabilities</th><th className="px-4 py-2.5" /></tr>
           </thead>
           <tbody className="divide-y divide-border">
             {members.map((m) => {
               const u = data.users.find((x) => x.id === m.userId)!
-              const eff = ROLE_INFO[u.orgRole].caps.filter((c) => m.role !== 'viewer' || c === 'view_all_projects').length
+              const eff = ROLE_INFO[u.orgRole].caps.filter((c) => can(u, c) && (m.role !== 'viewer' || c === 'view_all_projects')).length
               return (
                 <tr key={m.userId}>
                   <td className="px-4 py-2.5"><UserName id={m.userId} /></td>
-                  <td className="px-4 py-2.5"><Badge>{ROLE_INFO[u.orgRole].label}</Badge></td>
+                  <td className="px-4 py-2.5"><Badge>{ROLE_INFO[u.orgRole].label}</Badge> <span className="text-xs text-muted">{JOB_INFO[u.job].label}</span></td>
                   <td className="px-4 py-2.5">
                     {m.userId === project.ownerId ? <Badge tone="violet">Project owner</Badge> : (
                       <NativeSelect value={m.role} onChange={(e) => run(() => api.setProjectMember(project.id, m.userId, e.target.value as ProjectRole), 'Project role updated')} className="h-8 w-32 text-xs" aria-label="Project role">
@@ -398,20 +446,20 @@ export function InspectorPage() {
         <p className="text-[13px] text-muted">See exactly what a person can do in a project, and why.</p>
       </div>
       <Card className="grid gap-4 p-4 sm:grid-cols-2">
-        <Field label="Person"><NativeSelect value={uid} onChange={(e) => setUid(e.target.value)}>{db.users.map((x) => <option key={x.id} value={x.id}>{x.name} — {ROLE_INFO[x.orgRole].label}{x.status !== 'active' ? ` (${x.status})` : ''}</option>)}</NativeSelect></Field>
+        <Field label="Person"><NativeSelect value={uid} onChange={(e) => setUid(e.target.value)}>{db.users.map((x) => <option key={x.id} value={x.id}>{x.name} — {JOB_INFO[x.job].label} · {ROLE_INFO[x.orgRole].label}{x.status !== 'active' ? ` (${x.status})` : ''}</option>)}</NativeSelect></Field>
         <Field label="Project"><NativeSelect value={pid} onChange={(e) => setPid(e.target.value)}>{db.projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</NativeSelect></Field>
       </Card>
       {u && (
         <>
-          <Card className="p-4"><KeyValue cols={3} items={[{ label: 'Organization role', value: ROLE_INFO[u.orgRole].label }, { label: 'Project role', value: projectRole }, { label: 'Account status', value: <Badge tone={u.status === 'active' ? 'emerald' : 'slate'}>{u.status}</Badge> }]} /></Card>
+          <Card className="p-4"><KeyValue cols={4} items={[{ label: 'Access role', value: ROLE_INFO[u.orgRole].label }, { label: 'Job', value: JOB_INFO[u.job].label }, { label: 'Project role', value: projectRole }, { label: 'Account status', value: <Badge tone={u.status === 'active' ? 'emerald' : 'slate'}>{u.status}</Badge> }]} /></Card>
           {(noAccess || u.status !== 'active') && <Callout tone="danger">{u.status !== 'active' ? 'Account is not active — all access is denied.' : 'Not a member of this project — the project is invisible to this person.'}</Callout>}
           <Card className="divide-y divide-border">
             {(Object.keys(CAPABILITY_LABEL) as Capability[]).map((c) => {
               const allowed = !noAccess && can(u, c)
               return (
                 <div key={c} className="flex items-center justify-between gap-3 px-4 py-2.5 text-[13px]">
-                  <span>{CAPABILITY_LABEL[c]}</span>
-                  <span className={cn('flex items-center gap-1.5 text-xs', allowed ? 'text-emerald-700' : 'text-subtle')}>{allowed ? <Check className="size-4" /> : <X className="size-4" />}{allowed ? 'Allowed' : ROLE_INFO[u.orgRole].caps.includes(c) ? 'Blocked by project scope' : `Not granted to ${ROLE_INFO[u.orgRole].label}`}</span>
+                  <span>{CAPABILITY_LABEL[c]}<span className="block text-[11.5px] text-muted">{noAccess ? 'This project isn’t visible to this person.' : explain(u, c)}</span></span>
+                  <span className={cn('flex shrink-0 items-center gap-1.5 text-xs', allowed ? 'text-emerald-700' : 'text-subtle')}>{allowed ? <Check className="size-4" /> : <X className="size-4" />}{allowed ? 'Allowed' : noAccess ? 'Blocked by project scope' : 'Not allowed'}</span>
                 </div>
               )
             })}

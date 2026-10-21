@@ -12,6 +12,7 @@ import { MODEL_ID, MODEL_VERSION } from '@/data/seed/findings'
 import { FINDING_STATUS } from '@/utils/labels'
 import { actor, audit, commit, DemoApiError, requireCap, historyEntry, latency, mustFind, nextId, notify, now, replace, uid, userName, type CollectionKey, type CollectionMap } from './core'
 import { plural } from '@/utils/format'
+import { restrictForViewer } from './visibility'
 
 export type { CollectionKey, CollectionMap }
 
@@ -25,7 +26,8 @@ export async function list<K extends CollectionKey>(key: K): Promise<CollectionM
   // First load uses full simulated latency (shows loading states); refreshes after mutations are quick.
   await latency(loaded.has(key) ? 0.15 : 1)
   loaded.add(key)
-  return getDb()[key]
+  const db = getDb()
+  return restrictForViewer(key, db[key], db)
 }
 export async function getSettings() {
   await latency(0.3)

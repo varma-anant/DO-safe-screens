@@ -5,6 +5,9 @@ import { Search, CornerDownLeft } from 'lucide-react'
 import type { SearchEntityType } from '@/types'
 import { useUiStore } from '@/stores/ui'
 import { useDbStore } from '@/stores/db'
+import { computeScope, scopeCollection } from '@/hooks/scope'
+import { restrictForViewer } from '@/services/visibility'
+import type { CollectionKey } from '@/services/api'
 import { EntityIcon, entityPath } from '@/components/common/entities'
 import { cn } from '@/utils/format'
 
@@ -29,17 +32,20 @@ export function GlobalSearch() {
     const term = q.trim().toLowerCase()
     if (term.length < 2) return []
     const m = (...fields: (string | undefined)[]) => fields.some((f) => f?.toLowerCase().includes(term))
+    // Search only what this person may see: their projects, and the areas their job includes.
+    const scope = computeScope(db)
+    const see = <K extends CollectionKey>(k: K) => scopeCollection(k, restrictForViewer(k, db[k], db), db, scope.visibleApps)
     const out: Result[] = []
     const push = (arr: Result[], limit = 6) => out.push(...arr.slice(0, limit))
-    push(db.findings.filter((f) => m(f.id, f.title, f.cveId, f.category, ...f.cweIds, ...f.attackIds)).map((f) => ({ type: 'finding', id: f.id, title: f.title, sub: `${f.severity.toUpperCase()} · ${f.status.replace(/_/g, ' ')}${f.cveId ? ` · ${f.cveId}` : ''}`, domain: f.domain })), 8)
-    push(db.assets.filter((a) => !a.duplicateOfId && m(a.id, a.name, a.fqdn, a.ipAddress, a.type)).map((a) => ({ type: 'asset', id: a.id, title: a.name, sub: `${a.type} · ${a.environment}${a.ipAddress ? ` · ${a.ipAddress}` : ''}` })))
-    push(db.vendors.filter((v) => m(v.id, v.name, v.category)).map((v) => ({ type: 'vendor', id: v.id, title: v.name, sub: `${v.category} · ${v.tier}` })))
-    push(db.aiSystems.filter((a) => m(a.id, a.name, a.provider, a.type)).map((a) => ({ type: 'aiSystem', id: a.id, title: a.name, sub: `${a.type} · ${a.approval}` })))
-    push(db.incidents.filter((i) => m(i.id, i.title, i.category)).map((i) => ({ type: 'incident', id: i.id, title: i.title, sub: `${i.severity} · ${i.status}` })))
-    push(db.tickets.filter((t) => m(t.id, t.title, t.externalRef)).map((t) => ({ type: 'ticket', id: t.id, title: t.title, sub: `${t.priority} · ${t.status.replace(/_/g, ' ')}${t.externalRef ? ` · ${t.externalRef}` : ''}` })))
+    push(see('findings').filter((f) => m(f.id, f.title, f.cveId, f.category, ...f.cweIds, ...f.attackIds)).map((f) => ({ type: 'finding', id: f.id, title: f.title, sub: `${f.severity.toUpperCase()} · ${f.status.replace(/_/g, ' ')}${f.cveId ? ` · ${f.cveId}` : ''}`, domain: f.domain })), 8)
+    push(see('assets').filter((a) => !a.duplicateOfId && m(a.id, a.name, a.fqdn, a.ipAddress, a.type)).map((a) => ({ type: 'asset', id: a.id, title: a.name, sub: `${a.type} · ${a.environment}${a.ipAddress ? ` · ${a.ipAddress}` : ''}` })))
+    push(see('vendors').filter((v) => m(v.id, v.name, v.category)).map((v) => ({ type: 'vendor', id: v.id, title: v.name, sub: `${v.category} · ${v.tier}` })))
+    push(see('aiSystems').filter((a) => m(a.id, a.name, a.provider, a.type)).map((a) => ({ type: 'aiSystem', id: a.id, title: a.name, sub: `${a.type} · ${a.approval}` })))
+    push(see('incidents').filter((i) => m(i.id, i.title, i.category)).map((i) => ({ type: 'incident', id: i.id, title: i.title, sub: `${i.severity} · ${i.status}` })))
+    push(see('tickets').filter((t) => m(t.id, t.title, t.externalRef)).map((t) => ({ type: 'ticket', id: t.id, title: t.title, sub: `${t.priority} · ${t.status.replace(/_/g, ' ')}${t.externalRef ? ` · ${t.externalRef}` : ''}` })))
     push(db.knowledge.filter((k) => m(k.externalId, k.name, k.summary)).map((k) => ({ type: 'knowledge', id: k.id, title: `${k.externalId} — ${k.name}`, sub: k.source })))
-    push(db.services.filter((s) => m(s.id, s.name)).map((s) => ({ type: 'service', id: s.id, title: s.name, sub: `Application · ${s.criticality}` })), 3)
-    push(db.scenarios.filter((s) => m(s.id, s.name, s.threatType)).map((s) => ({ type: 'scenario', id: s.id, title: s.name, sub: `Risk scenario · ${s.threatType}` })), 3)
+    push(see('services').filter((s) => m(s.id, s.name)).map((s) => ({ type: 'service', id: s.id, title: s.name, sub: `Application · ${s.criticality}` })), 3)
+    push(see('scenarios').filter((s) => m(s.id, s.name, s.threatType)).map((s) => ({ type: 'scenario', id: s.id, title: s.name, sub: `Risk scenario · ${s.threatType}` })), 3)
     return out
   }, [q, db])
 

@@ -5,7 +5,7 @@ import { useDbStore } from '@/stores/db'
 import { ACME_USERS } from '@/data/seed'
 import { USERS } from '@/data/seed/reference'
 import * as api from '@/services/api'
-import { ROLE_INFO } from '@/utils/permissions'
+import { JOB_INFO } from '@/utils/permissions'
 import { cn } from '@/utils/format'
 import { Button } from '@/components/ui/button'
 import { Field, Input } from '@/components/ui/input'
@@ -137,7 +137,7 @@ export function LoginPage() {
           </div>
 
           <div className="mt-7">
-            <div className="mb-2 text-xs font-medium text-muted">Demo accounts — click to sign in</div>
+            <div className="mb-2 text-xs font-medium text-muted">Demo accounts — each job gets its own home and menu</div>
             <div className="space-y-1.5">
               {DEMO[ws].map((u) => (
                 <button key={u.id} type="button" disabled={busy} onClick={() => { setEmail(u.email); submit(undefined, u.email) }} className="flex w-full items-center gap-3 rounded-xl border border-border bg-surface px-3 py-2 text-left hover:border-primary/40 enabled:cursor-pointer">
@@ -146,7 +146,7 @@ export function LoginPage() {
                     <span className="block text-[13px] font-medium">{u.name}</span>
                     <span className="block truncate text-[11.5px] text-subtle">{u.email}</span>
                   </span>
-                  <span className="rounded-md bg-primary-soft px-2 py-0.5 text-[11px] font-medium text-primary">{ROLE_INFO[u.orgRole].label}</span>
+                  <span className="rounded-md bg-primary-soft px-2 py-0.5 text-[11px] font-medium text-primary">{JOB_INFO[u.job].label}</span>
                 </button>
               ))}
             </div>

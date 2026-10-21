@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "validate:seed": "vite-node scripts/validate-seed.ts",
     "test:routes": "node tests/e2e/routes.mjs",
-    "test:e2e": "node tests/e2e/journey.mjs && node tests/e2e/workflows.mjs && node tests/e2e/interactions.mjs && node tests/e2e/modules.mjs"
+    "test:e2e": "node tests/e2e/journey.mjs && node tests/e2e/roles.mjs && node tests/e2e/workflows.mjs && node tests/e2e/interactions.mjs && node tests/e2e/modules.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.2",

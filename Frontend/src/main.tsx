@@ -16,7 +16,9 @@ useDbStore.subscribe((s) => {
   if (s.db === prev) return
   const changed = (Object.keys(s.db) as (keyof typeof s.db)[]).filter((k) => s.db[k] !== prev[k])
   prev = s.db
-  changed.forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }))
+  // A change to people (e.g. someone's job) can change what every collection shows them.
+  if (changed.includes('users')) queryClient.invalidateQueries()
+  else changed.forEach((k) => queryClient.invalidateQueries({ queryKey: [k] }))
 })
 
 createRoot(document.getElementById('root')!).render(

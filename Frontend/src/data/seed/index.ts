@@ -11,7 +11,7 @@ import { generateAgents } from './agents'
 import { buildAccessRequests, buildApplications, buildInvitations, buildProjects, buildSupportTickets, treasuryAssets } from './projects'
 import { generateAttackPaths, generateAudit, generateDataQuality, generateEvents, generateIncidents, generateIngestion, generateNotifications, generateTickets } from './ops'
 
-export const DB_VERSION = 7
+export const DB_VERSION = 8
 export const SEED = 20261020
 
 export const DEFAULT_WEIGHTS = { cvss: 22, epss: 14, kev: 14, exploit: 8, internet: 14, assetCriticality: 12, serviceCriticality: 12, compensating: 8 }
@@ -138,8 +138,8 @@ export function buildDatabase(anchor = new Date()): Database {
 }
 
 export const ACME_USERS: Database['users'] = [
-  { id: 'ACM-001', name: 'Alex Rivera', role: 'Platform Administrator', team: 'IT Security', email: 'alex.rivera@acme.example', initials: 'AR', orgRole: 'admin', status: 'active', mfaEnabled: true, demoLogin: true },
-  { id: 'ACM-002', name: 'Jordan Blake', role: 'Security Analyst', team: 'IT Security', email: 'jordan.blake@acme.example', initials: 'JB', orgRole: 'analyst', status: 'active', mfaEnabled: true },
+  { id: 'ACM-001', name: 'Alex Rivera', role: 'Platform Administrator', team: 'IT Security', email: 'alex.rivera@acme.example', initials: 'AR', orgRole: 'admin', job: 'platform_admin', status: 'active', mfaEnabled: true, demoLogin: true },
+  { id: 'ACM-002', name: 'Jordan Blake', role: 'Security Analyst', team: 'IT Security', email: 'jordan.blake@acme.example', initials: 'JB', orgRole: 'analyst', job: 'security_analyst', status: 'active', mfaEnabled: true },
 ]
 
 /**

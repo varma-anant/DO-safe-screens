@@ -1,10 +1,10 @@
 // Sign-in, projects, application onboarding (declare → map → connect → test run → full run),
 // access requests, user management and support. Demo implementation over the local store.
-import type { AccessRequest, Asset, AssetLink, BusinessService, Database, Finding, Invitation, OrgRole, Project, ProjectRole, RiskScenario, ScanRun, SupportTicket } from '@/types'
+import type { AccessRequest, Asset, AssetLink, BusinessService, Database, Finding, Invitation, JobRole, OrgRole, Project, ProjectRole, RiskScenario, ScanRun, SupportTicket } from '@/types'
 import { getDb, useDbStore } from '@/stores/db'
 import { FINDING_TEMPLATES } from '@/data/seed/templates'
 import { FULL_STEPS, TEST_STEPS } from '@/data/seed/projects'
-import { can, projectRoleOf, ROLE_INFO } from '@/utils/permissions'
+import { can, JOB_INFO, projectRoleOf, ROLE_INFO } from '@/utils/permissions'
 import { actor, audit, commit, DemoApiError, latency, mustFind, nextId, notify, now, replace, requireCap, uid, userName } from './core'
 import { buildFindingFromTemplate } from './api'
 import { plural } from '@/utils/format'
@@ -334,13 +334,13 @@ export async function decideAccessRequest(id: string, approve: boolean, note: st
 
 // ===================================================================== User management
 
-export async function inviteUser(input: Pick<Invitation, 'name' | 'email' | 'orgRole' | 'projectIds'>) {
+export async function inviteUser(input: Pick<Invitation, 'name' | 'email' | 'orgRole' | 'job' | 'projectIds'>) {
   requireCap('manage_users')
   await latency()
   commit((db) => {
     if (db.users.some((u) => u.email.toLowerCase() === input.email.toLowerCase()) || db.invitations.some((i) => i.email.toLowerCase() === input.email.toLowerCase() && i.status === 'pending')) throw new DemoApiError('That email already has an account or a pending invitation.')
     const inv: Invitation = { id: nextId(db.invitations, 'INV', 3), ...input, invitedById: actor(), sentAt: now(), status: 'pending' }
-    return audit({ ...db, invitations: [inv, ...db.invitations] }, { action: 'user invited', entityType: 'settings', entityId: inv.id, details: `${input.email} as ${ROLE_INFO[input.orgRole].label}`, module: 'Platform' })
+    return audit({ ...db, invitations: [inv, ...db.invitations] }, { action: 'user invited', entityType: 'settings', entityId: inv.id, details: `${input.email} as ${ROLE_INFO[input.orgRole].label}${input.job ? ` · ${JOB_INFO[input.job].label}` : ''}`, module: 'Platform' })
   })
 }
 
@@ -353,7 +353,7 @@ export async function setInvitationStatus(id: string, status: 'accepted' | 'revo
     if (status === 'accepted') {
       const uidv = nextId(db.users.filter((u) => u.id.startsWith('USR') || u.id.startsWith('ACM')), db.settings.workspace === 'acme' ? 'ACM' : 'USR', 3)
       const initials = inv.name.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase()
-      next = { ...next, users: [...next.users, { id: uidv, name: inv.name, role: inv.orgRole === 'analyst' ? 'Security Analyst' : 'Engineering Owner', team: 'Invited user', email: inv.email, initials, orgRole: inv.orgRole, status: 'active', mfaEnabled: false }], projects: next.projects.map((p) => (inv.projectIds.includes(p.id) ? { ...p, members: [...p.members, { userId: uidv, role: inv.orgRole === 'viewer' ? 'viewer' : 'contributor', addedAt: now() }] } : p)) }
+      next = { ...next, users: [...next.users, { id: uidv, name: inv.name, role: inv.orgRole === 'analyst' ? 'Security Analyst' : 'Engineering Owner', team: 'Invited user', email: inv.email, initials, orgRole: inv.orgRole, job: inv.job ?? (inv.orgRole === 'viewer' ? 'employee' : inv.orgRole === 'project_owner' ? 'project_owner' : inv.orgRole === 'executive' ? 'executive' : inv.orgRole === 'admin' ? 'platform_admin' : 'security_analyst'), status: 'active', mfaEnabled: false }], projects: next.projects.map((p) => (inv.projectIds.includes(p.id) ? { ...p, members: [...p.members, { userId: uidv, role: inv.orgRole === 'viewer' ? 'viewer' : 'contributor', addedAt: now() }] } : p)) }
     }
     return audit(next, { action: `invitation ${status}`, entityType: 'settings', entityId: id, details: inv.email, module: 'Platform' })
   })
@@ -367,6 +367,15 @@ export async function changeUserRole(userId: string, orgRole: OrgRole) {
     if (u.orgRole === 'admin' && orgRole !== 'admin' && db.users.filter((x) => x.orgRole === 'admin' && x.status === 'active').length <= 1) throw new DemoApiError('At least one active administrator is required.')
     if (userId === actor()) throw new DemoApiError('You cannot change your own role.')
     return audit({ ...db, users: replace(db.users, { ...u, orgRole }) }, { action: 'role changed', entityType: 'settings', entityId: userId, details: `${u.name}: ${ROLE_INFO[u.orgRole].label} → ${ROLE_INFO[orgRole].label}`, module: 'Platform' })
+  })
+}
+
+export async function changeUserJob(userId: string, job: JobRole) {
+  requireCap('manage_users')
+  await latency(0.6)
+  commit((db) => {
+    const u = mustFind(db.users, userId, 'User')
+    return audit({ ...db, users: replace(db.users, { ...u, job }) }, { action: 'job changed', entityType: 'settings', entityId: userId, details: `${u.name}: ${JOB_INFO[u.job].label} → ${JOB_INFO[job].label}`, module: 'Platform' })
   })
 }
 

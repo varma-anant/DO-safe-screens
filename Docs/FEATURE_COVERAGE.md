@@ -14,7 +14,7 @@ Prototype: `Frontend/` (React + TypeScript + Vite). All data is simulated.
 
 **Summary (last run 2026-10-20):** 57 / 57 features represented · **50 VERIFIED** · **7 IMPLEMENTED** · 0 in progress · 0 not started.
 
-Test suites referenced below: **J** = `tests/e2e/journey.mjs` (v2 login, onboarding journey, roles), **W** = `tests/e2e/workflows.mjs` (Workflows A–H, agents, search, persistence), **I** = `tests/e2e/interactions.mjs`, **M** = `tests/e2e/modules.mjs`, **R** = route sweep.
+Test suites referenced below: **J** = `tests/e2e/journey.mjs` (v2 login, onboarding journey, roles), **P** = `tests/e2e/roles.mjs` (job-based experiences and read restrictions), **W** = `tests/e2e/workflows.mjs` (Workflows A–H, agents, search, persistence), **I** = `tests/e2e/interactions.mjs`, **M** = `tests/e2e/modules.mjs`, **R** = route sweep.
 
 ---
 
@@ -147,7 +147,11 @@ Test suites referenced below: **J** = `tests/e2e/journey.mjs` (v2 login, onboard
 | Projects in the sidebar, project switcher, project-scoped data | Shell, `/projects` | VERIFIED (J: viewer sees member projects only) |
 | Requests: access requests with justification, impact preview, approve/decline | `/requests` | IMPLEMENTED |
 | User management: people, invitations, roles matrix, project access, permission inspector, audit, identity policy | `/admin/*` | VERIFIED (J: role change, admin-only gate) |
-| Real role restrictions (Administrator, Security analyst, Project owner, Viewer), enforced in navigation, screens and API | `utils/permissions.ts`, `requireCap` | VERIFIED (J) |
+| Access role (what you may do: Administrator, Executive, Security analyst, Project owner, Viewer) separate from job (what you see: Executive, Platform admin, Security analyst, Incident responder, Application owner, Vendor risk, AI governance, Risk manager, Employee) | `utils/permissions.ts` (`ROLE_INFO`, `JOB_INFO`) | VERIFIED (J, P) |
+| Job-specific home pages and menus (main sidebar + security workspace with "More tools") | `modules/home/roles.tsx`, `app/navigation.tsx` | VERIFIED (P: 9 jobs) |
+| "Can view" permissions (problems, evidence, incidents, vendor, AI, financial) enforced in the data layer, route guards, global search and the assistant; restricted pages explain why | `services/visibility.ts`, `components/common/RequireCap.tsx` | VERIFIED (P: typed URLs, search, assistant) |
+| Business view of a problem for people without evidence access | Finding page | VERIFIED (P) |
+| "What you can see and why" scope panel; admins change a person's job in People | Top bar, `/admin/people` | VERIFIED (P: job change) |
 | Help & Support tickets with status stepper and conversation; service status | `/support` | IMPLEMENTED |
 | Knowledge base task guides with "where to go next", plus a jargon-free glossary | `/knowledge` | IMPLEMENTED |
 | Plain-language layer: glossary tooltips (`Term`), friendly names for app types / parts / tools, plain severity and problem descriptions | `utils/plain.ts`, `components/common/Term.tsx` | VERIFIED (J: landing, parts, protection-on copy) |
@@ -179,7 +183,7 @@ Test suites referenced below: **J** = `tests/e2e/journey.mjs` (v2 login, onboard
 
 * Frontend prototype only: no backend, no real scanning, exploitation, connector APIs, LLM, file upload or remediation execution.
 * Persistence is per-browser `localStorage`. Reset regenerates the deterministic dataset.
-* Roles and permissions are enforced in the browser only. A real deployment needs server-side authorization and a real identity provider.
+* Access roles, jobs and view permissions are enforced in the browser's demo data layer only. A real deployment needs the same rules in server-side authorization and a real identity provider.
 * EPSS values are illustrative; CVE/CWE/ATT&CK/OWASP summaries are a static snapshot of public sources.
 * CRQ, ROSI, vendor scoring and AI risk scores are documented illustrative models.
 * Workflow Center graphs are predefined; attack paths are seeded.

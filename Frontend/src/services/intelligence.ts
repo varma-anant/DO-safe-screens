@@ -10,6 +10,8 @@ import { aiRiskScore, computeScenario, isOverdue, postureScore, totalALE, vendor
 import { scoreFindings } from '@/utils/derive'
 import { fmtMoney, fmtPct, plural } from '@/utils/format'
 import { latency } from './core'
+import { viewerDb } from './visibility'
+import { can, explain, VIEW_AREA, type ViewCap } from '@/utils/permissions'
 
 export interface IntelRecord {
   type: SearchEntityType
@@ -53,7 +55,7 @@ type Handler = (db: Database, q: string) => Omit<IntelResponse, 'engine' | 'supp
 const base = (db: Database) => scoreFindings(db.findings, db.assets, db.services, db.settings.weights)
 const fRec = (f: Database['findings'][number], meta?: string): IntelRecord => ({ type: 'finding', id: f.id, label: f.title, meta, domain: f.domain })
 
-const INTENTS: { name: string; match: RegExp; handle: Handler }[] = [
+const INTENTS: { name: string; match: RegExp; handle: Handler; needs?: ViewCap }[] = [
   {
     name: 'cve-lookup',
     match: /cve-\d{4}-\d{4,7}/i,
@@ -122,6 +124,7 @@ const INTENTS: { name: string; match: RegExp; handle: Handler }[] = [
   },
   {
     name: 'service-risk',
+    needs: 'view_financial_risk',
     match: /(business service|application).*(risk|highest)|highest risk.*service|which service/i,
     handle: (db) => {
       const rows = db.services.map((s) => {
@@ -142,6 +145,7 @@ const INTENTS: { name: string; match: RegExp; handle: Handler }[] = [
   },
   {
     name: 'vendors',
+    needs: 'view_vendor_risk',
     match: /vendor|third[- ]part|supplier/i,
     handle: (db) => {
       const rows = db.vendors.filter((v) => v.lifecycle !== 'offboarded').map((v) => ({ v, alerts: db.monitoringAlerts.filter((a) => a.vendorId === v.id && a.status === 'open'), items: db.tickets.filter((t) => t.vendorId === v.id && !['done', 'cancelled'].includes(t.status)).length })).filter((r) => r.alerts.length || ['high', 'critical'].includes(vendorRiskBand(r.v.residualRisk))).sort((a, b) => b.v.residualRisk + b.alerts.length * 5 - (a.v.residualRisk + a.alerts.length * 5))
@@ -157,6 +161,7 @@ const INTENTS: { name: string; match: RegExp; handle: Handler }[] = [
   },
   {
     name: 'ai-config',
+    needs: 'view_ai_governance',
     match: /ai system.*(config|issue|misconfig)|configuration issues|ai config/i,
     handle: (db) => {
       const rows = db.aiSystems.map((a) => ({ a, fails: a.configChecks.filter((c) => c.result === 'fail') })).filter((r) => r.fails.length).sort((a, b) => b.fails.length - a.fails.length)
@@ -172,6 +177,7 @@ const INTENTS: { name: string; match: RegExp; handle: Handler }[] = [
   },
   {
     name: 'shadow-ai',
+    needs: 'view_ai_governance',
     match: /shadow ai|unsanctioned|unauthori[sz]ed ai/i,
     handle: (db) => {
       const rows = db.aiSystems.filter((a) => a.approval === 'unsanctioned' || (a.approval === 'prohibited' && a.users > 0))
@@ -203,6 +209,7 @@ const INTENTS: { name: string; match: RegExp; handle: Handler }[] = [
   },
   {
     name: 'ale',
+    needs: 'view_financial_risk',
     match: /annual loss|\bale\b|financial|loss exposure|quantif/i,
     handle: (db) => {
       const rows = db.scenarios.map((s) => ({ s, r: computeScenario(s, db.findings) })).sort((a, b) => b.r.ale - a.r.ale)
@@ -236,6 +243,7 @@ const INTENTS: { name: string; match: RegExp; handle: Handler }[] = [
   },
   {
     name: 'incidents',
+    needs: 'view_incidents',
     match: /incident/i,
     handle: (db) => {
       const act = db.incidents.filter((i) => i.status !== 'closed')
@@ -262,10 +270,10 @@ const INTENTS: { name: string; match: RegExp; handle: Handler }[] = [
         title: `Security posture summary — score ${postureScore(db.findings)}/100`,
         answer: [
           `Exposure: ${open.length} open findings — ${open.filter((f) => f.severity === 'critical').length} critical, ${open.filter((f) => f.kev).length} KEV-listed, ${db.findings.filter(isOverdue).length} past SLA.`,
-          `Financial: illustrative estimated annual loss ${fmtMoney(ale)}; highest-loss scenario is ${[...db.scenarios].sort((a, b) => computeScenario(b, db.findings).ale - computeScenario(a, db.findings).ale)[0].name}.`,
-          `Third parties: ${hv.length} vendors at high/critical residual risk; ${db.monitoringAlerts.filter((a) => a.status === 'open').length} open monitoring alerts.`,
-          `AI: ${shadow.length} shadow AI apps; ${db.aiSystems.filter((a) => a.governanceStatus === 'non_compliant').length} AI systems non-compliant.`,
-          `Operations: ${db.incidents.filter((i) => i.status !== 'closed').length} active incidents; ${db.tickets.filter((t) => !['done', 'cancelled'].includes(t.status)).length} open remediation tickets.`,
+          ...(db.scenarios.length ? [`Financial: illustrative estimated annual loss ${fmtMoney(ale)}; highest-loss scenario is ${[...db.scenarios].sort((a, b) => computeScenario(b, db.findings).ale - computeScenario(a, db.findings).ale)[0].name}.`] : []),
+          ...(db.vendors.length ? [`Third parties: ${hv.length} vendors at high/critical residual risk; ${db.monitoringAlerts.filter((a) => a.status === 'open').length} open monitoring alerts.`] : []),
+          ...(db.aiSystems.length ? [`AI: ${shadow.length} shadow AI apps; ${db.aiSystems.filter((a) => a.governanceStatus === 'non_compliant').length} AI systems non-compliant.`] : []),
+          `Operations: ${db.incidents.length ? `${db.incidents.filter((i) => i.status !== 'closed').length} active incidents; ` : ''}${db.tickets.filter((t) => !['done', 'cancelled'].includes(t.status)).length} open remediation tickets.`,
         ],
         records: [...open.filter((f) => f.kev && f.severity === 'critical').slice(0, 3).map((f) => fRec(f, 'critical · KEV')), ...hv.slice(0, 2).map((v) => ({ type: 'vendor' as const, id: v.id, label: v.name, meta: `residual ${v.residualRisk}` })), ...shadow.slice(0, 2).map((a) => ({ type: 'aiSystem' as const, id: a.id, label: a.name, meta: 'shadow AI' }))],
         evidence: [{ label: 'Aggregated from all modules', detail: 'Findings, CRQ scenarios, vendors, AI systems, incidents and tickets in the demo dataset.', provenance: 'inferred' }],
@@ -282,8 +290,22 @@ function isOverdueRow(r: { f: Database['findings'][number] }) {
 export const demoProvider: IntelligenceProvider = {
   async ask(question: string) {
     await latency(3)
-    const db = getDb()
+    // Answers use only what the person may see — their projects and the areas their job includes.
+    const full = getDb()
+    const db = viewerDb(full)
+    const me = full.users.find((u) => u.id === full.settings.currentUserId)
     const intent = INTENTS.find((i) => i.match.test(question))
+    if (intent?.needs && !can(me, intent.needs))
+      return {
+        intent: 'restricted',
+        title: `${VIEW_AREA[intent.needs]} isn’t part of your job`,
+        answer: [explain(me, intent.needs), 'Ask about something in your own area, or ask an administrator for access.'],
+        records: [],
+        evidence: [],
+        nextActions: [{ label: 'Ask for access', to: '/requests?new=1' }],
+        engine: 'deterministic-demo',
+        supported: false,
+      }
     if (!intent)
       return {
         intent: 'unsupported',

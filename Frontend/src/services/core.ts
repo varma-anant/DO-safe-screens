@@ -1,6 +1,6 @@
 import type { AuditEvent, Database, HistoryEntry, Notification } from '@/types'
 import { getDb, setDb } from '@/stores/db'
-import { can, ROLE_INFO, CAPABILITY_LABEL, type Capability } from '@/utils/permissions'
+import { can, CAPABILITY_LABEL, explain, type Capability } from '@/utils/permissions'
 
 export class DemoApiError extends Error {}
 
@@ -66,5 +66,5 @@ export function requireCap(cap: Capability) {
   const db = getDb()
   const u = db.users.find((x) => x.id === db.settings.currentUserId)
   if (!db.settings.authenticated || !u) throw new DemoApiError('Your session has ended. Sign in again.')
-  if (!can(u, cap)) throw new DemoApiError(`Your role (${ROLE_INFO[u.orgRole].label}) can't ${CAPABILITY_LABEL[cap].charAt(0).toLowerCase()}${CAPABILITY_LABEL[cap].slice(1)}. Request access from Requests.`)
+  if (!can(u, cap)) throw new DemoApiError(`You can't ${CAPABILITY_LABEL[cap].charAt(0).toLowerCase()}${CAPABILITY_LABEL[cap].slice(1)}: ${explain(u, cap)} Request access from Requests.`)
 }

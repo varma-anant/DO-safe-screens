@@ -1,23 +1,22 @@
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router'
-import { AlarmClock, AppWindow, ArrowRight, Bot, Check, CheckCircle2, Clock, Cloud, Database, FileWarning, FolderOpen, Globe, Inbox, KeyRound, LayoutDashboard, Lock, PauseCircle, Plug, Rocket, ShieldAlert, ShieldCheck, Sparkles, Ticket, UserCheck, Users, Bug, UserX } from 'lucide-react'
+import { AlarmClock, AppWindow, ArrowRight, Bot, Bug, Check, CheckCircle2, Clock, Cloud, Database, FileText, FolderOpen, Globe, KeyRound, LayoutDashboard, Lock, PauseCircle, Plug, Rocket, ShieldAlert, ShieldCheck, Sparkles, UserCheck, UserX, Users } from 'lucide-react'
 import type { BusinessService } from '@/types'
 import { useCan, useCollections, useCurrentUser, useSettings } from '@/hooks/queries'
 import { usePage } from '@/hooks/usePage'
 import { Callout, ErrorState, LoadingState, Section } from '@/components/common/layout'
-import { Badge, FindingStatusBadge, RiskScore, SeverityBadge, StatusBadge } from '@/components/common/badges'
+import { Badge } from '@/components/common/badges'
 import { RelTime } from '@/components/common/entities'
 import { Term } from '@/components/common/Term'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { APP_STATUS } from '@/modules/applications'
 import { JOURNEY, JOURNEY_MINUTES, stepFromStatus } from '@/modules/onboarding/journey'
 import { cn, fmtDate, fmtDateTime, plural } from '@/utils/format'
 import { isOpen, TICKET_STATUS } from '@/utils/labels'
-import { isOverdue } from '@/utils/risk'
 import { scoreFindings } from '@/utils/derive'
-import { ROLE_INFO } from '@/utils/permissions'
-import { APP_TYPE_PLAIN, assetLabel, findingPlain, SEVERITY_PLAIN } from '@/utils/plain'
+import { can, JOB_INFO, jobOf, ROLE_INFO } from '@/utils/permissions'
+import { AdminSections, AISections, AnalystSections, EmployeeHome, ExecutiveSections, OwnerSections, RiskSections, VendorSections, type HomeCtx } from './roles'
+import { APP_TYPE_PLAIN, findingPlain } from '@/utils/plain'
 
 const TYPE_ICON: Record<string, React.ReactNode> = {
   'Web application': <Globe />,
@@ -42,10 +41,10 @@ export function HomePage() {
   const canOnboard = useCan('onboard_applications')
   const canUsers = useCan('manage_users')
   const canIntegrations = useCan('manage_integrations')
-  const { data, isLoading, error, retry } = useCollections(['services', 'projects', 'findings', 'assets', 'tickets', 'accessRequests', 'integrations', 'audit'] as const)
+  const { data, isLoading, error, retry } = useCollections(['services', 'projects', 'findings', 'assets', 'tickets', 'accessRequests', 'integrations', 'users', 'invitations'] as const)
   if (error) return <ErrorState error={error} onRetry={retry} />
   if (isLoading || !data) return <LoadingState kpis={3} rows={6} />
-  const { services, projects, findings, assets, tickets, accessRequests, integrations } = data
+  const { services, projects, findings, assets, tickets, accessRequests, integrations, users, invitations } = data
   const protectedApps = services.filter((s) => s.status === 'active' || s.status === 'paused')
   const onboarding = services.filter((s) => !(s.status === 'active' || s.status === 'paused'))
   const firstName = me.name.split(' ')[0]
@@ -140,14 +139,17 @@ export function HomePage() {
     )
   }
 
-  // ---------------- Returning user
+  // ---------------- Returning user — the experience depends on the person's job
+  const job = jobOf(me)
+  if (job === 'employee') {
+    return <EmployeeHome name={firstName} myTickets={tickets.filter((t) => t.assigneeId === me.id && !['done', 'cancelled'].includes(t.status))} myRequests={accessRequests.filter((r) => r.requesterId === me.id)} />
+  }
   const scored = scoreFindings(findings, assets, services, settings.weights)
   const mine = scored.filter((x) => x.f.ownerId === me.id && isOpen(x.f.status)).sort((a, b) => b.score - a.score)
   const myTickets = tickets.filter((t) => t.assigneeId === me.id && !['done', 'cancelled'].includes(t.status))
   const pendingForMe = accessRequests.filter((r) => r.status === 'pending' && r.requesterId !== me.id && (me.orgRole === 'admin' || projects.find((p) => p.id === r.projectId)?.ownerId === me.id))
   const myRequests = accessRequests.filter((r) => r.requesterId === me.id && r.status === 'pending')
   const openAll = scored.filter((x) => isOpen(x.f.status))
-  const top = [...openAll].sort((a, b) => b.score - a.score).slice(0, 5)
   const urgent = openAll.filter((x) => x.f.severity === 'critical').sort((a, b) => b.score - a.score)
   const paused = protectedApps.filter((s) => s.status === 'paused')
 
@@ -163,164 +165,102 @@ export function HomePage() {
   const nextCheck = protectedApps.filter((s) => s.status === 'active').map((s) => s.nextRunAt).filter(Boolean).sort()[0]
   const allGood = !paused.length && checkedParts.length === protectedParts.length
 
-  const nextActions: { key: string; icon: React.ReactNode; text: React.ReactNode; to: string; cta: string; tone?: 'red' }[] = [
-    ...urgent.slice(0, 3).map((x) => ({ key: x.f.id, icon: <ShieldAlert />, text: <><span className="font-medium">{findingPlain(x.f)}</span><span className="block text-[12px] text-muted">{SEVERITY_PLAIN[x.f.severity].when} · {x.asset ? `${assetLabel(x.asset.type).toLowerCase()} of ` : ''}{x.service?.name ?? 'unknown application'}</span><span className="block truncate text-[12px] text-subtle" title={x.f.title}>{x.f.title}</span></>, to: `/operations/findings/${x.f.id}`, cta: 'See how to fix', tone: 'red' as const })),
-    ...(onboarding[0] && canOnboard ? [{ key: 'ob', icon: <Rocket />, text: <><span className="font-medium">Finish setting up {onboarding[0].name}</span><span className="block text-[12px] text-muted">Next: {JOURNEY[stepFromStatus(onboarding[0])].label}</span></>, to: `/onboarding?app=${onboarding[0].id}`, cta: 'Continue' }] : []),
-    ...(pendingForMe.length ? [{ key: 'req', icon: <Inbox />, text: <><span className="font-medium">{plural(pendingForMe.length, 'access request')} waiting for you</span><span className="block text-[12px] text-muted">Someone asked to see or change something</span></>, to: '/requests', cta: 'Decide' }] : []),
-  ].slice(0, 4)
+  const ctx: HomeCtx = { meId: me.id, services, findings, assets, tickets, integrations, accessRequests, openAll, pendingForMe }
+
+  const nextActions: { key: string; label: string; to: string }[] = [
+    ...(job === 'platform_admin' ? integrations.filter((i) => i.status === 'error' || (i.status === 'connected' && i.health < 80)).slice(0, 1).map((i) => ({ key: i.id, label: `Fix ${i.name} — it ${i.status === 'error' ? 'isn’t working' : 'is unhealthy'}`, to: `/integrations/${i.id}` })) : []),
+    ...(job === 'executive' || job === 'platform_admin' ? [] : urgent.slice(0, 2).map((x) => ({ key: x.f.id, label: `Fix: ${findingPlain(x.f).toLowerCase()} (${x.service?.name ?? 'an application'})`, to: `/operations/findings/${x.f.id}` }))),
+    ...(onboarding[0] && canOnboard ? [{ key: 'ob', label: `Finish setting up ${onboarding[0].name}`, to: `/onboarding?app=${onboarding[0].id}` }] : []),
+    ...(pendingForMe.length ? [{ key: 'req', label: `Decide ${plural(pendingForMe.length, 'access request')}`, to: '/requests' }] : []),
+    ...(job === 'executive' ? [{ key: 'dec', label: 'Review decisions waiting for you', to: '/requests?tab=approvals' }] : []),
+  ].slice(0, 3)
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="text-[13px] font-medium text-primary">{settings.orgName} · {ROLE_INFO[me.orgRole].label}</div>
+          <div className="text-[13px] font-medium text-primary">{settings.orgName} · {JOB_INFO[job].label}</div>
           <h1 className="mt-1 text-[26px] font-semibold tracking-tight">{greeting}</h1>
-          <p className="mt-1 text-[14px] text-muted">{plural(protectedApps.length, 'protected application')} across {plural(projects.length, 'project')} you can access.</p>
+          <p className="mt-1 text-[14px] text-muted">{JOB_INFO[job].summary}</p>
+          <p className="mt-0.5 text-[12.5px] text-muted">Viewing {can(me, 'view_all_projects') ? `all ${plural(projects.length, 'project')}` : `${plural(projects.length, 'project')} you belong to`} · {plural(protectedApps.length, 'protected application')} · Access: {ROLE_INFO[me.orgRole].label}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {canOnboard && <Button onClick={() => navigate('/onboarding?new=1')}><ShieldCheck /> Protect another application</Button>}
-          {canUsers && <Button variant="secondary" onClick={() => navigate('/admin/people')}><Users /> Invite people</Button>}
+          {job === 'executive' && <Button onClick={() => navigate('/crq/report')}><FileText /> Board report</Button>}
+          {canOnboard && ['platform_admin', 'project_owner'].includes(job) && <Button onClick={() => navigate('/onboarding?new=1')}><ShieldCheck /> Protect another application</Button>}
+          {canUsers && job === 'platform_admin' && <Button variant="secondary" onClick={() => navigate('/admin/people')}><Users /> Invite people</Button>}
           {me.orgRole === 'viewer' && <Button variant="secondary" onClick={() => navigate('/requests?new=1')}><KeyRound /> Ask for access</Button>}
         </div>
       </div>
       {me.orgRole === 'viewer' && <Callout tone="info" icon={<KeyRound />}>You can look at {plural(projects.length, 'project')} but not change anything. To work on problems, ask for contributor access.</Callout>}
 
-      {/* Plain-language status: the three questions everyone has */}
-      <section aria-label="Your security at a glance" className="grid gap-4 lg:grid-cols-3">
-        <Card className="p-5">
-          <div className="text-[13px] font-medium text-muted">Am I protected?</div>
-          <div className="mt-2 flex items-center gap-3">
-            <span className={cn('flex size-11 items-center justify-center rounded-full', allGood ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600')}>{allGood ? <ShieldCheck className="size-6" /> : paused.length ? <PauseCircle className="size-6" /> : <ShieldAlert className="size-6" />}</span>
-            <div>
-              <div className="text-[18px] font-semibold">{allGood ? 'Yes' : 'Mostly'}</div>
-              <div className="text-[13px] text-muted">{checkedParts.length} of {plural(protectedParts.length, 'part')} checked{paused.length ? ` · ${plural(paused.length, 'app')} paused` : ''}</div>
-            </div>
+      {/* Plain-language status: the three questions everyone has, in one compact strip */}
+      <section aria-label="Your security at a glance" className="card grid divide-y divide-border md:grid-cols-3 md:divide-x md:divide-y-0">
+        <div className="flex items-center gap-3 p-4">
+          <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-full', allGood ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600')}>{allGood ? <ShieldCheck className="size-5" /> : paused.length ? <PauseCircle className="size-5" /> : <ShieldAlert className="size-5" />}</span>
+          <div className="min-w-0">
+            <div className="text-[12.5px] text-muted">Am I protected?</div>
+            <div className="text-[15px] font-semibold">{allGood ? 'Yes' : 'Mostly'} <span className="font-normal text-muted">· {checkedParts.length} of {plural(protectedParts.length, 'part')} checked{paused.length ? ` · ${plural(paused.length, 'app')} paused` : ''}</span></div>
+            <div className="truncate text-[12px] text-muted">Last check {lastCheck ? <RelTime iso={lastCheck} /> : '—'} · next {nextCheck ? fmtDateTime(nextCheck) : '—'}</div>
           </div>
-          <div className="mt-3 space-y-0.5 text-[12.5px] text-muted">
-            <div>Last check: {lastCheck ? <RelTime iso={lastCheck} /> : '—'}</div>
-            <div>Next check: {nextCheck ? fmtDateTime(nextCheck) : '—'}</div>
+        </div>
+        <Link to="/exposures/prioritization" className="flex items-center gap-3 p-4 hover:bg-surface-2/60">
+          <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-full', urgent.length ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600')}>{urgent.length ? <ShieldAlert className="size-5" /> : <CheckCircle2 className="size-5" />}</span>
+          <div className="min-w-0">
+            <div className="text-[12.5px] text-muted">Is anything urgent?</div>
+            <div className="text-[15px] font-semibold">{urgent.length ? plural(urgent.length, 'urgent problem') : 'Nothing urgent'}</div>
+            <div className="truncate text-[12px] text-muted">{plural(openAll.length, 'open problem')} in total · see them in order</div>
           </div>
-        </Card>
-        <Card className="p-5">
-          <div className="text-[13px] font-medium text-muted">Is anything urgent?</div>
-          <div className="mt-2 flex items-center gap-3">
-            <span className={cn('flex size-11 items-center justify-center rounded-full', urgent.length ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600')}>{urgent.length ? <ShieldAlert className="size-6" /> : <CheckCircle2 className="size-6" />}</span>
-            <div>
-              <div className="text-[18px] font-semibold">{urgent.length ? plural(urgent.length, 'urgent problem') : 'Nothing urgent'}</div>
-              <div className="text-[13px] text-muted">{urgent.length ? 'These could be used against you now — fix today' : 'Nothing needs fixing today'}</div>
-            </div>
+        </Link>
+        <div className="flex items-center gap-3 p-4">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary"><ArrowRight className="size-5" /></span>
+          <div className="min-w-0 flex-1">
+            <div className="text-[12.5px] text-muted">What should I do next?</div>
+            {nextActions[0] ? (
+              <Link to={nextActions[0].to} className="block truncate text-[14px] font-semibold hover:text-primary">{nextActions[0].label} →</Link>
+            ) : (
+              <div className="text-[15px] font-semibold">You’re all caught up</div>
+            )}
+            {nextActions.length > 1 && <div className="truncate text-[12px] text-muted">Then: {nextActions.slice(1).map((x) => x.label).join(' · ')}</div>}
           </div>
-          <div className="mt-3 text-[12.5px] text-muted">{plural(openAll.length, 'open problem')} in total · <Link to="/exposures/prioritization" className="text-primary hover:underline">see them in order</Link></div>
-        </Card>
-        <Card className="p-5">
-          <div className="text-[13px] font-medium text-muted">What should I do next?</div>
-          {nextActions.length ? (
-            <ol className="mt-2 space-y-2">
-              {nextActions.map((a, i) => (
-                <li key={a.key}>
-                  <Link to={a.to} className="flex items-start gap-2.5 rounded-lg p-1.5 text-[13px] hover:bg-surface-2">
-                    <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary-soft text-[11px] font-semibold text-primary">{i + 1}</span>
-                    <span className="min-w-0 flex-1">{a.text}</span>
-                    <span className="shrink-0 text-[12px] font-medium text-primary">{a.cta} →</span>
-                  </Link>
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <p className="mt-2 flex items-center gap-2 text-[13.5px]"><CheckCircle2 className="size-5 text-emerald-600" /> You’re all caught up.</p>
-          )}
-        </Card>
+        </div>
       </section>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <AttentionCard icon={<Inbox />} label="Requests waiting for you" value={pendingForMe.length} to="/requests" tone={pendingForMe.length ? 'violet' : undefined} />
-        <AttentionCard icon={<FileWarning />} label="Problems assigned to you" value={mine.length} to="/operations/findings" tone={mine.some((x) => x.f.severity === 'critical') ? 'red' : undefined} sub={`${mine.filter(({ f }) => isOverdue(f)).length} overdue`} />
-        <AttentionCard icon={<Ticket />} label="Your open tasks" value={myTickets.length} to="/operations/tickets" sub={`${myTickets.filter((t) => new Date(t.dueDate) < new Date()).length} overdue`} />
-        <AttentionCard icon={<Rocket />} label="Applications being set up" value={onboarding.length} to="/applications" sub={onboarding[0] ? `${onboarding[0].name}: ${APP_STATUS[onboarding[0].status].label}` : 'None'} />
-      </div>
-      <div className="grid gap-5 xl:grid-cols-3">
-        <Section className="xl:col-span-2" title={mine.length ? 'Your most important problems' : 'Most important problems'} description={<>Ranked by <Term k="risk">priority</Term> — fix from the top down.</>} actions={<Button size="xs" variant="ghost" asChild><Link to="/exposures/prioritization">See all <ArrowRight /></Link></Button>}>
-          <div className="divide-y divide-border">
-            {(mine.length ? mine.slice(0, 6) : top).map((x) => (
-              <Link key={x.f.id} to={`/operations/findings/${x.f.id}`} className="flex items-center gap-3 py-2.5 hover:bg-surface-2/60">
-                <RiskScore score={x.score} />
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13.5px] font-medium">{x.f.title}</span>
-                  <span className="block truncate text-[12px] text-muted">{x.service?.name ?? '—'} · {x.asset?.name ?? '—'}{isOverdue(x.f) ? ' · overdue' : ''}</span>
-                </span>
-                <SeverityBadge severity={x.f.severity} />
-                <span className="hidden sm:block"><FindingStatusBadge status={x.f.status} /></span>
-              </Link>
-            ))}
-            {!openAll.length && <p className="py-3 text-[13px] text-muted">No open problems. Nice work.</p>}
-          </div>
-        </Section>
-        <div className="space-y-5">
-          <Section title="Protected applications" actions={<Button size="xs" variant="ghost" asChild><Link to="/applications">All <ArrowRight /></Link></Button>}>
-            <ul className="space-y-2">
-              {services.slice(0, 6).map((a) => (
-                <li key={a.id}>
-                  <Link to={`/applications/${a.id}`} className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 hover:bg-surface-2">
-                    <span className="min-w-0">
-                      <span className="block truncate text-[13px] font-medium">{a.name}</span>
-                      <span className="block truncate text-[12px] text-muted">{projects.find((p) => p.id === a.projectId)?.name}</span>
-                    </span>
-                    <StatusBadge map={APP_STATUS} value={a.status} />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </Section>
-          {(myTickets.length > 0 || myRequests.length > 0) && (
-            <Section title="Your work">
-              <ul className="space-y-2 text-[13px]">
-                {myTickets.slice(0, 4).map((t) => (
-                  <li key={t.id}>
-                    <Link to={`/operations/tickets/${t.id}`} className="flex items-center justify-between gap-2 hover:text-primary">
-                      <span className="truncate">{t.title}</span>
-                      <span className="flex shrink-0 items-center gap-1 text-[12px] text-muted">{new Date(t.dueDate) < new Date() && <AlarmClock className="size-3 text-red-600" />}{fmtDate(t.dueDate)}</span>
-                    </Link>
-                    <div className="text-[12px] text-muted">{TICKET_STATUS[t.status].label}</div>
-                  </li>
-                ))}
-                {myRequests.map((r) => (
-                  <li key={r.id} className="flex items-center justify-between gap-2">
-                    <span className="truncate">Your request: {r.requestedRole}{r.projectId ? ` on ${projects.find((p) => p.id === r.projectId)?.name ?? 'a project'}` : ''}</span>
-                    <Badge tone="amber">Pending</Badge>
-                  </li>
-                ))}
-              </ul>
-            </Section>
-          )}
-          <Section title="Ask DO SAFE" description="Questions in plain English">
-            <div className="space-y-1.5">
-              {['Which application has the highest risk?', 'What remediation tasks are overdue?', 'Summarize the current security posture'].map((q) => (
-                <button key={q} onClick={() => navigate(`/intelligence?q=${encodeURIComponent(q)}`)} className="flex min-h-10 w-full items-center gap-2 rounded-lg bg-surface-2 px-3 py-2 text-left text-[13px] text-muted hover:text-fg cursor-pointer">
-                  <Sparkles className="size-3.5 text-primary" /> {q}
-                </button>
-              ))}
-            </div>
-          </Section>
-          <Link to="/dashboard" className="card flex items-center gap-3 p-4 text-[13px] hover:border-border-strong">
-            <LayoutDashboard className="size-5 text-primary" />
-            <span className="flex-1"><span className="block font-medium">Advanced security workspace</span><span className="block text-[12px] text-muted">Charts, money-at-risk estimates, vendors and AI — for security specialists</span></span>
-            <ArrowRight className="size-4 text-muted" />
-          </Link>
-        </div>
-      </div>
-    </div>
-  )
-}
+      {job === 'executive' && <ExecutiveSections ctx={ctx} />}
+      {job === 'platform_admin' && <AdminSections ctx={ctx} pendingInvites={invitations.filter((i) => i.status === 'pending').length} noMfa={users.filter((u) => u.status === 'active' && !u.mfaEnabled).length} />}
+      {(job === 'security_analyst' || job === 'incident_responder') && <AnalystSections ctx={ctx} top={mine.length ? mine.slice(0, 8) : [...openAll].sort((x, y) => y.score - x.score).slice(0, 8)} incidentsFirst={job === 'incident_responder'} />}
+      {job === 'project_owner' && <OwnerSections ctx={ctx} myTickets={myTickets} />}
+      {job === 'vendor_risk' && <VendorSections />}
+      {job === 'ai_governance' && <AISections ctx={ctx} />}
+      {job === 'risk_manager' && <RiskSections ctx={ctx} />}
 
-function AttentionCard({ icon, label, value, to, sub, tone }: { icon: React.ReactNode; label: string; value: number; to: string; sub?: string; tone?: 'red' | 'violet' }) {
-  return (
-    <Link to={to} className="card flex items-start gap-3 p-4 transition-colors hover:border-border-strong">
-      <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-lg [&_svg]:size-[18px]', tone === 'red' ? 'bg-red-50 text-red-600' : 'bg-primary-soft text-primary')}>{icon}</span>
-      <span className="min-w-0">
-        <span className="block text-[13px] text-muted">{label}</span>
-        <span className="num block text-2xl font-semibold">{value}</span>
-        {sub && <span className="block truncate text-[12px] text-muted">{sub}</span>}
-      </span>
-    </Link>
+      {(myRequests.length > 0 || (job !== 'project_owner' && myTickets.length > 0)) && (
+        <Section title="Your work">
+          <ul className="space-y-2 text-[13px]">
+            {job !== 'project_owner' && myTickets.slice(0, 4).map((t) => (
+              <li key={t.id}>
+                <Link to={`/operations/tickets/${t.id}`} className="flex items-center justify-between gap-2 hover:text-primary">
+                  <span className="truncate">{t.title}</span>
+                  <span className="flex shrink-0 items-center gap-1 text-[12px] text-muted">{new Date(t.dueDate) < new Date() && <AlarmClock className="size-3 text-red-600" />}{fmtDate(t.dueDate)}</span>
+                </Link>
+                <div className="text-[12px] text-muted">{TICKET_STATUS[t.status].label}</div>
+              </li>
+            ))}
+            {myRequests.map((r) => (
+              <li key={r.id} className="flex items-center justify-between gap-2">
+                <span className="truncate">Your request: {r.requestedRole}{r.projectId ? ` on ${projects.find((p) => p.id === r.projectId)?.name ?? 'a project'}` : ''}</span>
+                <Badge tone="amber">Pending</Badge>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      )}
+      {job === 'executive' || job === 'risk_manager' ? null : (
+        <Link to={can(me, 'view_financial_risk') ? '/dashboard' : '/exposures'} className="card flex items-center gap-3 p-4 text-[13px] hover:border-border-strong">
+          <LayoutDashboard className="size-5 text-primary" />
+          <span className="flex-1"><span className="block font-medium">Advanced security workspace</span><span className="block text-[12px] text-muted">Every tool your access allows — for detailed work</span></span>
+          <ArrowRight className="size-4 text-muted" />
+        </Link>
+      )}
+    </div>
   )
 }

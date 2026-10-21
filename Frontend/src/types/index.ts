@@ -22,7 +22,9 @@ export type PersonaRole =
   | 'Incident Responder'
 
 /** Platform role: decides what a user may do in DO SAFE. `role` (job title) is descriptive only. */
-export type OrgRole = 'admin' | 'analyst' | 'project_owner' | 'viewer'
+export type OrgRole = 'admin' | 'executive' | 'analyst' | 'project_owner' | 'viewer'
+/** The person's job — decides their home, navigation and level of detail (separate from what they may do). */
+export type JobRole = 'executive' | 'platform_admin' | 'security_analyst' | 'incident_responder' | 'project_owner' | 'vendor_risk' | 'ai_governance' | 'risk_manager' | 'employee'
 export type ProjectRole = 'owner' | 'contributor' | 'viewer'
 
 export interface User {
@@ -34,6 +36,7 @@ export interface User {
   initials: string
   isPersona?: boolean
   orgRole: OrgRole
+  job: JobRole
   status: 'active' | 'invited' | 'deactivated'
   lastActiveAt?: ISODate
   mfaEnabled: boolean
@@ -802,6 +805,7 @@ export interface Invitation {
   email: string
   name: string
   orgRole: OrgRole
+  job?: JobRole
   projectIds: string[]
   invitedById: string
   sentAt: ISODate
