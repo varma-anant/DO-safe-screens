@@ -15,7 +15,7 @@ import { Progress, Switch } from '@/components/ui/misc'
 import { useUiStore } from '@/stores/ui'
 import * as api from '@/services/api'
 import { demoProvider, SUGGESTED_QUESTIONS, type IntelResponse } from '@/services/intelligence'
-import { cn, fmtDateTime, fmtPct } from '@/utils/format'
+import { cn, fmtDateTime, fmtPct, plural } from '@/utils/format'
 import { isOpen } from '@/utils/labels'
 import { scoreFindings } from '@/utils/derive'
 import { entityPath } from '@/components/common/entities'
@@ -316,7 +316,7 @@ export function ThreatIntelPage() {
                   <Link to={`/intelligence/library/${k.id}`} className="text-[13px] font-medium hover:text-violet-700"><span className="font-mono text-sky-700">{k.externalId}</span> {k.name}</Link>
                   <div className="text-[11px] text-muted">CVSS {k.cvss?.score} · EPSS {fmtPct(k.epss?.score ?? 0)} (illustrative) · published {k.published}</div>
                 </div>
-                {affected.length ? <Button size="xs" variant="secondary" onClick={() => navigate(`/exposures/vulnerabilities/${affected[0].id}`)}>{affected.length} open finding(s)</Button> : <Badge tone="emerald">No open exposure</Badge>}
+                {affected.length ? <Button size="xs" variant="secondary" onClick={() => navigate(`/exposures/vulnerabilities/${affected[0].id}`)}>{plural(affected.length, 'open finding')}</Button> : <Badge tone="emerald">No open exposure</Badge>}
               </div>
             ))}
           </div>
@@ -465,7 +465,7 @@ export function InvestigationPage() {
                 <ul className="space-y-1 text-xs text-muted">
                   {sel.cveId && <li>• {sel.cveId} vendor advisory (external reference)</li>}
                   {sel.evidence.slice(0, 2).map((e) => <li key={e.id}>• {e.id} — {e.label}</li>)}
-                  {resolvedSimilar.length > 0 && <li>• {resolvedSimilar.length} similar finding(s) resolved with this approach</li>}
+                  {resolvedSimilar.length > 0 && <li>• {plural(resolvedSimilar.length, 'similar finding')} resolved with this approach</li>}
                 </ul>
               </Section>
               <Section title="Similar historical findings">

@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import * as api from '@/services/api'
 import { useDbStore } from '@/stores/db'
 import { cn } from '@/utils/format'
+import { GLOSSARY } from '@/utils/plain'
 
 // ---------------------------------------------------------------- Support center
 
@@ -231,9 +232,9 @@ interface Guide {
 }
 
 const GUIDES: Guide[] = [
-  { id: 'onboard', title: 'Onboard an application', category: 'Getting started', icon: <PlayCircle />, summary: 'Take an application from "draft" to a protected SAFE application in seven steps.', steps: ['Pick or create the project the application belongs to.', 'Describe the application: type, business owner, criticality and data handled.', 'Declare its assets — accept discovered suggestions, add them manually, or paste a list.', 'Map the assets: link entry points to compute, compute to data and identity.', 'Connect the sources that will assess each asset (scanners, cloud, code, ASM).', 'Run a test run. It checks coverage and connectivity without creating findings.', 'Fix anything the test run flags, then start the full run. The application becomes a SAFE application.'], next: [{ label: 'Start onboarding', to: '/onboarding?new=1' }, { label: 'SAFE applications', to: '/applications' }] },
-  { id: 'map', title: 'Map and link assets', category: 'Getting started', icon: <Network />, summary: 'Why links matter and how to draw them on the asset map.', steps: ['Open Asset mapping and pick an application.', 'Use "Suggest links" to propose relations from asset types and naming.', 'Drag from one asset to another to add a link and pick its relation (routes to, runs on, reads/writes, authenticates with).', 'Remove or relabel incorrect links.', 'Save. Prioritization uses these links to tell which exposures can reach critical data.'], next: [{ label: 'Open Asset mapping', to: '/mapping' }] },
-  { id: 'runs', title: 'Test run vs full run', category: 'Getting started', icon: <GitBranch />, summary: 'What each run does and why a test run comes first.', steps: ['A test run is a dry run: it verifies every declared asset has at least one connected source that fits it and that the source is reachable.', 'It does not create findings or tickets.', 'Typical failures: an asset with no source, a disconnected source, or an internet-only scanner pointed at an internal asset.', 'A full run assesses every asset, creates findings, scores them and starts continuous monitoring.', 'You can pause monitoring from the application page at any time.'], next: [{ label: 'SAFE applications', to: '/applications' }] },
+  { id: 'onboard', title: 'Protect your first application', category: 'Getting started', icon: <PlayCircle />, summary: 'Seven short steps, about 10 minutes. Nothing in your systems changes.', steps: ['Pick a project — a folder that keeps related applications together.', 'Describe your app: what it is, who is responsible, how important it is and what kind of data it handles.', 'List its parts. We suggest the typical parts (website, database, code…); untick what you don’t have and add anything missing.', 'Connect the parts. We draw a suggested map of how they talk to each other — adjust it if needed.', 'Connect your tools. For each tool you see exactly what DO SAFE can read (and that it can change nothing) before you allow read-only access.', 'Test run: a one-minute safe check that every part is reachable. If something isn’t ready, it tells you exactly what to fix.', 'Turn on protection: the full run checks everything, then DO SAFE keeps checking every day. You get a clear “Protection is on” summary and a list of what to fix first.'], next: [{ label: 'Start setup', to: '/onboarding?new=1' }, { label: 'Protected applications', to: '/applications' }] },
+  { id: 'map', title: 'Show how the parts connect', category: 'Getting started', icon: <Network />, summary: 'Why the map matters and how to adjust it.', steps: ['Open Asset mapping and pick an application.', 'Click “Suggest connections” — DO SAFE draws the usual connections for the kinds of parts you have.', 'To add one, drag from the dot on the right of a part to another part, and pick what the connection means (for example “reads from”).', 'Click a connection to relabel or remove it.', 'Save. DO SAFE uses the map to tell whether a problem could reach important data.'], next: [{ label: 'Open Asset mapping', to: '/mapping' }] },
+  { id: 'runs', title: 'Test run vs turning on protection', category: 'Getting started', icon: <GitBranch />, summary: 'Why there is a quick safe check before the real one.', steps: ['The test run is a dry run. It checks that DO SAFE can reach every part and that each connected tool’s access works.', 'It changes nothing and reports no problems — it only answers “are we ready?”.', 'If a part isn’t ready, the result says why in plain words (for example “Wiz isn’t connected yet”) with a button to fix it.', '“Turn on protection” starts the full run: every part is checked properly, problems are explained and ranked, and daily checks begin.', 'You can pause protection from the application page at any time.'], next: [{ label: 'Protected applications', to: '/applications' }] },
   { id: 'triage', title: 'Triage a finding', category: 'Daily work', icon: <FileSearch />, summary: 'Confirm, assign and ticket the findings that matter first.', steps: ['Start at Prioritization — it ranks findings by exploitability, exposure, asset criticality and business impact.', 'Open a finding to see evidence, the affected asset and the attack path it belongs to.', 'Confirm it, or mark it as a false positive with a reason (that goes to review).', 'Assign an owner and create a remediation ticket with an SLA.', 'Verification re-tests the fix before the finding closes.'], next: [{ label: 'Prioritization', to: '/exposures/prioritization' }, { label: 'Ticket management', to: '/operations/tickets' }] },
   { id: 'fp', title: 'Review a false-positive claim', category: 'Daily work', icon: <ShieldCheck />, summary: 'How false-positive and risk-acceptance decisions are approved.', steps: ['Claims appear in Requests → Security approvals.', 'Read the evidence and the analyst reasoning.', 'Approve to close the finding as false positive, or reject with a note to send it back.', 'Every decision is written to the audit log.'], next: [{ label: 'Security approvals', to: '/requests?tab=approvals' }] },
   { id: 'vendor', title: 'Assess a vendor', category: 'Daily work', icon: <Building2 />, summary: 'Send a questionnaire, score responses and track remediation.', steps: ['Open Third-party risk inside a project.', 'Start an assessment for the vendor and choose a questionnaire.', 'Score responses and attach evidence.', 'Raise remediation items for gaps and track them to closure.'], next: [{ label: 'Third-party risk', to: '/tprm' }] },
@@ -249,6 +250,7 @@ export function KnowledgePage() {
   const [cat, setCat] = React.useState<Guide['category'] | 'All'>('All')
   const openId = params.get('guide')
   const open = GUIDES.find((g) => g.id === openId)
+  const terms = Object.values(GLOSSARY).filter((g) => !q || `${g.term} ${g.plain} ${g.meaning}`.toLowerCase().includes(q.toLowerCase()))
   const list = GUIDES.filter((g) => (cat === 'All' || g.category === cat) && (!q || `${g.title} ${g.summary} ${g.steps.join(' ')}`.toLowerCase().includes(q.toLowerCase())))
   return (
     <div className="space-y-5">
@@ -256,7 +258,7 @@ export function KnowledgePage() {
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-[260px] flex-1">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-subtle" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" placeholder="Search guides — e.g. test run, map assets, false positive" aria-label="Search guides" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} className="pl-9" placeholder="Search guides and the glossary — e.g. test run, KEV, read-only" aria-label="Search guides" />
         </div>
         <div className="flex items-center gap-1 rounded-lg border border-border bg-surface p-1">
           <Filter className="mx-1 size-3.5 text-subtle" />
@@ -311,6 +313,19 @@ export function KnowledgePage() {
           </Card>
         )}
       </div>
+      <Card className="p-5" id="glossary">
+        <h2 className="text-[15px] font-semibold">Jargon-free glossary</h2>
+        <p className="mt-0.5 text-[13px] text-muted">Security words you might see, explained in plain English. {q && `Filtered by “${q}”.`}</p>
+        <dl className="mt-4 grid gap-x-8 gap-y-4 md:grid-cols-2">
+          {terms.map((g) => (
+            <div key={g.term}>
+              <dt className="text-[13.5px] font-semibold">{g.plain}{g.term !== g.plain && <span className="font-normal text-muted"> · “{g.term}”</span>}</dt>
+              <dd className="mt-0.5 text-[13px] text-muted">{g.meaning}</dd>
+            </div>
+          ))}
+          {!terms.length && <p className="text-[13px] text-muted">No glossary terms match.</p>}
+        </dl>
+      </Card>
     </div>
   )
 }

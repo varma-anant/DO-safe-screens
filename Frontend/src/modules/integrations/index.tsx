@@ -20,7 +20,7 @@ import { Field, Input, NativeSelect } from '@/components/ui/input'
 import { Progress } from '@/components/ui/misc'
 import { FindingsTable } from '@/modules/findings/FindingsTable'
 import * as api from '@/services/api'
-import { cn, fmtDateTime, fmtNum } from '@/utils/format'
+import { cn, fmtDateTime, fmtNum, plural } from '@/utils/format'
 import { scoreFindings } from '@/utils/derive'
 
 const STATUS: Record<Integration['status'], { label: string; tone: 'emerald' | 'red' | 'slate' | 'amber' | 'sky' }> = { available: { label: 'Available', tone: 'sky' }, configuring: { label: 'Configuring', tone: 'amber' }, connected: { label: 'Connected', tone: 'emerald' }, error: { label: 'Error', tone: 'red' }, disabled: { label: 'Disabled', tone: 'slate' } }
@@ -119,7 +119,7 @@ export function IntegrationDetail() {
             {i.status === 'connected' && <Button variant="secondary" loading={pending} onClick={() => run(() => api.syncIntegration(i.id), 'Sync completed (simulated)')}><RefreshCw /> Sync now</Button>}
             {i.status === 'connected' && <Button variant="secondary" loading={pending} onClick={() => run(() => api.setIntegrationStatus(i.id, 'disabled'), 'Integration disabled')}><Power /> Disable</Button>}
             {(i.status === 'disabled' || i.status === 'error') && i.config?.testResult === 'success' && <Button loading={pending} onClick={() => run(() => api.setIntegrationStatus(i.id, 'connected'), 'Integration re-enabled')}><Power /> Re-enable</Button>}
-            {canEnable && i.status !== 'disabled' && i.status !== 'error' && <Button variant="accent" loading={pending} onClick={() => run(() => api.enableIntegration(i.id), (ids) => `Integration enabled — initial sync imported ${ids.length} finding(s)`)}><PlugZap /> Enable integration</Button>}
+            {canEnable && i.status !== 'disabled' && i.status !== 'error' && <Button variant="accent" loading={pending} onClick={() => run(() => api.enableIntegration(i.id), (ids) => `Integration enabled — initial sync imported ${plural(ids.length, 'finding')}`)}><PlugZap /> Enable integration</Button>}
           </>
         }
       />

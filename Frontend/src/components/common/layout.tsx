@@ -85,18 +85,57 @@ export function LoadingState({ rows = 6, kpis = 0 }: { rows?: number; kpis?: num
 
 export function ErrorState({ error, onRetry }: { error?: Error; onRetry?: () => void }) {
   return (
-    <Card className="flex flex-col items-center px-6 py-14 text-center">
+    <Card className="flex flex-col items-center px-6 py-14 text-center" role="alert">
       <div className="flex size-11 items-center justify-center rounded-full bg-red-500/10 text-red-600">
         <AlertTriangle className="size-5" />
       </div>
-      <h3 className="mt-3 text-sm font-semibold">Unable to load data</h3>
-      <p className="mt-1 max-w-md text-xs text-muted">{error?.message ?? 'The demo API returned an error.'}</p>
-      {onRetry && (
-        <Button variant="secondary" size="sm" className="mt-4" onClick={onRetry}>
-          <RefreshCw /> Retry
+      <h3 className="mt-3 text-[15px] font-semibold">We couldn’t load this page</h3>
+      <p className="mt-1 max-w-md text-[13px] text-muted">Your data is safe — nothing was changed. This is usually a brief connection hiccup, so trying again normally works.</p>
+      <div className="mt-4 flex flex-wrap justify-center gap-2">
+        {onRetry && (
+          <Button size="sm" onClick={onRetry}>
+            <RefreshCw /> Try again
+          </Button>
+        )}
+        <Button size="sm" variant="secondary" asChild>
+          <Link to="/support?new=1">Get help</Link>
         </Button>
+      </div>
+      {error?.message && (
+        <details className="mt-4 max-w-md text-[12px] text-muted">
+          <summary className="cursor-pointer">Technical details</summary>
+          <p className="mt-1">{error.message}</p>
+        </details>
       )}
     </Card>
+  )
+}
+
+/** Full-screen placeholder shown while the app first loads, with a recovery hint if it takes long. */
+export function AppLoading() {
+  const [slow, setSlow] = React.useState(false)
+  React.useEffect(() => {
+    const t = setTimeout(() => setSlow(true), 6000)
+    return () => clearTimeout(t)
+  }, [])
+  return (
+    <div className="flex min-h-screen bg-bg" aria-busy="true" aria-label="Loading DO SAFE">
+      <div className="hidden w-[248px] shrink-0 space-y-3 border-r border-border bg-sidebar p-4 lg:block">
+        <div className="flex items-center gap-2.5">
+          <div className="flex size-9 items-center justify-center rounded-xl bg-[#16161d] text-[12px] font-bold text-white">DO</div>
+          <span className="text-[15px] font-semibold">DO SAFE</span>
+        </div>
+        {Array.from({ length: 9 }).map((_, i) => <Skeleton key={i} className="h-7 w-full" />)}
+      </div>
+      <div className="flex-1 p-6">
+        <Skeleton className="h-8 w-64" />
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-28 w-full" />)}
+        </div>
+        <Skeleton className="mt-6 h-64 w-full" />
+        <p className="mt-6 text-[13px] text-muted" aria-live="polite">{slow ? 'This is taking longer than usual. Check your connection, or reload the page.' : 'Loading DO SAFE…'}</p>
+      </div>
+    </div>
   )
 }
 

@@ -24,7 +24,8 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <RouterProvider router={router} />
-        <Toaster theme="light" position="bottom-right" richColors closeButton />
+        {/* Top-right, below the header: never covers page titles or the primary action in sticky step footers. */}
+        <Toaster theme="light" position="top-right" offset={72} richColors closeButton />
       </TooltipProvider>
     </QueryClientProvider>
   </StrictMode>,

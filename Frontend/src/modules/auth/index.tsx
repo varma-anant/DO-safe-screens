@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router'
-import { Building2, KeyRound, Loader2, ShieldCheck, Sparkles } from 'lucide-react'
+import { ArrowRight, Building2, KeyRound, ListChecks, Loader2, Lock, Mail, Plug, ShieldCheck, Sparkles } from 'lucide-react'
 import { useDbStore } from '@/stores/db'
 import { ACME_USERS } from '@/data/seed'
 import { USERS } from '@/data/seed/reference'
@@ -36,7 +36,7 @@ export function LoginPage() {
   const submit = async (e?: React.FormEvent, overrideEmail?: string) => {
     e?.preventDefault()
     const em = overrideEmail ?? email
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return setError('Enter a valid work email address.')
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return setError('That doesn’t look like an email address — check for typos, e.g. name@company.com.')
     if (!overrideEmail && password.length < 4) return setError('Enter your password (any 4+ characters in this demo).')
     setBusy(true)
     setError(null)
@@ -57,15 +57,28 @@ export function LoginPage() {
           <div className="flex size-10 items-center justify-center rounded-xl bg-white text-[13px] font-bold text-[#16161d]">DO</div>
           <div>
             <div className="text-lg font-semibold leading-tight">DO SAFE</div>
-            <div className="text-xs text-white/60">Autonomous cyber risk management</div>
+            <div className="text-xs text-white/70">Security, made simple</div>
           </div>
         </div>
         <div className="max-w-md">
-          <h1 className="text-[34px] font-semibold leading-tight tracking-tight" style={{ textWrap: 'balance' }}>Know what you're protecting. Fix what matters first.</h1>
-          <ul className="mt-8 space-y-4 text-[14px] text-white/80">
-            <li className="flex gap-3"><ShieldCheck className="mt-0.5 size-5 shrink-0 text-[#a594ff]" /> Map your applications and assets, test the connection, then run continuous assessments.</li>
-            <li className="flex gap-3"><Sparkles className="mt-0.5 size-5 shrink-0 text-[#a594ff]" /> Every finding explained: source, evidence, CVE/CWE/ATT&CK mapping, root cause and fix.</li>
-            <li className="flex gap-3"><KeyRound className="mt-0.5 size-5 shrink-0 text-[#a594ff]" /> Role-based access, approval gates and a complete audit trail for enterprise teams.</li>
+          <h1 className="text-[34px] font-semibold leading-tight tracking-tight" style={{ textWrap: 'balance' }}>Know you’re protected. Know what to fix first.</h1>
+          <p className="mt-4 text-[15px] text-white/80">DO SAFE connects to the tools you already use, checks everything for security problems, and tells you in plain words what to fix first.</p>
+          <ol className="mt-8 grid grid-cols-3 gap-2 text-center text-[12.5px]" aria-label="How it works">
+            {[[Plug, 'Your existing tools'], [ShieldCheck, 'DO SAFE checks everything'], [ListChecks, 'A clear to-do list']].map(([Icon, t], i) => {
+              const I = Icon as typeof Plug
+              return (
+                <li key={t as string} className="relative rounded-xl border border-white/10 bg-white/5 px-2 py-4">
+                  <I className="mx-auto size-6 text-[#b7a9ff]" />
+                  <div className="mt-2 text-white/85">{t as string}</div>
+                  {i < 2 && <ArrowRight className="absolute -right-2.5 top-1/2 z-10 size-4 -translate-y-1/2 text-white/40" aria-hidden />}
+                </li>
+              )
+            })}
+          </ol>
+          <ul className="mt-8 space-y-3 text-[14px] text-white/80">
+            <li className="flex gap-3"><Lock className="mt-0.5 size-5 shrink-0 text-[#b7a9ff]" /> Read-only: it looks, but never changes anything in your systems.</li>
+            <li className="flex gap-3"><Sparkles className="mt-0.5 size-5 shrink-0 text-[#b7a9ff]" /> Every problem explained in plain words, with step-by-step fixes.</li>
+            <li className="flex gap-3"><KeyRound className="mt-0.5 size-5 shrink-0 text-[#b7a9ff]" /> Each person sees only what their role and projects allow.</li>
           </ul>
         </div>
         <p className="text-xs text-white/40">Interactive prototype · all organizations, people and data are simulated.</p>
@@ -80,14 +93,14 @@ export function LoginPage() {
             </div>
           </div>
           <h2 className="text-2xl font-semibold tracking-tight">Sign in to your workspace</h2>
-          <p className="mt-1 text-sm text-muted">Use your work account. Access depends on your role and project membership.</p>
+          <p className="mt-1 text-sm text-muted">Use your work email. You’ll see the projects your administrator has given you.</p>
 
           <div className="mt-6">
             <div className="mb-1.5 text-xs font-medium text-muted">Workspace</div>
             <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Workspace">
               {([
-                ['northstar', 'Northstar Financial', 'Established · 8 applications'],
-                ['acme', 'Acme Corporation', 'New customer · nothing set up'],
+                ['northstar', 'Northstar Financial', 'Already set up · 7 applications'],
+                ['acme', 'Acme Corporation', 'Brand new · start from zero'],
               ] as const).map(([id, name, sub]) => (
                 <button key={id} type="button" role="radio" aria-checked={ws === id} onClick={() => { setWs(id); setEmail(''); setError(null) }} className={cn('rounded-xl border bg-surface p-3 text-left transition-colors cursor-pointer', ws === id ? 'border-primary ring-2 ring-primary/15' : 'border-border hover:border-border-strong')}>
                   <Building2 className={cn('size-4', ws === id ? 'text-primary' : 'text-subtle')} />
@@ -114,6 +127,14 @@ export function LoginPage() {
             </Button>
             <p className="text-center text-[11.5px] text-subtle">SSO is simulated. Any password of 4+ characters works in this demo.</p>
           </form>
+
+          <div className="mt-6 flex gap-3 rounded-xl border border-border bg-surface p-3.5 text-[13px]">
+            <Mail className="mt-0.5 size-4 shrink-0 text-primary" />
+            <div>
+              <div className="font-medium">New to DO SAFE?</div>
+              <p className="text-muted">Accounts are created by invitation. If your company uses DO SAFE, your administrator sends you an email invite. To see the setup from scratch, choose <button type="button" className="font-medium text-primary underline cursor-pointer" onClick={() => { setWs('acme'); setEmail(''); setError(null) }}>Acme Corporation</button>.</p>
+            </div>
+          </div>
 
           <div className="mt-7">
             <div className="mb-2 text-xs font-medium text-muted">Demo accounts — click to sign in</div>

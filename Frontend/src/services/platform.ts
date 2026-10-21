@@ -7,6 +7,7 @@ import { FULL_STEPS, TEST_STEPS } from '@/data/seed/projects'
 import { can, projectRoleOf, ROLE_INFO } from '@/utils/permissions'
 import { actor, audit, commit, DemoApiError, latency, mustFind, nextId, notify, now, replace, requireCap, uid, userName } from './core'
 import { buildFindingFromTemplate } from './api'
+import { plural } from '@/utils/format'
 
 const addDays = (iso: string, d: number) => new Date(new Date(iso).getTime() + d * 86_400_000).toISOString()
 const me = () => {
@@ -21,10 +22,10 @@ export async function login(email: string, password: string, workspace: Database
   if (getDb().settings.workspace !== workspace) useDbStore.getState().loadWorkspace(workspace)
   const db = getDb()
   const user = db.users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase())
-  if (!user) throw new DemoApiError('No account with that email in this workspace.')
-  if (user.status === 'deactivated') throw new DemoApiError('This account has been deactivated. Contact your administrator.')
-  if (user.status === 'invited') throw new DemoApiError('This invitation has not been accepted yet.')
-  if (password.length < 4) throw new DemoApiError('Incorrect password.')
+  if (!user) throw new DemoApiError(`We couldn’t find ${email.trim()} in ${db.settings.orgName}. Check the spelling, or ask your administrator for an invite.`)
+  if (user.status === 'deactivated') throw new DemoApiError('This account has been switched off. Ask your administrator to turn it back on.')
+  if (user.status === 'invited') throw new DemoApiError('You’ve been invited but haven’t accepted yet — open the invitation email first.')
+  if (password.length < 4) throw new DemoApiError('That password didn’t work. Try again, or use “Continue with SSO”.')
   commit((d) => audit({ ...d, users: d.users.map((u) => (u.id === user.id ? { ...u, lastActiveAt: now() } : u)), settings: { ...d.settings, authenticated: true, currentUserId: user.id, currentProjectId: null } }, { action: 'signed in', entityType: 'settings', entityId: 'session', details: `${user.name} (${ROLE_INFO[user.orgRole].label})`, module: 'Platform', actorId: user.id }))
   return user
 }
@@ -103,7 +104,7 @@ export async function declareAssets(appId: string, drafts: AssetDraft[]) {
       created.push(a)
     }
     const status = app.status === 'draft' ? 'assets_declared' : app.status
-    return audit({ ...db, assets, services: replace(db.services, { ...app, status }) }, { action: 'assets declared', entityType: 'service', entityId: appId, details: `${created.length} asset(s): ${created.map((a) => a.name).join(', ')}`, module: 'CTEM' })
+    return audit({ ...db, assets, services: replace(db.services, { ...app, status }) }, { action: 'assets declared', entityType: 'service', entityId: appId, details: `${plural(created.length, 'asset')}: ${created.map((a) => a.name).join(', ')}`, module: 'CTEM' })
   })
 }
 
@@ -127,7 +128,7 @@ export async function saveAssetLinks(appId: string, links: Omit<AssetLink, 'id'>
     ensureProjectWrite(db, app.projectId)
     const assetLinks = links.map((l, i) => ({ ...l, id: `${appId}-L${i + 1}` }))
     const status = ['draft', 'assets_declared'].includes(app.status) ? 'mapped' : app.status
-    return audit({ ...db, services: replace(db.services, { ...app, assetLinks, status }) }, { action: 'asset map saved', entityType: 'service', entityId: appId, details: `${assetLinks.length} link(s)`, module: 'CTEM' })
+    return audit({ ...db, services: replace(db.services, { ...app, assetLinks, status }) }, { action: 'asset map saved', entityType: 'service', entityId: appId, details: `${plural(assetLinks.length, 'link')}`, module: 'CTEM' })
   })
 }
 
@@ -138,17 +139,18 @@ export async function saveCoverage(appId: string, coverage: Record<string, strin
     const app = mustFind(db.services, appId, 'Application')
     ensureProjectWrite(db, app.projectId)
     const status = ['draft', 'assets_declared', 'mapped', 'test_failed'].includes(app.status) ? 'connected' : app.status
-    return audit({ ...db, assets: db.assets.map((a) => (coverage[a.id] ? { ...a, sourceIntegrationIds: coverage[a.id] } : a)), services: replace(db.services, { ...app, coverage, status }) }, { action: 'sources assigned', entityType: 'service', entityId: appId, details: `${Object.values(coverage).filter((v) => v.length).length} asset(s) covered`, module: 'Integrations' })
+    return audit({ ...db, assets: db.assets.map((a) => (coverage[a.id] ? { ...a, sourceIntegrationIds: coverage[a.id] } : a)), services: replace(db.services, { ...app, coverage, status }) }, { action: 'sources assigned', entityType: 'service', entityId: appId, details: `${plural(Object.values(coverage).filter((v) => v.length).length, 'asset')} covered`, module: 'Integrations' })
   })
 }
 
-/** One-click simulated connector setup used during onboarding (no findings are imported). */
-export async function quickConnectIntegration(integrationId: string) {
+/** Simulated connector authorization used during onboarding: read-only, scoped, no findings imported. */
+export async function quickConnectIntegration(integrationId: string, scope?: string) {
   requireCap('manage_integrations')
   await latency(2)
   commit((db) => {
     const i = mustFind(db.integrations, integrationId, 'Integration')
-    return audit({ ...db, integrations: replace(db.integrations, { ...i, status: 'connected', health: 100, lastSyncAt: now(), config: { endpoint: i.config?.endpoint ?? `https://api.${i.vendor.toLowerCase().replace(/[^a-z]/g, '')}.example`, authMethod: i.config?.authMethod ?? 'API token (demo placeholder)', scope: i.config?.scope ?? `${db.settings.orgName} — all environments`, syncInterval: i.config?.syncInterval ?? 'Hourly', testedAt: now(), testResult: 'success' } }) }, { action: 'integration connected (simulated)', entityType: 'integration', entityId: integrationId, details: i.name, module: 'Integrations' })
+    const sc = scope ?? i.config?.scope ?? `${db.settings.orgName} — all environments`
+    return audit({ ...db, integrations: replace(db.integrations, { ...i, status: 'connected', health: 100, lastSyncAt: now(), config: { endpoint: i.config?.endpoint ?? `https://api.${i.vendor.toLowerCase().replace(/[^a-z]/g, '')}.example`, authMethod: 'Read-only authorization (simulated)', scope: sc, syncInterval: i.config?.syncInterval ?? 'Hourly', testedAt: now(), testResult: 'success' } }) }, { action: 'integration connected with read-only access (simulated)', entityType: 'integration', entityId: integrationId, details: `${i.name} · scope: ${sc}`, module: 'Integrations' })
   })
 }
 
@@ -163,12 +165,12 @@ function patchRun(db: Database, appId: string, runId: string, fn: (r: ScanRun) =
 /** Per-asset readiness result for a test run — deterministic so the demo can show a fix-and-retry loop. */
 function assessAsset(db: Database, app: BusinessService, a: Asset): ScanRun['assetResults'][number] {
   const sources = app.coverage[a.id] ?? []
-  if (!sources.length) return { assetId: a.id, reachable: false, credentialsOk: false, sourceIds: [], note: 'No source assigned — assign at least one source that can assess this asset.' }
+  if (!sources.length) return { assetId: a.id, reachable: false, credentialsOk: false, sourceIds: [], note: 'No tool is checking this part yet — assign one.' }
   const disconnected = sources.map((s) => db.integrations.find((i) => i.id === s)).filter((i) => i && i.status !== 'connected')
-  if (disconnected.length) return { assetId: a.id, reachable: true, credentialsOk: false, sourceIds: sources, note: `${disconnected.map((i) => i!.name).join(', ')} is not connected — finish its setup.` }
+  if (disconnected.length) return { assetId: a.id, reachable: true, credentialsOk: false, sourceIds: sources, note: `${disconnected.map((i) => (i!.id === 'INT-ASM' ? 'The outside-in monitor' : i!.vendor)).join(' and ')} ${disconnected.length > 1 ? 'aren’t' : 'isn’t'} connected yet — connect ${disconnected.length > 1 ? 'them' : 'it'} to check this part.` }
   const onlyExternal = sources.every((s) => s === 'INT-ASM')
-  if (onlyExternal && !a.internetExposed) return { assetId: a.id, reachable: false, credentialsOk: true, sourceIds: sources, note: 'The external attack-surface monitor cannot reach an internal asset — add an internal scanner, cloud or EDR source.' }
-  return { assetId: a.id, reachable: true, credentialsOk: true, sourceIds: sources, note: 'Reachable; credentials valid; sample checks returned data.' }
+  if (onlyExternal && !a.internetExposed) return { assetId: a.id, reachable: false, credentialsOk: true, sourceIds: sources, note: 'The outside-in monitor can’t see inside your network — add a cloud or server tool for this part.' }
+  return { assetId: a.id, reachable: true, credentialsOk: true, sourceIds: sources, note: 'Reachable, access works, sample check returned data.' }
 }
 
 export async function startTestRun(appId: string) {
@@ -187,7 +189,7 @@ export async function startTestRun(appId: string) {
     const results = assets.map((x) => assessAsset(db, a, x))
     const failed = results.filter((r) => !r.reachable || !r.credentialsOk).length
     const status: ScanRun['status'] = failed ? 'failed' : 'passed'
-    let next = patchRun(db, appId, runId, (r) => ({ ...r, status, finishedAt: now(), assetResults: results, steps: r.steps.map((s, i) => ({ ...s, status: failed && i >= 1 && i <= 2 ? 'warning' : 'done', detail: failed && i >= 1 && i <= 2 ? `${failed} asset(s) need attention` : 'Completed' })), summary: failed ? `${failed} of ${assets.length} assets are not ready. Fix the issues below and run the test again.` : `All ${assets.length} assets are reachable with valid credentials. No findings were created — you can start the full run.` }))
+    let next = patchRun(db, appId, runId, (r) => ({ ...r, status, finishedAt: now(), assetResults: results, steps: r.steps.map((s, i) => ({ ...s, status: failed && i >= 1 && i <= 2 ? 'warning' : 'done', detail: failed && i >= 1 && i <= 2 ? `${failed} ${failed === 1 ? 'part needs' : 'parts need'} attention` : 'Completed' })), summary: failed ? `${failed} of ${assets.length} parts aren’t ready yet. Each one below says what to do.` : `All ${assets.length} parts are reachable and every tool’s access works. Nothing was changed and no problems were reported yet — you can turn on protection.` }))
     next = patchApp(next, appId, (x) => ({ ...x, status: x.status === 'active' ? 'active' : failed ? 'test_failed' : 'test_passed' }))
     return audit(next, { action: `test run ${status}`, entityType: 'service', entityId: appId, details: `${assets.length - failed}/${assets.length} assets ready`, module: 'CTEM', actorId: 'SYSTEM' })
   })
@@ -234,11 +236,11 @@ export async function startFullRun(appId: string) {
     // Re-observe existing findings on this application.
     next = { ...next, findings: next.findings.map((f) => (f.businessServiceId === appId && !created.includes(f) && !['resolved', 'false_positive'].includes(f.status) ? { ...f, lastObserved: now() } : f)) }
     next = { ...next, assets: next.assets.map((x) => (x.businessServiceId === appId ? { ...x, lastSeen: now(), tags: x.tags.filter((t) => t !== 'declared' && t !== 'onboarding') } : x)) }
-    next = patchRun(next, appId, runId, (r) => ({ ...r, status: 'completed', finishedAt: now(), findingIds: created.map((f) => f.id), assetResults: assets.map((x) => ({ assetId: x.id, reachable: true, credentialsOk: true, sourceIds: a.coverage[x.id] ?? [], note: `${created.filter((f) => f.assetId === x.id).length} new finding(s)` })), steps: r.steps.map((s) => ({ ...s, status: 'done', detail: 'Completed (simulated)' })), summary: `Assessed ${assets.length} assets — ${created.length} new finding(s)${created.filter((f) => f.severity === 'critical').length ? `, ${created.filter((f) => f.severity === 'critical').length} critical` : ''}.` }))
+    next = patchRun(next, appId, runId, (r) => ({ ...r, status: 'completed', finishedAt: now(), findingIds: created.map((f) => f.id), assetResults: assets.map((x) => ({ assetId: x.id, reachable: true, credentialsOk: true, sourceIds: a.coverage[x.id] ?? [], note: `${created.filter((f) => f.assetId === x.id).length} new` })), steps: r.steps.map((s) => ({ ...s, status: 'done', detail: 'Completed (simulated)' })), summary: `Checked ${assets.length} parts — found ${created.length} ${created.length === 1 ? 'problem' : 'problems'}${created.filter((f) => f.severity === 'critical').length ? `, ${created.filter((f) => f.severity === 'critical').length} urgent` : ''}.` }))
     next = patchApp(next, appId, (x) => ({ ...x, status: x.status === 'paused' ? 'paused' : 'active', protectedSince: x.protectedSince ?? now(), nextRunAt: addDays(now(), 1), runSchedule: x.runSchedule === 'Manual' ? 'Daily' : x.runSchedule }))
     if (firstRun && !next.scenarios.some((s) => s.businessServiceId === appId)) next = { ...next, scenarios: [...next.scenarios, starterScenario(next, a, created)] }
     next = audit(next, { action: 'full run completed', entityType: 'service', entityId: appId, details: `${created.length} findings`, module: 'CTEM', actorId: 'SYSTEM' })
-    return notify(next, { title: firstRun ? `${a.name} is now a SAFE application` : `Full run completed — ${a.name}`, body: `${created.length} new finding(s). ${firstRun ? 'Monitoring runs daily from now on.' : ''}`, link: `/applications/${appId}`, severity: created.some((f) => f.severity === 'critical') ? 'critical' : 'info' })
+    return notify(next, { title: firstRun ? `Protection is on for ${a.name}` : `Check completed — ${a.name}`, body: `${created.length} ${created.length === 1 ? 'problem' : 'problems'} found. ${firstRun ? 'DO SAFE checks it every day from now on.' : ''}`, link: `/applications/${appId}`, severity: created.some((f) => f.severity === 'critical') ? 'critical' : 'info' })
   })
   return runId
 }

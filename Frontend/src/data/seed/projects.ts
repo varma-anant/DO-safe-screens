@@ -121,12 +121,12 @@ function seededRun(id: string, kind: ScanRun['kind'], assets: Asset[], at: strin
     steps: (kind === 'test' ? TEST_STEPS : FULL_STEPS).map((name) => ({ name, status: 'done' as const, detail: 'Completed' })),
     assetResults: assets.map((a) => ({ assetId: a.id, reachable: true, credentialsOk: true, sourceIds: a.sourceIntegrationIds, note: 'OK' })),
     findingIds,
-    summary: kind === 'test' ? `Connectivity and credentials verified for ${assets.length} assets. No findings are created by a test run.` : `Full assessment of ${assets.length} assets completed — ${findingIds.length} findings recorded.`,
+    summary: kind === 'test' ? `All ${assets.length} parts reachable and every tool’s access works. A test run reports no problems.` : `Checked ${assets.length} parts — found ${findingIds.length} problems.`,
   }
 }
 
-export const TEST_STEPS = ['Resolve declared assets', 'Check network reachability', 'Validate source credentials', 'Run safe sample checks', 'Confirm data reaches DO SAFE']
-export const FULL_STEPS = ['Discover assets & software', 'Vulnerability assessment', 'Configuration & identity review', 'Enrich with knowledge library', 'Prioritize by business impact', 'Publish findings']
+export const TEST_STEPS = ['Finding your parts', 'Reaching each part', 'Confirming tool access', 'Running a safe sample check', 'Making sure results arrive']
+export const FULL_STEPS = ['Looking at every part', 'Checking for weak or outdated software', 'Checking settings and sign-in safety', 'Explaining each problem', 'Ranking what to fix first', 'Turning on daily checks']
 
 export function buildApplications(services: ServiceSeed[], assets: Asset[], findings: { id: string; businessServiceId?: string; firstDetected: string }[], clock: Clock): BusinessService[] {
   return services.map((s) => {

@@ -20,7 +20,7 @@ import { Field, NativeSelect, Textarea } from '@/components/ui/input'
 import { FindingsTable, FINDING_VIEWS } from '@/modules/findings/FindingsTable'
 import * as api from '@/services/api'
 import { DEFAULT_WEIGHTS } from '@/data/seed'
-import { cn, fmtDateTime, fmtPct } from '@/utils/format'
+import { cn, fmtDateTime, fmtPct, plural } from '@/utils/format'
 import { ASSET_TYPE_LABEL, isOpen, SEVERITY_COLOR } from '@/utils/labels'
 import { scoreFindings } from '@/utils/derive'
 
@@ -511,7 +511,7 @@ export function AttackPathDetail() {
               <EntityLink type="finding" id={f!.id} />
               <div className="flex items-center gap-2">
                 <FindingStatusBadge status={f!.status} />
-                <span className="text-xs text-muted">{f!.ticketIds.length ? `${f!.ticketIds.length} ticket(s)` : 'no ticket'}</span>
+                <span className="text-xs text-muted">{f!.ticketIds.length ? `${plural(f!.ticketIds.length, 'ticket')}` : 'no ticket'}</span>
               </div>
             </div>
           ))}

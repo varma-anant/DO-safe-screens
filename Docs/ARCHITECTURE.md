@@ -149,3 +149,29 @@ Project roles are owner, contributor and viewer. Visibility follows project memb
 * The **full run** generates findings from the template library for the declared assets, adds a starter CRQ scenario, and notifies that the app "is now a SAFE application".
 
 **Workspaces.** `northstar` is the seeded mature tenant (`DB_VERSION` 6). `acme` is an empty tenant (`buildEmptyDatabase`) used for the first-run journey. Switching happens at sign-in, and reset keeps the current workspace.
+
+## 10. Designed for non-specialists
+
+Goal: someone with no security background can set up and run DO SAFE without help.
+
+* **One journey definition** (`modules/onboarding/journey.tsx`) drives the wizard stepper, the Home "How setup works" list, the sidebar *Get started* card and the Knowledge base guide, so they can never disagree. Each step carries a time estimate.
+* **Plain-language layer** (`utils/plain.ts`):
+  * a glossary rendered by `components/common/Term.tsx` as dotted-underline tooltips
+  * friendly names for application types and part (asset) types
+  * per-tool access statements (reads / never touches / approver / minutes)
+  * plain severity ("Urgent — fix today") and a one-line description per problem category
+
+  Technical names stay visible as secondary text and in advanced views.
+* **Trust before access:** connecting a tool always goes through `ConnectToolDialog`. It shows what is read, that nothing can be changed, what is never touched, the scope, retention and how to disconnect, and only then runs a visible (simulated) read-only authorization. Connections record their scope.
+* **No silent gaps:**
+  * the Connect step pre-fills recommended coverage and asks for explicit confirmation before continuing with unchecked parts
+  * test-run failures offer a repair button for each cause
+* **Clear outcomes:** the wizard ends on "Protection is on" (parts checked, tools, last and next check, plain list of what to fix). Home leads with *Am I protected? / Is anything urgent? / What should I do next?*, and the charts sit behind "Advanced security workspace". Finding pages open with an "In plain words" box.
+* **Accessibility baseline:**
+  * secondary text meets WCAG AA contrast
+  * `prefers-reduced-motion` is honoured
+  * touch screens get 44px hit areas
+  * focus moves to each new wizard step
+  * notifications appear top-right so they never cover the primary action
+  * the app shell shows a skeleton while loading
+  * errors say what happened, that data is safe, and how to get help

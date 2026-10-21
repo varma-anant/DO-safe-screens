@@ -2,7 +2,8 @@ import * as React from 'react'
 import { ReactFlow, Background, Controls, Handle, Position, MarkerType, type Connection, type Edge, type Node, type NodeProps } from '@xyflow/react'
 import { Database, Globe, GitBranch, KeyRound, Network, Server, Box, Cloud, AppWindow, Trash2, Wand2 } from 'lucide-react'
 import type { Asset, AssetLink } from '@/types'
-import { ASSET_TYPE_LABEL } from '@/utils/labels'
+import { assetLabel } from '@/utils/plain'
+import { plural } from '@/utils/format'
 import { cn } from '@/utils/format'
 import { Button } from '@/components/ui/button'
 import { NativeSelect } from '@/components/ui/input'
@@ -16,7 +17,7 @@ const LAYER: Record<string, number> = {
   database: 2, 'cloud-storage': 2,
   'identity-provider': 3, 'code-repository': 3,
 }
-const LAYER_LABEL = ['Entry points', 'Compute', 'Data', 'Identity & code']
+const LAYER_LABEL = ['How people get in', 'Where the work happens', 'Where data lives', 'Sign-in & code']
 
 const ICON: Record<string, React.ReactNode> = {
   'network-device': <Network />, 'api-gateway': <Globe />, 'web-application': <AppWindow />, 'saas-application': <Cloud />,
@@ -30,7 +31,7 @@ function AssetNode({ data }: { data: { asset: Asset; findings: number; selected:
     <div className={cn('w-48 rounded-xl border bg-white px-3 py-2 shadow-sm', data.selected ? 'border-primary ring-2 ring-primary/20' : a.internetExposed ? 'border-orange-300' : 'border-border-strong')}>
       <Handle type="target" position={Position.Left} className="!size-2.5 !bg-primary" />
       <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-subtle [&_svg]:size-3.5 [&_svg]:text-primary">
-        {ICON[a.type]} {ASSET_TYPE_LABEL[a.type]}
+        {ICON[a.type]} {assetLabel(a.type)}
       </div>
       <div className="mt-0.5 truncate text-[13px] font-medium text-fg">{a.name}</div>
       <div className="flex items-center justify-between text-[10.5px] text-muted">
@@ -86,7 +87,7 @@ export function AssetMap({ assets, links, editable, onChange, openFindings = {},
     <div className="space-y-3">
       {editable && (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2 text-xs">
-          <span className="text-muted">Drag from the right dot of one asset to another to link them as</span>
+          <span className="text-muted">To connect two parts, drag from the dot on the right of one to the other. Label new connections as</span>
           <NativeSelect value={relation} onChange={(e) => setRelation(e.target.value as AssetLink['relation'])} className="h-8 w-40 text-xs" aria-label="Relation for new links">
             {RELATIONS.map((r) => (
               <option key={r}>{r}</option>
@@ -94,7 +95,7 @@ export function AssetMap({ assets, links, editable, onChange, openFindings = {},
           </NativeSelect>
           <span className="mx-1 h-4 w-px bg-border" />
           <Button size="xs" variant="secondary" onClick={() => onChange?.(deriveLinks(assets, `SUG-${Date.now()}`))}>
-            <Wand2 /> Suggest links
+            <Wand2 /> Suggest connections
           </Button>
           {selLink && (
             <>
@@ -130,8 +131,8 @@ export function AssetMap({ assets, links, editable, onChange, openFindings = {},
         </ReactFlow>
       </div>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11.5px] text-muted">
-        <span>{assets.length} assets · {links.length} links</span>
-        {unmapped.length > 0 ? <span className="text-amber-700">{unmapped.length} not linked yet: {unmapped.map((a) => a.name).join(', ')}</span> : <span className="text-emerald-700">Every asset is linked</span>}
+        <span>{plural(assets.length, 'part')} · {plural(links.length, 'connection')}</span>
+        {unmapped.length > 0 ? <span className="text-amber-700">{unmapped.length} not connected yet: {unmapped.map((a) => a.name).join(', ')}</span> : <span className="text-emerald-700">Every part is connected</span>}
       </div>
     </div>
   )

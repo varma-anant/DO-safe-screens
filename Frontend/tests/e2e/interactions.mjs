@@ -90,9 +90,9 @@ await step('ErrorState', async () => {
   await page.goto(base + '/platform/settings'); await page.waitForSelector('main h1')
   await page.getByRole('switch').first().click(); await page.waitForTimeout(400)
   let saw = false
-  for (let i = 0; i < 6 && !saw; i++) { await page.goto(base + '/tprm/contracts'); await page.waitForTimeout(700); saw = await page.getByText('Unable to load data').isVisible() }
+  for (let i = 0; i < 6 && !saw; i++) { await page.goto(base + '/tprm/contracts'); await page.waitForTimeout(700); saw = await page.getByText('We couldn’t load this page').isVisible() }
   ok(saw, 'Error state rendered under simulated API errors')
-  if (saw) { await page.getByRole('button', { name: 'Retry' }).click(); ok(true, 'Retry available') }
+  if (saw) { await page.getByRole('button', { name: 'Try again' }).click(); ok(true, 'Retry available') }
   await page.goto(base + '/platform/settings'); await page.waitForSelector('main h1'); await page.getByRole('switch').first().click(); await page.waitForTimeout(400)
 })
 

@@ -22,7 +22,7 @@ import { Checkbox, Progress } from '@/components/ui/misc'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TicketsTable } from '@/modules/operations'
 import * as api from '@/services/api'
-import { cn, daysUntil, fmtDate, fmtDateTime, fmtMoney } from '@/utils/format'
+import { cn, daysUntil, fmtDate, fmtDateTime, fmtMoney, plural } from '@/utils/format'
 import { ASSESSMENT_STATUS, SEVERITY_COLOR, SEVERITY_RANK, VENDOR_LIFECYCLE } from '@/utils/labels'
 import { vendorRiskBand } from '@/utils/risk'
 
@@ -481,7 +481,7 @@ export function VendorDetail() {
                     </div>
                     <div className="flex items-center gap-2">
                       <SeverityBadge severity={f.riskLevel} />
-                      <Badge tone={f.concentration > 2 ? 'orange' : 'slate'}>used by {f.concentration} Northstar vendor(s)</Badge>
+                      <Badge tone={f.concentration > 2 ? 'orange' : 'slate'}>used by {plural(f.concentration, 'Northstar vendor')}</Badge>
                     </div>
                   </div>
                 ))}

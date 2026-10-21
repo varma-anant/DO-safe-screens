@@ -3,6 +3,7 @@ import { useLocation, useParams } from 'react-router'
 import { BookOpen, Brain, ChevronDown, Clock, FileSearch, GitBranch, History, LayoutGrid, Link2, MoreHorizontal, RotateCcw, ShieldCheck, ShieldOff, Siren, Ticket, UserPlus, Wrench, Download, Scale, CheckCircle2 } from 'lucide-react'
 import { useCollections, useAction, useSettings } from '@/hooks/queries'
 import { usePage } from '@/hooks/usePage'
+import { assetLabel, findingPlain, SEVERITY_PLAIN } from '@/utils/plain'
 import { ErrorState, LoadingState, NotFound, PageHeader } from '@/components/common/layout'
 import { Badge, FindingStatusBadge, KevBadge, RiskScore, SeverityBadge } from '@/components/common/badges'
 import { EntityLink, RelTime, UserName } from '@/components/common/entities'
@@ -143,6 +144,23 @@ export function FindingDetailPage() {
           </>
         }
       />
+      <section aria-label="In plain words" className="card grid gap-4 p-4 md:grid-cols-3">
+        <div>
+          <div className="text-[12px] font-semibold uppercase tracking-wide text-primary">What’s wrong</div>
+          <p className="mt-1 text-[14px] font-medium">{findingPlain(f)}</p>
+          <p className="mt-0.5 text-[13px] text-muted">On {asset ? <><span className="font-mono">{asset.name}</span> ({assetLabel(asset.type).toLowerCase()}{asset.internetExposed ? ', visible on the internet' : ''})</> : 'an affected system'}{service ? ` · ${service.name}` : ''}.</p>
+        </div>
+        <div>
+          <div className="text-[12px] font-semibold uppercase tracking-wide text-primary">How urgent</div>
+          <p className="mt-1 text-[14px] font-medium">{SEVERITY_PLAIN[f.severity].label} — {SEVERITY_PLAIN[f.severity].when.toLowerCase()}</p>
+          <p className="mt-0.5 text-[13px] text-muted">{f.kev ? 'Attackers are actively using this weakness right now.' : asset?.internetExposed ? 'Anyone on the internet can reach the affected part.' : 'Only reachable from inside your network, which lowers the risk.'}</p>
+        </div>
+        <div>
+          <div className="text-[12px] font-semibold uppercase tracking-wide text-primary">What to do</div>
+          <p className="mt-1 text-[14px] font-medium">{f.remediation.steps[0] ?? f.remediation.recommended}</p>
+          <p className="mt-0.5 text-[13px] text-muted">{closed ? 'This problem is closed.' : f.ticketIds.length ? 'A task is already assigned to fix it.' : 'Not sure how? Create a task and assign it to the person responsible.'}</p>
+        </div>
+      </section>
 
       <div className="card grid grid-cols-2 gap-x-6 gap-y-3 p-4 sm:grid-cols-4 xl:grid-cols-8">
         <HeaderStat label="Finding ID" value={<span className="font-mono">{f.id}</span>} />

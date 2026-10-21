@@ -13,26 +13,28 @@ export interface NavItem {
   end?: boolean
   cap?: Capability
   badge?: 'requests' | 'notifications' | 'applications'
+  /** Plain-language description shown on hover. */
+  hint?: string
 }
 
 /** Main sidebar — the enterprise workspace (mirrors the DO product family layout). */
 export const MAIN_NAV: NavItem[] = [
-  { label: 'Home', to: '/home', icon: <Home /> },
-  { label: 'Dashboard', to: '/dashboard', icon: <LayoutDashboard /> },
-  { label: 'Requests', to: '/requests', icon: <Inbox />, badge: 'requests' },
-  { label: 'SAFE applications', to: '/applications', icon: <ShieldCheck />, badge: 'applications' },
-  { label: 'Asset mapping', to: '/mapping', icon: <Waypoints /> },
-  { label: 'Ticket management', to: '/operations/tickets', icon: <Ticket /> },
-  { label: 'Prioritization', to: '/exposures/prioritization', icon: <ListOrdered /> },
-  { label: 'Notifications', to: '/platform/notifications', icon: <Bell />, badge: 'notifications' },
-  { label: 'User management', to: '/admin', icon: <Users />, cap: 'manage_users' },
+  { label: 'Home', to: '/home', icon: <Home />, hint: 'Am I protected, is anything urgent, and what to do next' },
+  { label: 'Dashboard', to: '/dashboard', icon: <LayoutDashboard />, hint: 'Charts and trends for security specialists and leadership' },
+  { label: 'Requests', to: '/requests', icon: <Inbox />, badge: 'requests', hint: 'Access requests and approvals waiting for a decision' },
+  { label: 'SAFE applications', to: '/applications', icon: <ShieldCheck />, badge: 'applications', hint: 'Applications DO SAFE protects, and ones being set up' },
+  { label: 'Asset mapping', to: '/mapping', icon: <Waypoints />, hint: 'How the parts of each application connect' },
+  { label: 'Ticket management', to: '/operations/tickets', icon: <Ticket />, hint: 'Fix-it tasks, who owns them and when they’re due' },
+  { label: 'Prioritization', to: '/exposures/prioritization', icon: <ListOrdered />, hint: 'Every problem in the order you should fix it' },
+  { label: 'Notifications', to: '/platform/notifications', icon: <Bell />, badge: 'notifications', hint: 'Alerts and updates for you' },
+  { label: 'User management', to: '/admin', icon: <Users />, cap: 'manage_users', hint: 'People, roles and who can see which projects' },
 ]
 
 export const FOOTER_NAV: NavItem[] = [
-  { label: 'Integrations', to: '/integrations', icon: <Plug />, cap: 'manage_integrations' },
-  { label: 'Knowledge base', to: '/knowledge', icon: <BookOpen /> },
-  { label: 'Help & Support', to: '/support', icon: <LifeBuoy /> },
-  { label: 'Settings', to: '/platform/settings', icon: <Settings /> },
+  { label: 'Integrations', to: '/integrations', icon: <Plug />, cap: 'manage_integrations', hint: 'Security tools connected to DO SAFE' },
+  { label: 'Knowledge base', to: '/knowledge', icon: <BookOpen />, hint: 'Step-by-step guides and a jargon-free glossary' },
+  { label: 'Help & Support', to: '/support', icon: <LifeBuoy />, hint: 'Ask a person for help' },
+  { label: 'Settings', to: '/platform/settings', icon: <Settings />, hint: 'Your profile, access and preferences' },
 ]
 
 export interface NavGroup {
@@ -53,7 +55,7 @@ export const SECURITY_NAV: NavGroup[] = [
     { label: 'Vulnerabilities', to: '/exposures/vulnerabilities', icon: <Bug /> },
     { label: 'Attack paths', to: '/exposures/attack-paths', icon: <Route /> },
     { label: 'Validation', to: '/exposures/validation', icon: <ShieldCheck /> },
-    { label: 'Prioritization', to: '/exposures/prioritization', icon: <ListOrdered /> },
+    { label: 'Prioritization', to: '/exposures/prioritization', icon: <ListOrdered />, hint: 'Every problem in the order you should fix it' },
   ] },
   { label: 'Security operations', items: [
     { label: 'Security findings', to: '/operations/findings', icon: <FileWarning /> },

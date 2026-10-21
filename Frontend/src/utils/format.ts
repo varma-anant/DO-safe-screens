@@ -24,6 +24,9 @@ export const fmtMoney = (n: number, compact = true) =>
 export const fmtNum = (n: number) => new Intl.NumberFormat('en-US').format(n)
 export const fmtPct = (n: number, digits = 0) => `${(n * 100).toFixed(digits)}%`
 
+/** "1 application", "3 applications" — never "application(s)". */
+export const plural = (n: number, one: string, many = `${one}s`) => `${fmtNum(n)} ${n === 1 ? one : many}`
+
 export const titleCase = (s: string) => s.replace(/[_-]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 
 export function downloadCsv(filename: string, rows: Record<string, unknown>[]) {

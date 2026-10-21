@@ -1,4 +1,5 @@
-// v2 customer journey: login → first-run landing → onboard (test run fails → fix → passes) → full run, plus role restrictions.
+// Customer journey: login → first-run landing → protect an application (access review, coverage gate,
+// test run fails → fix from the result → passes) → “Protection is on” → overview, plus role restrictions.
 // Requires the dev server on :5173 and Playwright (npm i -D playwright && npx playwright install chromium).
 import { chromium } from 'playwright'
 import { signIn } from './login.mjs'
@@ -23,52 +24,69 @@ await step('Auth', async () => {
 
 await step('Journey', async () => {
   await signIn(page, base, 'Alex Rivera', 'Acme')
-  await page.getByRole('heading', { name: /What do you want to secure/ }).waitFor()
-  ok(true, 'Landing: empty workspace asks what to secure')
-  await main().getByRole('button', { name: /Web application/ }).click()
+  await page.getByRole('heading', { name: /Let’s protect your first application/ }).waitFor()
+  ok(await page.getByText('How DO SAFE protects you').isVisible(), 'Landing: explains what DO SAFE does, with real examples')
+  ok((await main().getByText(/^\d min$/).count()) === 7, 'Landing: shows the same 7 steps as the wizard, with time estimates')
+  await main().getByRole('button', { name: /Our website or customer portal/ }).click()
   await page.getByLabel('Project name').fill('Customer Portal')
   await page.getByRole('button', { name: 'Continue' }).click()
-  await page.getByLabel('Application name').fill('Customer Portal Web')
-  await page.getByLabel('Owner').selectOption({ index: 1 })
-  await page.getByLabel('What does it do?').fill('Customer self-service portal for orders and billing')
-  await page.getByRole('button', { name: 'Create application' }).click()
-  await page.getByRole('button', { name: /Add \d+ selected/ }).click()
-  await page.getByRole('button', { name: /Continue to mapping/ }).click()
-  await page.getByRole('button', { name: 'Suggest links' }).click()
-  await page.getByRole('button', { name: /Save map & continue/ }).click()
-  await page.getByRole('heading', { name: /Connect sources to the assets/ }).waitFor()
+  await page.getByLabel('What do you call it?').fill('Customer Portal Web')
+  await page.getByLabel('What does it do, in one sentence?').fill('Customers log in to see orders and pay invoices')
+  await page.getByRole('button', { name: 'Save and continue' }).click()
+  await page.getByRole('heading', { name: 'What is it made of?' }).waitFor()
+  ok(await page.getByText(/these are not discovered/).isVisible(), 'Parts: suggestions are labelled honestly as a template')
+  await page.getByRole('button', { name: /Add 7 parts and continue/ }).click()
+  await page.getByText('We drew a suggested map for you').waitFor()
+  ok(true, 'Map: starts from a suggested map instead of a blank canvas')
+  await page.getByRole('button', { name: /Looks right — continue/ }).click()
+  await page.getByRole('heading', { name: 'Connect your security tools' }).waitFor()
   let app = (await db()).services.find((s) => s.name === 'Customer Portal Web')
-  ok(app.assetLinks.length > 0, `Map: ${app.assetLinks.length} asset links saved`)
+  ok(app.assetLinks.length > 0, `Map: ${app.assetLinks.length} connections saved`)
 
-  // Partial coverage on a source that isn't connected → the test run must fail.
-  await main().locator('[role=checkbox]').first().click()
-  await page.getByRole('button', { name: /Save & continue to test run/ }).click()
+  // Continuing with tools not yet connected asks for explicit confirmation.
+  await page.getByRole('button', { name: /Continue to test run/ }).click()
+  const confirm = page.getByRole('dialog', { name: /Some parts won’t be checked yet/ })
+  await confirm.waitFor()
+  ok(true, 'Coverage gate: unconnected tools need an explicit “Continue anyway”')
+  await confirm.getByRole('button', { name: 'Continue anyway' }).click()
   await page.getByRole('button', { name: /Start test run/ }).click()
-  await page.getByText('Test run · failed').waitFor({ timeout: 15000 })
-  ok((await db()).services.find((s) => s.id === app.id).status === 'test_failed', 'Test run: fails for unassigned/disconnected sources')
-  ok(await page.getByRole('button', { name: /Continue to full run/ }).isDisabled(), 'Test run: full run blocked until the test passes')
+  await page.getByText('Test run · needs attention').waitFor({ timeout: 15000 })
+  ok((await db()).services.find((s) => s.id === app.id).status === 'test_failed', 'Test run: fails when tools aren’t connected')
+  ok(await page.getByRole('button', { name: 'Continue', exact: true }).isDisabled(), 'Test run: protection stays locked until the test passes')
 
-  await main().getByRole('button', { name: 'Connect sources', exact: true }).last().click()
-  await page.getByRole('button', { name: /Recommend coverage/ }).click()
-  for (let i = 0; i < 8; i++) {
-    const b = main().getByRole('button', { name: 'Connect', exact: true })
-    if (!(await b.count())) break
-    await b.first().click(); await page.waitForTimeout(1500)
+  // Fix straight from the result: each repair button opens the access review.
+  let reviewed = false
+  for (let i = 0; i < 6; i++) {
+    const fix = page.getByRole('region', { name: 'How to fix it' }).getByRole('button', { name: /^Connect / })
+    if (!(await fix.count())) break
+    await fix.first().click()
+    const d = page.getByRole('dialog')
+    if (!reviewed) {
+      const text = await d.innerText()
+      reviewed = text.includes('What DO SAFE will read') && text.includes('What DO SAFE can change') && text.includes('What DO SAFE never touches')
+    }
+    await d.getByRole('button', { name: 'Allow read-only access' }).click()
+    await d.getByText('Connected with read-only access').waitFor({ timeout: 15000 })
+    await d.getByRole('button', { name: 'Done' }).click()
   }
-  await page.getByRole('button', { name: /Save & continue to test run/ }).click()
+  ok(reviewed, 'Access review: read / change / never-touches shown before connecting')
+  const conn = (await db()).integrations.filter((i) => i.config?.authMethod === 'Read-only authorization (simulated)')
+  ok(conn.length > 0 && conn.every((i) => i.config.scope.includes('Customer Portal Web')), `Access review: ${conn.length} tools connected read-only, scoped to the application`)
   await page.getByRole('button', { name: /Run the test again/ }).click()
   await page.getByText('Test run · passed').waitFor({ timeout: 15000 })
-  ok(true, 'Test run: passes after fixing coverage')
+  ok(true, 'Test run: passes after fixing from the result screen')
 
-  await page.getByRole('button', { name: /Continue to full run/ }).click()
-  await page.getByRole('button', { name: /Start full run/ }).click()
-  await page.getByText('Full run · completed').waitFor({ timeout: 20000 })
+  await page.getByRole('button', { name: 'Continue', exact: true }).click()
+  await page.getByRole('button', { name: 'Turn on protection', exact: true }).click()
+  await page.getByRole('heading', { name: 'Protection is on' }).waitFor({ timeout: 20000 })
   const d = await db()
   app = d.services.find((s) => s.id === app.id)
-  ok(app.status === 'active', 'Full run: application is now a SAFE application')
-  ok(d.findings.some((f) => f.businessServiceId === app.id), `Full run: ${d.findings.filter((f) => f.businessServiceId === app.id).length} findings published`)
-  await page.goto(base + '/applications'); await main().getByText('Customer Portal Web').first().waitFor()
-  ok(true, 'SAFE applications: lists the new application')
+  ok(app.status === 'active', 'Protection is on: application is protected')
+  ok(await page.getByText('7 of 7', { exact: true }).isVisible(), 'Protection is on: shows parts checked, tools, last and next check')
+  ok(d.findings.some((f) => f.businessServiceId === app.id), `Protection is on: ${d.findings.filter((f) => f.businessServiceId === app.id).length} problems explained in plain words`)
+  await page.getByRole('button', { name: /Go to my security overview/ }).click()
+  await page.getByText('Am I protected?').waitFor()
+  ok(await page.getByText('Is anything urgent?').isVisible() && await page.getByText('What should I do next?').isVisible(), 'Overview: answers protected / urgent / next')
 })
 
 await step('Roles', async () => {
@@ -77,7 +95,7 @@ await step('Roles', async () => {
   ok(!(await page.locator('aside').getByText('User management').count()), 'Viewer: User management hidden from navigation')
   await page.goto(base + '/admin'); await page.getByText('User management is restricted').waitFor()
   ok(true, 'Viewer: /admin is restricted')
-  await page.goto(base + '/onboarding?new=1'); await page.getByText(/Onboarding needs Administrator or Project Owner access/).waitFor()
+  await page.goto(base + '/onboarding?new=1'); await page.getByText(/Setting up protection needs an administrator or project owner/).waitFor()
   ok(true, 'Viewer: onboarding is restricted')
   const visible = (await db()).projects.length
   const sidebar = await page.locator('aside').innerText()

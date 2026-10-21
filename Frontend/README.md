@@ -1,6 +1,6 @@
 # DO SAFE Unified — Frontend Prototype
 
-An interactive, enterprise-grade frontend prototype of **DO SAFE Unified** (DataObserve). Customers sign in, choose what to secure, declare and map an application's assets, connect sources, prove coverage with a **test run**, then start the **full run** that turns it into a protected **SAFE application**. Everything is organized by project, with real role-based access. The eight security modules (Unified Risk Dashboard, CTEM, TPRM, CRQ, AI-SPM, Security Intelligence & agents, Integrations, Security Operations) sit inside the project workspace.
+An interactive, enterprise-grade frontend prototype of **DO SAFE Unified** (DataObserve). Customers sign in, choose what to protect in plain language, declare and map an application's assets, connect sources, prove coverage with a **test run**, then start the **full run** that turns it into a protected **SAFE application**. Everything is organized by project, with real role-based access. The eight security modules (Unified Risk Dashboard, CTEM, TPRM, CRQ, AI-SPM, Security Intelligence & agents, Integrations, Security Operations) sit inside the project workspace.
 
 > **Demo only.** All data is simulated, for two fictional customers: *Northstar Financial Services* (mature) and *Acme Corporation* (empty, first-run). No scanning, exploitation, live integration, LLM call or remediation is performed.
 
@@ -64,7 +64,7 @@ src/
   stores/         Zustand demo database (persisted to localStorage), UI state
   data/seed/      deterministic seed: reference data, knowledge library, finding templates, generators
   hooks/          useCollections (TanStack Query), useAction, usePage, useUrlFilters
-  utils/          risk & CRQ models, derived analytics, labels, formatting
+  utils/          risk & CRQ models, derived analytics, labels, formatting, permissions, plain-language copy (plain.ts)
   types/          domain model
 ```
 

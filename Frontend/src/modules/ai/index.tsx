@@ -20,7 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { FindingsTable } from '@/modules/findings/FindingsTable'
 import { CreateTicketDialog } from '@/modules/findings/dialogs'
 import * as api from '@/services/api'
-import { cn, fmtDate, fmtDateTime, fmtNum } from '@/utils/format'
+import { cn, fmtDate, fmtDateTime, fmtNum, plural } from '@/utils/format'
 import { AI_APPROVAL, ASSESSMENT_STATUS, isOpen, SEVERITY_COLOR } from '@/utils/labels'
 import { aiRiskScore, riskBand } from '@/utils/risk'
 import { scoreFindings } from '@/utils/derive'
@@ -787,7 +787,7 @@ export function GovernanceDetail() {
             <Section title="Linked finding">
               <EntityLink type="finding" id={f.id} />
               <div className="mt-1 flex gap-1.5"><SeverityBadge severity={f.severity} /><FindingStatusBadge status={f.status} /></div>
-              <div className="mt-2 text-[11px] text-muted">{f.ticketIds.length} remediation ticket(s)</div>
+              <div className="mt-2 text-[11px] text-muted">{plural(f.ticketIds.length, 'remediation ticket')}</div>
             </Section>
           )}
           <Section title="Policy references">

@@ -149,7 +149,14 @@ Test suites referenced below: **J** = `tests/e2e/journey.mjs` (v2 login, onboard
 | User management: people, invitations, roles matrix, project access, permission inspector, audit, identity policy | `/admin/*` | VERIFIED (J: role change, admin-only gate) |
 | Real role restrictions (Administrator, Security analyst, Project owner, Viewer), enforced in navigation, screens and API | `utils/permissions.ts`, `requireCap` | VERIFIED (J) |
 | Help & Support tickets with status stepper and conversation; service status | `/support` | IMPLEMENTED |
-| Knowledge base task guides with "where to go next" | `/knowledge` | IMPLEMENTED |
+| Knowledge base task guides with "where to go next", plus a jargon-free glossary | `/knowledge` | IMPLEMENTED |
+| Plain-language layer: glossary tooltips (`Term`), friendly names for app types / parts / tools, plain severity and problem descriptions | `utils/plain.ts`, `components/common/Term.tsx` | VERIFIED (J: landing, parts, protection-on copy) |
+| One shared journey definition (Home, wizard, sidebar "Get started" card, guide) with time estimates | `modules/onboarding/journey.tsx` | VERIFIED (J: 7 steps on Home) |
+| Tool access review before connecting (reads / can change / never touches / scope / retention / disconnect / approver) and visible read-only authorization | `modules/onboarding/ConnectTool.tsx` | VERIFIED (J) |
+| Coverage gate: explicit confirmation before continuing with unchecked parts; recommended coverage pre-filled | Connect step | VERIFIED (J) |
+| Test-run failures with one-click repair actions | Test step | VERIFIED (J) |
+| "Protection is on" completion screen and plain overview (Am I protected? / Anything urgent? / What next?) | Final step, `/home` | VERIFIED (J) |
+| Accessibility & polish: WCAG AA secondary text, reduced-motion support, 44px touch targets on touch screens, focus moves to each new step, shell loading skeleton, actionable error state, pluralized copy | `styles/index.css`, `layout.tsx` | IMPLEMENTED (visual) |
 
 ## Cross-cutting requirements from the build brief
 

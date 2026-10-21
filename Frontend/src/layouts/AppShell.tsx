@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog'
 import * as api from '@/services/api'
 import { GlobalSearch } from './GlobalSearch'
+import { JOURNEY, stepFromStatus } from '@/modules/onboarding/journey'
 
 function useMe() {
   return useDbStore((s) => s.db.users.find((u) => u.id === s.db.settings.currentUserId))
@@ -36,7 +37,9 @@ function useBadges() {
 
 function NavRow({ item, collapsed, badge, onNavigate }: { item: NavItem; collapsed: boolean; badge?: number; onNavigate?: () => void }) {
   return (
-    <Tooltip content={collapsed ? item.label : undefined} side="right">
+    <Tooltip content={collapsed ? (item.hint ? <><span className="font-semibold">{item.label}</span><span className="block text-muted">{item.hint}</span></> : item.label) : item.hint} side="right">
+      {/* Wrapper element: Radix Slot would otherwise stringify NavLink's className function. */}
+      <span className="block">
       <NavLink
         to={item.to}
         end={item.end ?? item.to === '/exposures'}
@@ -53,7 +56,26 @@ function NavRow({ item, collapsed, badge, onNavigate }: { item: NavItem; collaps
         {!collapsed && <span className="flex-1 truncate">{item.label}</span>}
         {!collapsed && badge ? <span className="num rounded-full bg-primary-soft px-1.5 text-[11px] font-semibold text-primary">{badge}</span> : null}
       </NavLink>
+      </span>
     </Tooltip>
+  )
+}
+
+/** Persistent "finish setup" card while an application is part-way through onboarding (or nothing is protected yet). */
+function SetupGuide({ onNavigate }: { onNavigate?: () => void }) {
+  const services = useDbStore((s) => s.db.services)
+  const location = useLocation()
+  const inProgress = services.find((s) => !['active', 'paused'].includes(s.status))
+  const anyProtected = services.some((s) => s.status === 'active' || s.status === 'paused')
+  if (location.pathname.startsWith('/onboarding') || (!inProgress && anyProtected)) return null
+  const step = inProgress ? stepFromStatus(inProgress) : 0
+  return (
+    <Link to={inProgress ? `/onboarding?app=${inProgress.id}` : '/onboarding?new=1'} onClick={onNavigate} className="block rounded-xl border border-primary/25 bg-surface p-3 shadow-sm hover:border-primary/50">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-primary">{inProgress ? 'Finish setup' : 'Get started'}</div>
+      <div className="mt-0.5 truncate text-[13px] font-medium">{inProgress ? inProgress.name : 'Protect your first application'}</div>
+      <div className="mt-0.5 text-[12px] text-muted">Step {step + 1} of {JOURNEY.length}: {JOURNEY[step].label}</div>
+      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-3"><div className="h-full rounded-full bg-primary" style={{ width: `${(step / JOURNEY.length) * 100}%` }} /></div>
+    </Link>
   )
 }
 
@@ -81,6 +103,7 @@ function Sidebar({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: (
         </Link>
       </div>
       <nav className="flex-1 space-y-4 overflow-y-auto px-3 pb-3 pt-1" aria-label="Primary">
+        {!collapsed && can(me, 'onboard_applications') && <SetupGuide onNavigate={onNavigate} />}
         <div>
           {!collapsed && <div className="px-2.5 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-subtle">Workspace</div>}
           <ul className="space-y-0.5">
@@ -259,7 +282,7 @@ function Breadcrumbs() {
       <span className="shrink-0 text-subtle">DO SAFE</span>
       {crumbs.slice(0, -1).map((c, i) => (
         <React.Fragment key={i}>
-          <span className="text-subtle">/</span>
+          <span className="hidden text-subtle md:inline">/</span>
           {c.to ? (
             <Link to={c.to} className="hidden truncate text-subtle hover:text-fg md:inline">
               {c.label}

@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog'
 import { Field, Input } from '@/components/ui/input'
 import { Progress, Slider } from '@/components/ui/misc'
 import * as api from '@/services/api'
-import { cn, downloadText, fmtDate, fmtDateTime, fmtMoney, fmtPct } from '@/utils/format'
+import { cn, downloadText, fmtDate, fmtDateTime, fmtMoney, fmtPct, plural } from '@/utils/format'
 import { isOpen, SEVERITY_RANK } from '@/utils/labels'
 import { computeScenario, controlStrength, CRQ_MODEL, lossExceedance, postureScore, totalALE, vendorRiskBand, aiRiskScore } from '@/utils/risk'
 
@@ -375,7 +375,7 @@ export function ControlsPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2"><span className="text-[13px] font-medium">{c.name}</span><Badge tone="sky">{c.category}</Badge></div>
                     <div className="text-[11px] text-muted">{c.description}</div>
-                    <div className="text-[11px] text-subtle">Evidence: {c.evidence} · tested {fmtDate(c.lastTested)} · used by {used.length} scenario(s)</div>
+                    <div className="text-[11px] text-subtle">Evidence: {c.evidence} · tested {fmtDate(c.lastTested)} · used by {plural(used.length, 'scenario')}</div>
                   </div>
                   <div className="w-36 text-xs">
                     <div className="flex justify-between"><span className="text-muted">Effectiveness</span><span>{fmtPct(c.effectiveness)}</span></div>

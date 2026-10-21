@@ -12,7 +12,7 @@ import { Field, Input, NativeSelect } from '@/components/ui/input'
 import { useDbStore } from '@/stores/db'
 import { useAction } from '@/hooks/queries'
 import * as api from '@/services/api'
-import { fmtDate } from '@/utils/format'
+import { fmtDate, plural } from '@/utils/format'
 import { FINDING_STATUS, SEVERITY_ORDER, SEVERITY_RANK } from '@/utils/labels'
 import { isOverdue } from '@/utils/risk'
 import type { ScoredFinding } from '@/utils/derive'
@@ -126,7 +126,7 @@ export function FindingsTable({ rows, tableId, views = FINDING_VIEWS, initialVie
                 if (!targets.length) return
                 await run(async () => {
                   for (const t of targets) await api.changeFindingStatus(t.f.id, 'triaged', 'Bulk triage')
-                }, `${targets.length} finding(s) marked triaged`)
+                }, `${plural(targets.length, 'finding')} marked triaged`)
                 clear()
               }}
             >
@@ -146,7 +146,7 @@ function BulkAssignDialog({ findings, users, onClose }: { findings: Finding[] | 
   const { run, pending } = useAction()
   return (
     <Dialog open={!!findings} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent title={`Assign owner to ${findings?.length ?? 0} finding(s)`} description="The owner becomes accountable for remediation and receives a notification.">
+      <DialogContent title={`Assign owner to ${plural(findings?.length ?? 0, 'finding')}`} description="The owner becomes accountable for remediation and receives a notification.">
         <Field label="Owner" required>
           <NativeSelect value={owner} onChange={(e) => setOwner(e.target.value)}>
             <option value="">Select owner…</option>
@@ -167,7 +167,7 @@ function BulkAssignDialog({ findings, users, onClose }: { findings: Finding[] | 
             onClick={async () => {
               await run(async () => {
                 for (const f of findings ?? []) await api.assignFinding(f.id, owner)
-              }, `Owner assigned to ${findings?.length} finding(s)`)
+              }, `Owner assigned to ${plural(findings?.length ?? 0, 'finding')}`)
               onClose()
             }}
           >
@@ -213,11 +213,11 @@ function BulkTicketDialog({ findings, onClose }: { findings: Finding[] | null; o
                 for (const f of findings ?? []) {
                   await api.createTicket({ title: `Remediate: ${f.title}`, description: f.remediation.recommended, type: f.domain === 'vulnerability' ? 'vulnerability' : f.domain === 'ai' ? 'ai-governance' : 'configuration', priority: f.severity === 'critical' ? 'P1' : f.severity === 'high' ? 'P2' : f.severity === 'medium' ? 'P3' : 'P4', assigneeId: f.ownerId, dueDate: days ? new Date(Date.now() + Number(days) * 86_400_000).toISOString() : f.targetDate ?? new Date(Date.now() + 30 * 86_400_000).toISOString(), findingId: f.id, aiSystemId: f.aiSystemId })
                 }
-              }, `${findings?.length} ticket(s) created`)
+              }, `${plural(findings?.length ?? 0, 'ticket')} created`)
               onClose()
             }}
           >
-            Create {findings?.length ?? 0} ticket(s)
+            Create {plural(findings?.length ?? 0, 'ticket')}
           </Button>
         </DialogFooter>
       </DialogContent>

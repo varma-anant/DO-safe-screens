@@ -11,7 +11,7 @@ import { generateAgents } from './agents'
 import { buildAccessRequests, buildApplications, buildInvitations, buildProjects, buildSupportTickets, treasuryAssets } from './projects'
 import { generateAttackPaths, generateAudit, generateDataQuality, generateEvents, generateIncidents, generateIngestion, generateNotifications, generateTickets } from './ops'
 
-export const DB_VERSION = 6
+export const DB_VERSION = 7
 export const SEED = 20261020
 
 export const DEFAULT_WEIGHTS = { cvss: 22, epss: 14, kev: 14, exploit: 8, internet: 14, assetCriticality: 12, serviceCriticality: 12, compensating: 8 }

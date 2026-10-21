@@ -5,6 +5,7 @@ import { Activity, AlertTriangle, ArrowRight, Bot, Briefcase, Building2, Calcula
 import { createColumnHelper } from '@tanstack/react-table'
 import { useCollections, useCurrentUser, useSettings } from '@/hooks/queries'
 import { usePage } from '@/hooks/usePage'
+import { Term } from '@/components/common/Term'
 import { Callout, EmptyState, ErrorState, KeyValue, KpiCard, LoadingState, NotFound, PageHeader, Section, Stat } from '@/components/common/layout'
 import { AXIS, BarList, ChartTooltip, GRID, Legend, CATEGORICAL } from '@/components/common/charts'
 import { Badge, CriticalityBadge, DemoTag, FindingStatusBadge, InfoHint, RiskScore, SeverityBadge, StatusBadge } from '@/components/common/badges'
@@ -15,7 +16,7 @@ import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/misc'
 import { FindingsTable } from '@/modules/findings/FindingsTable'
-import { cn, fmtMoney, fmtPct } from '@/utils/format'
+import { cn, fmtMoney, fmtPct, plural } from '@/utils/format'
 import { ASSET_TYPE_LABEL, AI_APPROVAL, INCIDENT_STATUS, isOpen, SEVERITY_COLOR, TICKET_STATUS, VENDOR_LIFECYCLE } from '@/utils/labels'
 import { aiRiskScore, computeScenario, isOverdue, postureScore, totalALE, vendorRiskBand } from '@/utils/risk'
 import { mttrDays, openTrend, scoreFindings, slaCompliance } from '@/utils/derive'
@@ -89,9 +90,9 @@ export function ExecutiveDashboard() {
       />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
-        <KpiCard label="Cyber posture score" icon={<Gauge />} value={`${posture}/100`} tone={posture >= 70 ? 'green' : posture >= 50 ? 'amber' : 'red'} sub="Severity-weighted open exposure" help="Illustrative index: 100 minus a severity- and KEV-weighted penalty for open findings." onClick={() => navigate('/analytics')} />
-        <KpiCard label="Open critical exposures" icon={<ShieldAlert />} value={openCritical.length} tone="red" trend={{ value: `${critDelta > 0 ? '+' : ''}${critDelta} in 90d`, good: critDelta <= 0, up: critDelta > 0 }} sub={`${openCritical.filter((o) => o.f.kev).length} KEV-listed`} onClick={() => navigate('/exposures/vulnerabilities?severity=critical&status=new,triaged,in_validation,validated,in_remediation,pending_verification')} />
-        <KpiCard label="Estimated annual loss" icon={<Calculator />} value={fmtMoney(ale)} tone="violet" sub={<span>Illustrative ALE · {fmtMoney(ale - aleRemediated)} reducible</span>} help="Sum of scenario ALE using the documented illustrative model (CRQ → Risk Overview). Not a validated actuarial estimate." onClick={() => navigate('/crq')} />
+        <KpiCard label="Cyber posture score" icon={<Gauge />} value={`${posture}/100`} tone={posture >= 70 ? 'green' : posture >= 50 ? 'amber' : 'red'} sub="Severity-weighted open exposure" help="A 0–100 health score: 100 means no open problems. Urgent and actively exploited problems lower it most. Illustrative." onClick={() => navigate('/analytics')} />
+        <KpiCard label="Open critical exposures" icon={<ShieldAlert />} value={openCritical.length} tone="red" trend={{ value: `${critDelta > 0 ? '+' : ''}${critDelta} in 90d`, good: critDelta <= 0, up: critDelta > 0 }} sub={<span>{openCritical.filter((o) => o.f.kev).length} <Term k="kev" icon={false}>being actively exploited</Term></span>} help="Critical problems still open. KEV = on the US government’s list of weaknesses attackers are using right now — fix those first." onClick={() => navigate('/exposures/vulnerabilities?severity=critical&status=new,triaged,in_validation,validated,in_remediation,pending_verification')} />
+        <KpiCard label="Estimated annual loss" icon={<Calculator />} value={fmtMoney(ale)} tone="violet" sub={<span><Term k="ale" icon={false}>Expected yearly loss</Term> · {fmtMoney(ale - aleRemediated)} could be avoided</span>} help="Sum of scenario ALE using the documented illustrative model (CRQ → Risk Overview). Not a validated actuarial estimate." onClick={() => navigate('/crq')} />
         <KpiCard label="High-risk vendors" icon={<Building2 />} value={highVendors.length} tone="amber" sub={`of ${vendors.filter((v) => v.lifecycle !== 'offboarded').length} active third parties`} onClick={() => navigate('/tprm/vendors?risk=high,critical')} />
         <KpiCard label="AI systems" icon={<Bot />} value={aiSystems.length} sub={<span className="text-amber-700">{shadow.length} shadow AI detected</span>} onClick={() => navigate('/ai-security')} />
         <KpiCard label="Overdue remediation" icon={<Clock />} value={overdue.length} tone={overdue.length ? 'red' : 'green'} sub={`MTTR ${mttrDays(findings)}d · SLA ${fmtPct(slaCompliance(findings))}`} onClick={() => navigate('/operations/remediation?sla=Overdue')} />
@@ -493,7 +494,7 @@ export function ServiceDetail() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         <KpiCard label="Assets" value={svcAssets.length} sub={`${svcAssets.filter((a) => a.internetExposed).length} internet-facing`} />
         <KpiCard label="Open exposures" value={open.length} tone={open.some((o) => o.f.severity === 'critical') ? 'red' : 'default'} sub={`${open.filter((o) => o.f.severity === 'critical').length} critical`} />
-        <KpiCard label="Illustrative ALE" value={fmtMoney(ale)} tone="violet" sub={`${svcScenarios.length} scenario(s)`} onClick={() => navigate('/crq/scenarios')} />
+        <KpiCard label="Illustrative ALE" value={fmtMoney(ale)} tone="violet" sub={`${plural(svcScenarios.length, 'scenario')}`} onClick={() => navigate('/crq/scenarios')} />
         <KpiCard label="Third parties" value={svcVendors.length} sub={`${svcVendors.filter((v) => vendorRiskBand(v.residualRisk) === 'high' || vendorRiskBand(v.residualRisk) === 'critical').length} high risk`} />
         <KpiCard label="Active attack paths" value={svcPaths.filter((p) => p.status === 'active').length} tone={svcPaths.some((p) => p.status === 'active') ? 'amber' : 'green'} />
       </div>

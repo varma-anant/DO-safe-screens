@@ -19,21 +19,21 @@ import { Field, NativeSelect } from '@/components/ui/input'
 import { FindingsTable } from '@/modules/findings/FindingsTable'
 import * as api from '@/services/api'
 import { useDbStore } from '@/stores/db'
-import { fmtDateTime, fmtMoney } from '@/utils/format'
+import { fmtDateTime, fmtMoney, plural } from '@/utils/format'
 import { ASSET_TYPE_LABEL, INCIDENT_STATUS, isOpen, SEVERITY_COLOR } from '@/utils/labels'
 import { computeScenario } from '@/utils/risk'
 import { scoreFindings } from '@/utils/derive'
 import { projectRoleOf } from '@/utils/permissions'
 
 export const APP_STATUS: Record<BusinessService['status'], { label: string; tone: 'emerald' | 'violet' | 'amber' | 'red' | 'slate' | 'sky'; step: number }> = {
-  draft: { label: 'Draft — declare assets', tone: 'slate', step: 2 },
-  assets_declared: { label: 'Assets declared — map them', tone: 'sky', step: 3 },
-  mapped: { label: 'Mapped — connect sources', tone: 'sky', step: 4 },
-  connected: { label: 'Connected — run a test', tone: 'violet', step: 5 },
-  test_failed: { label: 'Test failed — fix coverage', tone: 'red', step: 5 },
-  test_passed: { label: 'Test passed — start full run', tone: 'amber', step: 6 },
+  draft: { label: 'Setting up — list its parts', tone: 'slate', step: 2 },
+  assets_declared: { label: 'Setting up — connect the parts', tone: 'sky', step: 3 },
+  mapped: { label: 'Setting up — connect tools', tone: 'sky', step: 4 },
+  connected: { label: 'Ready for test run', tone: 'violet', step: 5 },
+  test_failed: { label: 'Test run needs fixes', tone: 'red', step: 5 },
+  test_passed: { label: 'Ready to turn on protection', tone: 'amber', step: 6 },
   active: { label: 'Protected', tone: 'emerald', step: 7 },
-  paused: { label: 'Monitoring paused', tone: 'slate', step: 7 },
+  paused: { label: 'Paused', tone: 'slate', step: 7 },
 }
 
 const SEVS = ['critical', 'high', 'medium', 'low'] as const
@@ -111,7 +111,7 @@ export function ApplicationsPage() {
               <DropdownMenuItem disabled={!canRun || c.row.original.status === 'paused'} onSelect={() => run(() => api.startFullRun(c.row.original.id), 'Full run started')}>
                 <Play /> Run full assessment now
               </DropdownMenuItem>
-              <DropdownMenuItem disabled={!canRun} onSelect={() => run(() => api.setMonitoring(c.row.original.id, c.row.original.status !== 'paused'), c.row.original.status === 'paused' ? 'Monitoring resumed' : 'Monitoring paused')}>
+              <DropdownMenuItem disabled={!canRun} onSelect={() => run(() => api.setMonitoring(c.row.original.id, c.row.original.status !== 'paused'), c.row.original.status === 'paused' ? 'Monitoring resumed' : 'Paused')}>
                 <Pause /> {c.row.original.status === 'paused' ? 'Resume monitoring' : 'Pause monitoring'}
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => navigate(`/mapping?app=${c.row.original.id}`)}>
@@ -139,7 +139,7 @@ export function ApplicationsPage() {
               <div key={o.id} className="flex flex-wrap items-center gap-4 py-3">
                 <div className="min-w-0 flex-1">
                   <div className="text-[14px] font-medium">{o.name}</div>
-                  <div className="text-xs text-muted">{o.projectName} · {o.assets} asset(s) declared · started <RelTime iso={o.onboardingStartedAt} /></div>
+                  <div className="text-xs text-muted">{o.projectName} · {plural(o.assets, 'asset')} declared · started <RelTime iso={o.onboardingStartedAt} /></div>
                 </div>
                 <StatusBadge map={APP_STATUS} value={o.status} />
                 <OnboardingProgress app={o} />
@@ -210,7 +210,7 @@ export function ApplicationDetail() {
         actions={
           protectedApp ? (
             <>
-              <Button variant="secondary" disabled={!canRun} onClick={() => run(() => api.setMonitoring(app.id, app.status !== 'paused'), app.status === 'paused' ? 'Monitoring resumed' : 'Monitoring paused')}>
+              <Button variant="secondary" disabled={!canRun} onClick={() => run(() => api.setMonitoring(app.id, app.status !== 'paused'), app.status === 'paused' ? 'Monitoring resumed' : 'Paused')}>
                 {app.status === 'paused' ? <Play /> : <Pause />} {app.status === 'paused' ? 'Resume monitoring' : 'Pause monitoring'}
               </Button>
               <Button disabled={!canRun || running || app.status === 'paused'} loading={pending} onClick={() => run(() => api.startFullRun(app.id), 'Full run started')}>
@@ -301,7 +301,7 @@ export function ApplicationDetail() {
                   <span className="text-xs text-muted">{fmtDateTime(r.startedAt)} · by <UserName id={r.startedById} avatar={false} /></span>
                 </div>
                 <p className="mt-1.5 text-[13px] text-muted">{r.status === 'running' ? `Running: ${r.steps.find((s) => s.status === 'running')?.name ?? 'starting'}…` : r.summary}</p>
-                {r.findingIds.length > 0 && <p className="mt-1 text-xs text-subtle">{r.findingIds.length} finding(s) published</p>}
+                {r.findingIds.length > 0 && <p className="mt-1 text-xs text-subtle">{plural(r.findingIds.length, 'finding')} published</p>}
               </Card>
             ))}
             {!app.runs.length && <Card><EmptyState title="No runs yet" description="Runs start from the onboarding wizard." /></Card>}

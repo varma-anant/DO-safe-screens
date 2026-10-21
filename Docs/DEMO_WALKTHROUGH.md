@@ -24,28 +24,42 @@ Record IDs below come from the deterministic seed after a reset. If a demo has a
 
 ---
 
-## Demo 0 — New customer secures its first application
+## Demo 0 — A non-specialist protects their first application
 
 | | |
 |---|---|
 | **Sign in as** | Alex Rivera — Administrator, **Acme Corporation** workspace |
-| **Starting screen** | Home (`/home`) |
-| **Objective** | Show the enterprise journey: login → "what are your assets?" → map and link them → test run → actual run → SAFE application. |
+| **Starting screen** | Sign in (`/login`), then Home |
+| **Objective** | Show that someone with no security background can go from login to "Protection is on" in about 10 minutes, understanding every step: what DO SAFE is, what each tool can access, why the test run matters, and what to do next. |
 
 **Click sequence**
-1. Home asks **"What do you want to secure?"**. Point out the six application types, the six-step journey strip and the workspace setup checklist. The left panel is the enterprise workspace: Requests, SAFE applications, Asset mapping, Ticket management, Prioritization, Notifications, User management, then **Projects**, then Knowledge base, Help & Support and Settings.
-2. Click **Web application** → onboarding. **Project** step: create *Customer Portal* (you become its owner) → **Continue**.
-3. **Application** step: name *Customer Portal Web*, pick an owner, describe it → **Create application**.
-4. **Declare assets**: the seven suggested assets are pre-selected → **Add 7 selected**. Mention the *Add manually* and *Paste a list* tabs → **Continue to mapping**.
-5. **Map & link**: click **Suggest links**, then drag between two assets to add a link and choose its relation → **Save map & continue**. Explain that the map drives attack-path analysis and prioritization.
-6. **Connect sources**: to show a failure, tick only one cell (e.g. the web asset under a scanner that is *not connected*) → **Save & continue to test run** → **Start test run**.
-7. The test run **fails**. Each asset gets a reason ("No source assigned…", "…is not connected — finish its setup") and the full run is blocked. Click **Connect sources**.
-8. Click **Recommend coverage**, then **Connect** on each recommended source → **Save & continue to test run** → **Run the test again** → **passed**.
-9. **Continue to full run** → **Start full run**. Six stages animate, then the findings summary appears and the header badge turns **SAFE application**. A notification arrives.
-10. Open **SAFE applications** (the app is listed as protected), then **Home**, which now shows top risks instead of the first-run screen.
+1. **Sign in.** The left panel explains DO SAFE in one sentence ("connects to the tools you already use, checks everything, tells you in plain words what to fix first"), shows a three-box picture (your tools → DO SAFE → a clear to-do list), and notes it is read-only. The "New to DO SAFE?" box explains invitations. Choose **Acme Corporation** → **Alex Rivera**.
+2. **Home** asks one human question: *"What would hurt most if it stopped working or leaked data?"* Point out:
+   * "How DO SAFE protects you": three before/after examples (open storage folder, exploited software, former employee's admin account).
+   * "How setup works": the same 7 steps as the wizard, with minutes for each.
+   * "Good to know": read-only, who needs to approve, progress saves.
+   * The **Get started** card in the left panel, which follows you everywhere until setup is done.
+3. Click **Our website or customer portal**. **Pick a project**: create *Customer Portal* → **Continue**.
+4. **Describe your app**: name it, choose who's responsible and describe it in one sentence. Importance and data sensitivity are plain choice cards ("The business stops without it", "Customer, payment or health data"); tiers and compliance fields are tucked under *More details* → **Save and continue**.
+5. **List its parts**: the seven typical parts appear in plain names (Website, Connection point (API), Database…), honestly labelled as a template rather than "discovered". Untick anything you don't have → **Add 7 parts and continue**.
+6. **Connect the parts**: a suggested map is already drawn ("We drew a suggested map for you") → **Looks right — continue**.
+7. **Connect your tools**: "0 of 7 parts will be checked" plus three recommended tool cards, each saying in one line what the tool does and which parts it checks. Click **Review access & connect** on Wiz to show the access review:
+   * what DO SAFE will read
+   * what it can change ("Nothing")
+   * what it never touches
+   * which parts it can see
+   * encryption, retention, disconnecting, and who approves
 
-**Data changes:** project, application, assets, links, coverage, connected integrations, two runs, about 10 findings, audit events and notifications.
-**Final outcome:** a customer goes from zero to a monitored SAFE application in one guided flow, and nothing is scanned until a test run proves coverage.
+   Click **Not now** to keep the failure demo.
+8. Click **Continue to test run**. The confirmation "Some parts won't be checked yet" lists each unconnected tool. Choose **Continue anyway**.
+9. **Test run** → **Start test run**. It finishes as **needs attention**. The "How to fix it" box has one button per missing tool (**Connect Wiz**, **Connect GitHub**, **Connect Outside-in monitor**). Each opens the same access review, followed by a visible three-step authorization and "Connected with read-only access". Then click **Run the test again** → **passed**, with a table answering "Can we reach it? / Does access work? / What to do".
+10. **Continue** → **Turn on protection**. The summary explains what will happen (all parts, which tools, ~5 minutes, read-only).
+11. **Protection is on**: parts checked (7 of 7), tools connected (read-only), last check and next check. "What we found" describes each problem in plain words ("A password or key is visible in your code — on the source code"), with how soon to fix it and **See how to fix**. The finding page opens with an "In plain words" box: what's wrong, how urgent, what to do.
+12. **Go to my security overview**: Home now answers *Am I protected?*, *Is anything urgent?* and *What should I do next?* The charts live under **Advanced security workspace**.
+13. Optional: **Knowledge base** has the same 7-step guide and a jargon-free glossary. Hover any dotted-underlined word (for example *read-only access*) for its meaning.
+
+**Data changes:** project, application, 7 parts, map, read-only tool connections scoped to the application, two test runs, a full run, about 10 problems, notifications and audit events.
+**Final outcome:** a non-specialist finishes setup without meeting unexplained jargon. They know what was connected and what it can access, and they end on an unmistakable "Protection is on" with a short list of what to do next.
 
 ---
 

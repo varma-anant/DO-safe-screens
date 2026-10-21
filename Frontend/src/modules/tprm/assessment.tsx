@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog'
 import { NativeSelect, Textarea } from '@/components/ui/input'
 import { QUESTIONNAIRE } from '@/data/seed/tprm'
 import * as api from '@/services/api'
-import { cn, fmtDate, fmtDateTime } from '@/utils/format'
+import { cn, fmtDate, fmtDateTime, plural } from '@/utils/format'
 import { ASSESSMENT_STATUS, SEVERITY_COLOR } from '@/utils/labels'
 
 const ANSWERS: { v: AssessmentAnswer['answer']; label: string; cls: string }[] = [
@@ -231,7 +231,7 @@ export function AssessmentDetail() {
         </div>
       </div>
       {missingEvidence.length > 0 && a.status !== 'completed' && (
-        <Callout tone="warn" icon={<FileText />} title={`${missingEvidence.length} answer(s) expect evidence`}>
+        <Callout tone="warn" icon={<FileText />} title={`${plural(missingEvidence.length, 'answer')} expect evidence`}>
           {missingEvidence.map((q) => q.id).join(', ')} — attach evidence documents (Due Diligence) to strengthen the assessment.
         </Callout>
       )}
@@ -255,8 +255,8 @@ export function AssessmentDetail() {
             <Button variant="secondary" onClick={() => setRemOpen(false)}>
               Cancel
             </Button>
-            <Button disabled={!picked.length} loading={pending} onClick={async () => { await run(() => api.createVendorRemediation(a.id, picked), `${picked.length} remediation item(s) created`); setRemOpen(false) }}>
-              Create {picked.length} item(s)
+            <Button disabled={!picked.length} loading={pending} onClick={async () => { await run(() => api.createVendorRemediation(a.id, picked), `${plural(picked.length, 'remediation item')} created`); setRemOpen(false) }}>
+              Create {plural(picked.length, 'item')}
             </Button>
           </DialogFooter>
         </DialogContent>

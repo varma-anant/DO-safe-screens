@@ -11,6 +11,7 @@ import { AGENT_PLAYBOOKS } from '@/data/seed/agents'
 import { MODEL_ID, MODEL_VERSION } from '@/data/seed/findings'
 import { FINDING_STATUS } from '@/utils/labels'
 import { actor, audit, commit, DemoApiError, requireCap, historyEntry, latency, mustFind, nextId, notify, now, replace, uid, userName, type CollectionKey, type CollectionMap } from './core'
+import { plural } from '@/utils/format'
 
 export type { CollectionKey, CollectionMap }
 
@@ -146,9 +147,9 @@ export async function regenerateAIAnalysis(id: string) {
         aiAnalysis: {
           summary: `${f.title}. Current status: ${FINDING_STATUS[f.status].label}. ${f.validation.status !== 'not_started' ? `Validation result: ${f.validation.status.replace('_', ' ')}. ` : ''}${f.rootCause.confirmed ? `Confirmed root cause: ${f.rootCause.confirmed} ` : `Leading hypothesis: ${f.rootCause.hypotheses[0]?.statement ?? 'none recorded'} `}Recommended action: ${f.remediation.recommended}`,
           keyObservations: [
-            `${f.evidence.length} evidence item(s); ${f.evidence.filter((e) => e.reliability === 'high').length} high reliability.`,
+            `${plural(f.evidence.length, 'evidence item')}; ${f.evidence.filter((e) => e.reliability === 'high').length} high reliability.`,
             f.cveId ? `${f.cveId}${f.kev ? ' (CISA KEV listed)' : ''}.` : 'No CVE applies.',
-            `${f.ticketIds.length} linked ticket(s); ${f.incidentIds.length} linked incident(s).`,
+            `${plural(f.ticketIds.length, 'linked ticket')}; ${plural(f.incidentIds.length, 'linked incident')}.`,
           ],
           evidenceRefs: f.evidence.map((e) => e.id),
           knowledgeRefs: [f.cveId, ...f.cweIds, ...f.attackIds, ...f.owaspIds].filter(Boolean) as string[],

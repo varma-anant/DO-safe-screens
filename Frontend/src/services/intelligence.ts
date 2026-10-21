@@ -8,7 +8,7 @@ import { getDb } from '@/stores/db'
 import { isOpen, FINDING_STATUS } from '@/utils/labels'
 import { aiRiskScore, computeScenario, isOverdue, postureScore, totalALE, vendorRiskBand } from '@/utils/risk'
 import { scoreFindings } from '@/utils/derive'
-import { fmtMoney, fmtPct } from '@/utils/format'
+import { fmtMoney, fmtPct, plural } from '@/utils/format'
 import { latency } from './core'
 
 export interface IntelRecord {
@@ -67,7 +67,7 @@ const INTENTS: { name: string; match: RegExp; handle: Handler }[] = [
       return {
         intent: 'cve-lookup',
         title: `${id} — ${k.name}`,
-        answer: [k.summary, `CVSS ${k.cvss?.score} (${k.cvss?.source}); ${k.kev ? 'listed in CISA KEV (known exploited)' : 'not listed in CISA KEV in this snapshot'}; weakness ${k.cweIds?.join(', ') || 'not mapped'}.`, `Northstar impact: ${fs.length} finding(s) on ${new Set(fs.map((f) => f.assetId)).size} asset(s); ${open.length} still open.`],
+        answer: [k.summary, `CVSS ${k.cvss?.score} (${k.cvss?.source}); ${k.kev ? 'listed in CISA KEV (known exploited)' : 'not listed in CISA KEV in this snapshot'}; weakness ${k.cweIds?.join(', ') || 'not mapped'}.`, `Northstar impact: ${plural(fs.length, 'finding')} on ${plural(new Set(fs.map((f) => f.assetId)).size, 'asset')}; ${open.length} still open.`],
         records: [{ type: 'knowledge', id: k.id, label: `${k.externalId} knowledge record` }, ...fs.slice(0, 8).map((f) => fRec(f, `${db.assets.find((a) => a.id === f.assetId)?.name} · ${FINDING_STATUS[f.status].label}`))],
         evidence: [{ label: 'NVD / CISA KEV summary', detail: `${k.source} · EPSS ${fmtPct(k.epss?.score ?? 0, 1)} (illustrative snapshot)`, provenance: 'external' }],
         nextActions: [{ label: 'Open knowledge record', to: `/intelligence/library/${k.id}` }, ...(open[0] ? [{ label: `Investigate ${open[0].id}`, to: `/exposures/vulnerabilities/${open[0].id}` }] : [])],

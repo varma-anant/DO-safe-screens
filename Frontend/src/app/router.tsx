@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate, useParams, useRouteError, Link } from 'r
 import { AppShell } from '@/layouts/AppShell'
 import { SecurityLayout } from '@/layouts/SecurityLayout'
 import { Button } from '@/components/ui/button'
+import { AppLoading } from '@/components/common/layout'
 
 function RouteError({ forceNotFound }: { forceNotFound?: boolean }) {
   const err = useRouteError() as (Error & { status?: number }) | undefined
@@ -43,12 +44,12 @@ const admin = () => import('@/modules/admin')
 const support = () => import('@/modules/support')
 
 export const router = createBrowserRouter([
-  { path: '/login', ...page(auth, 'LoginPage'), errorElement: <RouteError />, hydrateFallbackElement: <div className="p-8 text-sm text-muted">Loading DO SAFE…</div> },
+  { path: '/login', ...page(auth, 'LoginPage'), errorElement: <RouteError />, hydrateFallbackElement: <AppLoading /> },
   {
     path: '/',
     element: <AppShell />,
     errorElement: <RouteError />,
-    hydrateFallbackElement: <div className="p-8 text-sm text-muted">Loading DO SAFE…</div>,
+    hydrateFallbackElement: <AppLoading />,
     children: [
       { errorElement: <RouteError />, children: [
         { index: true, element: <Navigate to="/home" replace /> },
