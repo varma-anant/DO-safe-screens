@@ -17,7 +17,7 @@ const me = () => {
 
 // ===================================================================== Session
 
-export async function login(email: string, password: string, workspace: Database['settings']['workspace']) {
+export async function login(email: string, workspace: Database['settings']['workspace']) {
   await latency(1.5, false)
   if (getDb().settings.workspace !== workspace) useDbStore.getState().loadWorkspace(workspace)
   const db = getDb()
@@ -25,7 +25,6 @@ export async function login(email: string, password: string, workspace: Database
   if (!user) throw new DemoApiError(`We couldn’t find ${email.trim()} in ${db.settings.orgName}. Check the spelling, or ask your administrator for an invite.`)
   if (user.status === 'deactivated') throw new DemoApiError('This account has been switched off. Ask your administrator to turn it back on.')
   if (user.status === 'invited') throw new DemoApiError('You’ve been invited but haven’t accepted yet — open the invitation email first.')
-  if (password.length < 4) throw new DemoApiError('That password didn’t work. Try again, or use “Continue with SSO”.')
   commit((d) => audit({ ...d, users: d.users.map((u) => (u.id === user.id ? { ...u, lastActiveAt: now() } : u)), settings: { ...d.settings, authenticated: true, currentUserId: user.id, currentProjectId: null } }, { action: 'signed in', entityType: 'settings', entityId: 'session', details: `${user.name} (${ROLE_INFO[user.orgRole].label})`, module: 'Platform', actorId: user.id }))
   return user
 }
@@ -301,7 +300,7 @@ export async function createAccessRequest(input: Pick<AccessRequest, 'kind' | 'p
     const r: AccessRequest = { id, requesterId: u.id, ...input, risk, status: 'pending', createdAt: now() }
     created = r
     const next = audit({ ...db, accessRequests: [r, ...db.accessRequests] }, { action: 'access requested', entityType: 'settings', entityId: id, details: `${input.kind}: ${input.requestedRole}${input.projectId ? ` on ${db.projects.find((p) => p.id === input.projectId)?.name}` : ''}`, module: 'Platform' })
-    return notify(next, { title: 'New access request', body: `${u.name} requested ${input.requestedRole}${input.projectId ? ` on ${db.projects.find((p) => p.id === input.projectId)?.name}` : ''}`, link: '/requests', severity: 'info' })
+    return notify(next, { title: 'New access request', body: `${u.name} requested ${input.requestedRole}${input.projectId ? ` on ${db.projects.find((p) => p.id === input.projectId)?.name}` : ''}`, link: '/admin/requests', severity: 'info' })
   })
   return created!
 }
@@ -328,7 +327,7 @@ export async function decideAccessRequest(id: string, approve: boolean, note: st
       next = { ...next, users: next.users.map((x) => (x.id === r.requesterId && map[r.requestedRole] ? { ...x, orgRole: map[r.requestedRole] } : x)) }
     }
     next = audit(next, { action: `access request ${approve ? 'approved' : 'declined'}`, entityType: 'settings', entityId: id, details: `${userName(r.requesterId)} · ${r.requestedRole}${note ? ` · ${note}` : ''}`, module: 'Platform' })
-    return notify(next, { title: `Access request ${approve ? 'approved' : 'declined'}`, body: `${id}: ${r.requestedRole} for ${userName(r.requesterId)}`, link: '/requests', severity: 'info' })
+    return notify(next, { title: `Access request ${approve ? 'approved' : 'declined'}`, body: `${id}: ${r.requestedRole} for ${userName(r.requesterId)}`, link: '/admin/requests', severity: 'info' })
   })
 }
 

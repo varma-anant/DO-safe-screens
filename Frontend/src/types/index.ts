@@ -34,7 +34,6 @@ export interface User {
   team: string
   email: string
   initials: string
-  isPersona?: boolean
   orgRole: OrgRole
   job: JobRole
   status: 'active' | 'invited' | 'deactivated'

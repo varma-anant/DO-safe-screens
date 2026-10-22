@@ -13,7 +13,7 @@ export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 export async function latency(factor = 1, allowSimulatedError = true) {
   const { latencyMs, simulateErrors } = getDb().settings
   await sleep(latencyMs * factor * (0.6 + Math.random() * 0.8))
-  if (allowSimulatedError && simulateErrors && Math.random() < 0.35) throw new DemoApiError('Simulated API error (enable/disable in Settings → Demo controls).')
+  if (allowSimulatedError && simulateErrors && Math.random() < 0.35) throw new DemoApiError('Simulated API error (demo mode).')
 }
 
 export const now = () => new Date().toISOString()

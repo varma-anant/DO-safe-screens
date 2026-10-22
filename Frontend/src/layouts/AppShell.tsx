@@ -22,17 +22,9 @@ function useMe() {
 
 function useBadges() {
   return useDbStore(
-    useShallow((s) => {
-      const me = s.db.users.find((u) => u.id === s.db.settings.currentUserId)
-      const pendingAccess = s.db.accessRequests.filter((r) => r.status === 'pending' && r.requesterId !== me?.id && (can(me, 'manage_users') || (r.projectId && s.db.projects.find((p) => p.id === r.projectId)?.ownerId === me?.id))).length
-      const security = can(me, 'approve_high_impact') ? s.db.executions.filter((e) => e.approval?.status === 'pending').length + s.db.findings.filter((f) => f.riskAcceptance?.status === 'pending').length : 0
-      const visible = new Set(visibleProjectIds(s.db, s.db.settings.currentUserId))
-      return {
-        requests: pendingAccess + security,
-        notifications: restrictForViewer('notifications', s.db.notifications, s.db).filter((n) => !n.read).length,
-        applications: s.db.services.filter((a) => a.status === 'active' && visible.has(a.projectId)).length,
-      }
-    }),
+    useShallow((s) => ({
+      notifications: restrictForViewer('notifications', s.db.notifications, s.db).filter((n) => !n.read).length,
+    })),
   )
 }
 

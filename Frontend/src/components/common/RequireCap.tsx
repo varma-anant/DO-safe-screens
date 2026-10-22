@@ -26,7 +26,7 @@ export function Restricted({ area, reason }: { area: string; reason: string }) {
       <p className="mt-3 text-[12.5px] text-muted">You’re signed in as {me?.name} · Job: {JOB_INFO[jobOf(me)].label} · Access: {me ? ROLE_INFO[me.orgRole].label : '—'}</p>
       <div className="mt-5 flex flex-wrap justify-center gap-2">
         <Button asChild><Link to="/home">Go to my home</Link></Button>
-        <Button asChild variant="secondary"><Link to="/requests?new=1">Ask for access</Link></Button>
+        <Button asChild variant="secondary"><Link to="/admin/requests?new=1">Ask for access</Link></Button>
       </div>
     </Card>
   )

@@ -52,7 +52,7 @@ export function OnboardingPage() {
   if (!canOnboard)
     return (
       <Card>
-        <EmptyState icon={<ShieldCheck />} title="Setting up protection needs an administrator or project owner" description="Your role can see protected applications but can't add new ones. Ask for access and we'll notify the right person." action={<Button asChild variant="secondary"><Link to="/requests?new=1">Ask for access</Link></Button>} />
+        <EmptyState icon={<ShieldCheck />} title="Setting up protection needs an administrator or project owner" description="Your role can see protected applications but can't add new ones. Ask for access and we'll notify the right person." action={<Button asChild variant="secondary"><Link to="/admin/requests?new=1">Ask for access</Link></Button>} />
       </Card>
     )
   if (appId && !app) return <Card><EmptyState title="We couldn't find that application" description="It may have been removed, or the demo data was reset." action={<Button asChild variant="secondary"><Link to="/onboarding?new=1">Start again</Link></Button>} /></Card>
@@ -899,7 +899,7 @@ function ProtectionOn({ app, assets, tools, findings }: { app: BusinessService; 
           <li className="flex gap-2"><Plus className="mt-0.5 size-4 shrink-0 text-primary" /> Protect another application anytime from Home.</li>
         </ul>
         <div className="mt-5 flex flex-wrap gap-2">
-          <Button size="lg" onClick={() => navigate('/home')}>Go to my security overview <ArrowRight /></Button>
+          <Button size="lg" onClick={() => navigate('/home')}>Go to Home <ArrowRight /></Button>
           <Button size="lg" variant="secondary" onClick={() => navigate(`/applications/${app.id}`)}>See all problems</Button>
           <Button size="lg" variant="ghost" loading={pending} onClick={() => run(() => api.startFullRun(app.id), 'Checking again')}><RefreshCw /> Check again now</Button>
         </div>

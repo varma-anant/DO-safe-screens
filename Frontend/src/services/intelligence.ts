@@ -302,7 +302,7 @@ export const demoProvider: IntelligenceProvider = {
         answer: [explain(me, intent.needs), 'Ask about something in your own area, or ask an administrator for access.'],
         records: [],
         evidence: [],
-        nextActions: [{ label: 'Ask for access', to: '/requests?new=1' }],
+        nextActions: [{ label: 'Ask for access', to: '/admin/requests?new=1' }],
         engine: 'deterministic-demo',
         supported: false,
       }
@@ -317,6 +317,20 @@ export const demoProvider: IntelligenceProvider = {
         engine: 'deterministic-demo',
         supported: false,
       }
-    return { ...intent.handle(db, question), engine: 'deterministic-demo', supported: true }
+    try {
+      return { ...intent.handle(db, question), engine: 'deterministic-demo', supported: true }
+    } catch {
+      // Answers summarise records in the person's scope; with none yet (e.g. a new workspace) there is nothing to rank.
+      return {
+        intent: intent.name,
+        title: 'Nothing to report in your scope yet',
+        answer: ['There are no matching records in the projects and areas you can see yet. Protect an application or ask again once data has arrived.'],
+        records: [],
+        evidence: [],
+        nextActions: [{ label: 'Go to Home', to: '/home' }],
+        engine: 'deterministic-demo',
+        supported: true,
+      }
+    }
   },
 }

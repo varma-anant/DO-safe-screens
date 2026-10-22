@@ -5,7 +5,7 @@ import { Check, ClipboardCheck, Inbox, ShieldCheck, ShieldHalf, UserPlus, Users,
 import type { JobRole, OrgRole, ProjectRole, User } from '@/types'
 import { useAction, useCan, useCollections, useCurrentUser, useSettings } from '@/hooks/queries'
 import { usePage } from '@/hooks/usePage'
-import { Callout, ErrorState, KeyValue, KpiCard, LoadingState, PageHeader, Section } from '@/components/common/layout'
+import { Callout, ErrorState, KeyValue, LoadingState, PageHeader, Section } from '@/components/common/layout'
 import { Badge } from '@/components/common/badges'
 import { RelTime, UserName } from '@/components/common/entities'
 import { DataTable } from '@/components/common/DataTable'
@@ -75,51 +75,6 @@ export function AdminLayout() {
         <div className="min-w-0 flex-1">
           <Outlet />
         </div>
-      </div>
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------- Overview
-
-export function AdminOverview() {
-  usePage('User management', [{ label: 'User management' }])
-  const { data, isLoading, error, retry } = useCollections(['users', 'invitations', 'accessRequests', 'audit', 'projects'] as const, { ignoreProjectFilter: true })
-  if (error) return <ErrorState error={error} onRetry={retry} />
-  if (isLoading || !data) return <LoadingState kpis={4} />
-  const active = data.users.filter((u) => u.status === 'active')
-  return (
-    <div className="space-y-5">
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard label="Active people" value={active.length} sub={`${data.users.filter((u) => u.status === 'deactivated').length} deactivated`} />
-        <KpiCard label="Pending invitations" value={data.invitations.filter((i) => i.status === 'pending').length} />
-        <KpiCard label="Access requests" value={data.accessRequests.filter((r) => r.status === 'pending').length} tone="violet" sub="Awaiting decision" />
-        <KpiCard label="MFA coverage" value={`${Math.round((active.filter((u) => u.mfaEnabled).length / Math.max(1, active.length)) * 100)}%`} tone="green" />
-      </div>
-      <div className="grid gap-5 xl:grid-cols-2">
-        <Section title="People by role">
-          <div className="space-y-3">
-            {(Object.keys(ROLE_INFO) as OrgRole[]).map((r) => {
-              const n = active.filter((u) => u.orgRole === r).length
-              return (
-                <div key={r}>
-                  <div className="flex justify-between text-[13px]"><span>{ROLE_INFO[r].label}</span><span className="num font-semibold">{n}</span></div>
-                  <div className="mt-1 text-[11.5px] text-subtle">{ROLE_INFO[r].summary}</div>
-                </div>
-              )
-            })}
-          </div>
-        </Section>
-        <Section title="Recent identity & access events">
-          <ul className="space-y-2.5">
-            {data.audit.filter((a) => a.module === 'Platform').slice(0, 8).map((a) => (
-              <li key={a.id} className="text-[13px]">
-                <span className="font-medium">{a.action}</span> <span className="text-muted">— {a.details}</span>
-                <div className="text-[11px] text-subtle"><UserName id={a.actorId} avatar={false} /> · <RelTime iso={a.at} /></div>
-              </li>
-            ))}
-          </ul>
-        </Section>
       </div>
     </div>
   )

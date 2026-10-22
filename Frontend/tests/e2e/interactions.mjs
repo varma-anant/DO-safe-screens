@@ -87,13 +87,15 @@ await step('KPI', async () => {
 })
 
 await step('ErrorState', async () => {
-  await page.goto(base + '/platform/settings'); await page.waitForSelector('main h1')
-  await page.getByRole('switch').first().click(); await page.waitForTimeout(400)
+  // Simulated API errors have no switch in the current Settings screens; turn them on in stored settings.
+  const setErrors = (v) => page.evaluate((on) => { const k = 'do-safe-unified-demo-db'; const s = JSON.parse(localStorage.getItem(k)); s.state.db.settings.simulateErrors = on; localStorage.setItem(k, JSON.stringify(s)) }, v)
+  await page.goto(base + '/home'); await page.waitForSelector('main h1'); await page.waitForTimeout(800)
+  await setErrors(true)
   let saw = false
-  for (let i = 0; i < 6 && !saw; i++) { await page.goto(base + '/tprm/contracts'); await page.waitForTimeout(700); saw = await page.getByText('We couldn’t load this page').isVisible() }
+  for (let i = 0; i < 10 && !saw; i++) { await page.goto(base + '/tprm/contracts'); await page.waitForTimeout(700); saw = await page.getByText('We couldn’t load this page').isVisible() }
   ok(saw, 'Error state rendered under simulated API errors')
   if (saw) { await page.getByRole('button', { name: 'Try again' }).click(); ok(true, 'Retry available') }
-  await page.goto(base + '/platform/settings'); await page.waitForSelector('main h1'); await page.getByRole('switch').first().click(); await page.waitForTimeout(400)
+  await setErrors(false)
 })
 
 await step('Mobile', async () => {
@@ -108,8 +110,10 @@ await step('Mobile', async () => {
 })
 
 await step('Reset', async () => {
-  await page.goto(base + '/platform/settings'); await page.waitForSelector('main h1')
-  await page.getByRole('button', { name: 'Reset demo data' }).click(); await page.getByRole('dialog').getByRole('button', { name: 'Reset demo data' }).click()
+  await page.goto(base + '/home'); await page.waitForSelector('main h1')
+  await page.getByRole('button', { name: 'Account menu' }).click()
+  await page.getByRole('menuitem', { name: 'Reset demo data' }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Reset demo data' }).click()
   await page.waitForURL(/home/); await page.waitForTimeout(500)
   const x = await db(); ok(!x.vendors.some((v) => v.name.startsWith('Lattice')), 'Reset: demo data regenerated')
 })

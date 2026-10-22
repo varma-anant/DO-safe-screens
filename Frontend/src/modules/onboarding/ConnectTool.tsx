@@ -80,7 +80,7 @@ export function ConnectToolDialog({ integration, appName, parts, open, onOpenCha
             </ul>
             {!canConnect && (
               <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                Only an administrator can connect tools. <Link to="/requests?new=1" className="font-semibold underline">Ask for access</Link> or ask your administrator to connect {name}.
+                Only an administrator can connect tools. <Link to="/admin/requests?new=1" className="font-semibold underline">Ask for access</Link> or ask your administrator to connect {name}.
               </p>
             )}
             <p className="text-[11.5px] text-subtle">Demo: no real {name} account is contacted.</p>

@@ -3,3 +3,6 @@ dist
 .singlefile-dist
 *.tsbuildinfo
 .DS_Store
+
+# Screenshots written by e2e tests when a step fails
+fail*.png

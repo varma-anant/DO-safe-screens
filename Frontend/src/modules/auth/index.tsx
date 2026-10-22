@@ -24,7 +24,7 @@ export function LoginPage() {
   async function signIn(email: string) {
     setBusy(true); setError('')
     try {
-      await api.login(email, 'demo-sso', ws)
+      await api.login(email, ws)
       navigate(ws === session.workspace ? params.get('next') || '/home' : '/home', { replace: true })
     } catch (e) { setError(e instanceof Error ? e.message : 'Unable to sign in. Select your account to retry.') }
     finally { setBusy(false) }

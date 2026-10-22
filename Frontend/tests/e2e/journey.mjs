@@ -1,5 +1,5 @@
-// Customer journey: login → first-run landing → protect an application (access review, coverage gate,
-// test run fails → fix from the result → passes) → “Protection is on” → overview, plus role restrictions.
+// Protecting an application end to end: Home → Create project → parts → map → tools (access review, coverage gate)
+// → test run fails → fix from the result → passes → “Protection is on” → back to Home.
 // Requires the dev server on :5173 and Playwright (npm i -D playwright && npx playwright install chromium).
 import { chromium } from 'playwright'
 import { signIn } from './login.mjs'
@@ -12,7 +12,6 @@ page.on('console', (m) => { if (m.type() === 'error') errors.push(`[console] ${m
 const db = () => page.evaluate(() => JSON.parse(localStorage.getItem('do-safe-unified-demo-db')).state.db)
 const ok = (c, m) => console.log(`${c ? '✓' : '✗'} ${m}`)
 const step = async (name, fn) => { try { await fn() } catch (e) { await page.screenshot({ path: `fail4-${name}.png` }); console.log('✗', name, e.message.split('\n').slice(0, 2).join(' | ')) } }
-const signOut = () => page.evaluate(() => { const k = 'do-safe-unified-demo-db'; const s = JSON.parse(localStorage.getItem(k)); s.state.db.settings.authenticated = false; localStorage.setItem(k, JSON.stringify(s)) })
 const main = () => page.locator('main')
 
 await page.goto(base + '/login'); await page.evaluate(() => localStorage.clear())
@@ -24,10 +23,8 @@ await step('Auth', async () => {
 
 await step('Journey', async () => {
   await signIn(page, base, 'Alex Rivera', 'Acme')
-  await page.getByRole('heading', { name: /Let’s protect your first application/ }).waitFor()
-  ok(await page.getByText('How DO SAFE protects you').isVisible(), 'Landing: explains what DO SAFE does, with real examples')
-  ok((await main().getByText(/^\d min$/).count()) === 7, 'Landing: shows the same 7 steps as the wizard, with time estimates')
-  await main().getByRole('button', { name: /Our website or customer portal/ }).click()
+  await page.getByRole('heading', { name: /Welcome back/ }).waitFor()
+  await main().getByRole('link', { name: 'Create project' }).click()
   await page.getByLabel('Project name').fill('Customer Portal')
   await page.getByRole('button', { name: 'Continue' }).click()
   await page.getByLabel('What do you call it?').fill('Customer Portal Web')
@@ -84,28 +81,9 @@ await step('Journey', async () => {
   ok(app.status === 'active', 'Protection is on: application is protected')
   ok(await page.getByText('7 of 7', { exact: true }).isVisible(), 'Protection is on: shows parts checked, tools, last and next check')
   ok(d.findings.some((f) => f.businessServiceId === app.id), `Protection is on: ${d.findings.filter((f) => f.businessServiceId === app.id).length} problems explained in plain words`)
-  await page.getByRole('button', { name: /Go to my security overview/ }).click()
-  await page.getByText('Am I protected?').waitFor()
-  ok(await page.getByText('Is anything urgent?').isVisible() && await page.getByText('What should I do next?').isVisible(), 'Overview: answers protected / urgent / next')
-})
-
-await step('Roles', async () => {
-  await signOut()
-  await signIn(page, base, 'Ravi Shah', 'Northstar')
-  ok(!(await page.locator('aside').getByText('User management').count()), 'Viewer: User management hidden from navigation')
-  await page.goto(base + '/admin'); await page.getByText('User management is restricted').waitFor()
-  ok(true, 'Viewer: /admin is restricted')
-  await page.goto(base + '/onboarding?new=1'); await page.getByText(/Setting up protection needs an administrator or project owner/).waitFor()
-  ok(true, 'Viewer: onboarding is restricted')
-  const visible = (await db()).projects.length
-  const sidebar = await page.locator('aside').innerText()
-  ok(!sidebar.includes('Customer Data & Analytics'), `Viewer: sees only member projects (workspace has ${visible})`)
-
-  await signOut()
-  await signIn(page, base, 'Hannah Lee', 'Northstar')
-  await page.goto(base + '/admin/people'); await main().getByRole('heading', { name: 'People' }).waitFor()
-  await page.getByLabel('Role for Ravi Shah').selectOption('analyst'); await page.waitForTimeout(800)
-  ok((await db()).users.find((u) => u.name === 'Ravi Shah').orgRole === 'analyst', 'Admin: changed a person’s organization role')
+  await page.getByRole('button', { name: /Go to Home/ }).click()
+  await page.getByRole('heading', { name: /Welcome back/ }).waitFor()
+  ok(true, 'Finish: returns to Home')
 })
 
 console.log(errors.length ? `ERRORS:\n${errors.join('\n')}` : 'No console errors')

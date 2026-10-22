@@ -66,8 +66,8 @@ export interface JobInfo {
   views: ViewCap[]
   /** The job's work spans the whole organization (e.g. vendor or AI governance), so it sees every project. */
   orgWide?: boolean
-  /** Main-navigation item keys, in order (null = the full workspace navigation). */
-  nav: string[] | null
+  /** Shows every security-workspace group expanded instead of job-focused groups first. */
+  allAreas?: boolean
   /** Security-workspace groups shown first; the rest the person may open sit under "More tools". */
   focus: string[]
   /** Recommended access role when assigning this job. */
@@ -75,15 +75,15 @@ export interface JobInfo {
 }
 
 export const JOB_INFO: Record<JobRole, JobInfo> = {
-  executive: { label: 'Executive', summary: 'Are we protected, where is the business exposed, is risk improving, what needs my decision.', views: ['view_findings', 'view_incidents', 'view_vendor_risk', 'view_ai_governance', 'view_financial_risk'], orgWide: true, nav: ['home', 'dashboard', 'applications', 'requests', 'prioritization', 'notifications'], focus: ['Risk quantification', 'Project'], defaultRole: 'executive' },
-  platform_admin: { label: 'Platform administrator', summary: 'Tool connections, data health, onboarding, people and access.', views: [], nav: null, focus: ['Project'], defaultRole: 'admin' },
-  security_analyst: { label: 'Security analyst', summary: 'A queue of problems to triage, validate, fix and verify.', views: ['view_findings', 'view_evidence', 'view_incidents'], nav: ['home', 'prioritization', 'tickets', 'applications', 'mapping', 'requests', 'notifications'], focus: ['Exposure management', 'Security operations', 'Project', 'Intelligence'], defaultRole: 'analyst' },
-  incident_responder: { label: 'Incident responder', summary: 'Active incidents, suspicious events and containment.', views: ['view_findings', 'view_evidence', 'view_incidents'], orgWide: true, nav: ['home', 'incidents', 'tickets', 'applications', 'requests', 'notifications'], focus: ['Security operations', 'Exposure management', 'Intelligence'], defaultRole: 'analyst' },
-  project_owner: { label: 'Application owner', summary: 'How protected my applications are and what I need to fix.', views: ['view_findings', 'view_evidence', 'view_incidents'], nav: ['home', 'applications', 'tickets', 'mapping', 'requests', 'notifications'], focus: ['Project', 'Exposure management', 'Security operations'], defaultRole: 'project_owner' },
-  vendor_risk: { label: 'Vendor risk manager', summary: 'Supplier assessments, evidence, risky vendors and contracts.', views: ['view_findings', 'view_evidence', 'view_vendor_risk'], orgWide: true, nav: ['home', 'vendors', 'requests', 'applications', 'notifications'], focus: ['Third-party risk', 'Intelligence'], defaultRole: 'analyst' },
-  ai_governance: { label: 'AI governance', summary: 'Unapproved AI, governance reviews and AI-specific problems.', views: ['view_findings', 'view_evidence', 'view_ai_governance'], orgWide: true, nav: ['home', 'ai', 'requests', 'applications', 'notifications'], focus: ['AI security', 'Intelligence'], defaultRole: 'analyst' },
-  risk_manager: { label: 'Risk manager', summary: 'Loss scenarios, control effectiveness and where to invest.', views: ['view_findings', 'view_vendor_risk', 'view_ai_governance', 'view_financial_risk'], orgWide: true, nav: ['home', 'risk', 'dashboard', 'requests', 'applications', 'notifications'], focus: ['Risk quantification', 'Project'], defaultRole: 'analyst' },
-  employee: { label: 'Employee', summary: 'Only the security tasks assigned to me.', views: [], nav: ['home', 'requests', 'notifications'], focus: [], defaultRole: 'viewer' },
+  executive: { label: 'Executive', summary: 'Are we protected, where is the business exposed, is risk improving, what needs my decision.', views: ['view_findings', 'view_incidents', 'view_vendor_risk', 'view_ai_governance', 'view_financial_risk'], orgWide: true, focus: ['Risk quantification', 'Project'], defaultRole: 'executive' },
+  platform_admin: { label: 'Platform administrator', summary: 'Tool connections, data health, onboarding, people and access.', views: [], allAreas: true, focus: ['Project'], defaultRole: 'admin' },
+  security_analyst: { label: 'Security analyst', summary: 'A queue of problems to triage, validate, fix and verify.', views: ['view_findings', 'view_evidence', 'view_incidents'], focus: ['Exposure management', 'Security operations', 'Project', 'Intelligence'], defaultRole: 'analyst' },
+  incident_responder: { label: 'Incident responder', summary: 'Active incidents, suspicious events and containment.', views: ['view_findings', 'view_evidence', 'view_incidents'], orgWide: true, focus: ['Security operations', 'Exposure management', 'Intelligence'], defaultRole: 'analyst' },
+  project_owner: { label: 'Application owner', summary: 'How protected my applications are and what I need to fix.', views: ['view_findings', 'view_evidence', 'view_incidents'], focus: ['Project', 'Exposure management', 'Security operations'], defaultRole: 'project_owner' },
+  vendor_risk: { label: 'Vendor risk manager', summary: 'Supplier assessments, evidence, risky vendors and contracts.', views: ['view_findings', 'view_evidence', 'view_vendor_risk'], orgWide: true, focus: ['Third-party risk', 'Intelligence'], defaultRole: 'analyst' },
+  ai_governance: { label: 'AI governance', summary: 'Unapproved AI, governance reviews and AI-specific problems.', views: ['view_findings', 'view_evidence', 'view_ai_governance'], orgWide: true, focus: ['AI security', 'Intelligence'], defaultRole: 'analyst' },
+  risk_manager: { label: 'Risk manager', summary: 'Loss scenarios, control effectiveness and where to invest.', views: ['view_findings', 'view_vendor_risk', 'view_ai_governance', 'view_financial_risk'], orgWide: true, focus: ['Risk quantification', 'Project'], defaultRole: 'analyst' },
+  employee: { label: 'Employee', summary: 'Only the security tasks assigned to me.', views: [], focus: [], defaultRole: 'viewer' },
 }
 
 export const CAPABILITY_LABEL: Record<Capability, string> = {

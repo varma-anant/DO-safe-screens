@@ -571,7 +571,7 @@ export function RiskReport() {
         <ul className="mt-2 list-disc space-y-1 pl-5 text-[13px] text-muted">
           <li>{open.filter((f) => f.kev).length} open findings are listed in CISA KEV; {open.filter((f) => f.severity === 'critical' && f.tags.includes('internet-facing')).length} critical findings are on internet-facing assets.</li>
           <li>{highVendors.length} third parties carry high or critical residual risk, including {highVendors.slice(0, 3).map((v) => v.name).join(', ')}.</li>
-          <li>{aiSystems.filter((a) => a.approval === 'unsanctioned').length} unsanctioned AI applications are in use; highest-risk AI system: {[...aiSystems].sort((a, b) => aiRiskScore(b, findings) - aiRiskScore(a, findings))[0].name}.</li>
+          <li>{aiSystems.filter((a) => a.approval === 'unsanctioned').length} unsanctioned AI applications are in use; highest-risk AI system: {[...aiSystems].sort((a, b) => aiRiskScore(b, findings) - aiRiskScore(a, findings))[0]?.name ?? 'none in this scope'}.</li>
         </ul>
         <h3 className="mt-8 text-base font-semibold">3. Recommended investments</h3>
         <ul className="mt-2 space-y-2 text-[13px]">

@@ -1110,10 +1110,6 @@ export async function updateSettings(patch: Partial<DemoSettings>, summary = 'Se
   commit((db) => audit({ ...db, settings: { ...db.settings, ...patch } }, { action: 'settings updated', entityType: 'settings', entityId: 'settings', details: summary, module: 'Platform' }))
 }
 
-export function setCurrentUser(userId: string) {
-  commit((db) => audit({ ...db, settings: { ...db.settings, currentUserId: userId } }, { action: 'persona switched', entityType: 'settings', entityId: 'persona', details: userName(userId), module: 'Platform', actorId: userId }))
-}
-
 export function recordRecent(type: SearchEntityType, id: string, label: string) {
   const db = getDb()
   const recent = [{ type, id, label, at: now() }, ...(db.settings.recentRecords ?? []).filter((r) => r.id !== id)].slice(0, 8)

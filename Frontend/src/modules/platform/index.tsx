@@ -1,23 +1,18 @@
 import * as React from 'react'
 import { Link, useNavigate } from 'react-router'
 import { createColumnHelper } from '@tanstack/react-table'
-import { Bell, CheckCheck, Download, FlaskConical, RotateCcw, ScrollText, Settings } from 'lucide-react'
+import { Bell, CheckCheck, ScrollText } from 'lucide-react'
 import type { AuditEvent, Severity } from '@/types'
-import { useAction, useCollections, useCurrentUser, useSettings, useUsers } from '@/hooks/queries'
+import { useCollections, useUsers } from '@/hooks/queries'
 import { usePage } from '@/hooks/usePage'
-import { Callout, EmptyState, ErrorState, KeyValue, LoadingState, PageHeader, Section } from '@/components/common/layout'
+import { EmptyState, ErrorState, LoadingState, PageHeader } from '@/components/common/layout'
 import { Badge } from '@/components/common/badges'
 import { RelTime, UserName } from '@/components/common/entities'
 import { DataTable } from '@/components/common/DataTable'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Slider, Switch } from '@/components/ui/misc'
-import { ResetDialog } from '@/layouts/AppShell'
 import * as api from '@/services/api'
-import { getDb, useDbStore } from '@/stores/db'
-import { can, CAPABILITY_LABEL, JOB_INFO, jobOf, ROLE_INFO, VIEW_AREA, VIEW_CAPS, visibleProjectIds } from '@/utils/permissions'
-import { cn, downloadText, fmtDateTime } from '@/utils/format'
+import { cn, fmtDateTime } from '@/utils/format'
 
 const auditCol = createColumnHelper<AuditEvent & { actor: string }>()
 
@@ -76,95 +71,6 @@ export function NotificationsPage() {
         ))}
         {!list.length && <EmptyState title="No notifications" />}
       </Card>
-    </div>
-  )
-}
-
-export function SettingsPage() {
-  usePage('Settings', [{ label: 'Platform' }, { label: 'Settings' }])
-  const settings = useSettings()
-  const me = useCurrentUser()
-  const db = useDbStore((s) => s.db)
-  const myProjects = visibleProjectIds(db, me.id)
-  const { run } = useAction()
-  const [reset, setReset] = React.useState(false)
-  const [sla, setSla] = React.useState(settings.slaDays)
-  return (
-    <div className="space-y-5">
-      <PageHeader title="Settings" icon={<Settings />} description="Your profile and access, workspace policy and demo controls." />
-      <div className="grid gap-5 xl:grid-cols-2">
-        <Section title="My profile & access" description="Who you are signed in as and what your role lets you do. Access is managed in User management.">
-          <div className="flex items-center gap-3">
-            <span className="flex size-11 items-center justify-center rounded-full bg-[#ece9fb] text-sm font-semibold text-primary">{me.initials}</span>
-            <div>
-              <div className="text-[14px] font-semibold">{me.name}</div>
-              <div className="text-xs text-muted">{me.email} · {me.team}</div>
-            </div>
-            <Badge className="ml-auto" tone="violet">{JOB_INFO[jobOf(me)].label}</Badge>
-          </div>
-          <KeyValue className="mt-4" cols={2} items={[
-            { label: 'Job', value: JOB_INFO[jobOf(me)].label },
-            { label: 'Access role', value: ROLE_INFO[me.orgRole].label },
-            { label: 'Workspace', value: settings.orgName },
-            { label: 'Sign-in', value: settings.identity.provider },
-            { label: 'MFA', value: me.mfaEnabled ? 'Enabled' : 'Not enabled' },
-            { label: 'Projects', value: can(me, 'view_all_projects') ? 'All projects' : `${myProjects.length} project${myProjects.length === 1 ? '' : 's'}` },
-          ]} />
-          <div className="mt-4 text-xs font-medium text-muted">Areas you can see</div>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {VIEW_CAPS.filter((v) => can(me, v)).map((v) => <Badge key={v} tone="emerald">{VIEW_AREA[v]}</Badge>)}
-            {!VIEW_CAPS.some((v) => can(me, v)) && <span className="text-xs text-subtle">Only your assigned tasks.</span>}
-          </div>
-          <div className="mt-4 text-xs font-medium text-muted">What you can do</div>
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {ROLE_INFO[me.orgRole].caps.filter((c) => can(me, c)).map((c) => <Badge key={c}>{CAPABILITY_LABEL[c]}</Badge>)}
-            {!ROLE_INFO[me.orgRole].caps.length && <span className="text-xs text-subtle">Read-only access to your projects.</span>}
-          </div>
-          <div className="mt-4 flex gap-2">
-            <Button size="sm" variant="secondary" asChild><Link to="/requests?new=1">Request more access</Link></Button>
-            {can(me, 'manage_users') && <Button size="sm" variant="ghost" asChild><Link to="/admin">User management</Link></Button>}
-          </div>
-        </Section>
-        <Section title="Demo controls" description="Settings that shape the demo experience">
-          <div className="space-y-5">
-            <div>
-              <div className="mb-1.5 flex justify-between text-xs"><span>Simulated API latency</span><span className="num">{settings.latencyMs} ms</span></div>
-              <Slider value={[settings.latencyMs]} min={0} max={1200} step={20} onValueCommit={([v]) => run(() => api.updateSettings({ latencyMs: v }, `Latency → ${v}ms`))} onValueChange={() => undefined} aria-label="Latency" />
-              <p className="mt-1 text-[11px] text-subtle">Controls loading states. Set to 0 for presentations.</p>
-            </div>
-            <label className="flex items-center justify-between gap-3 text-[13px]">
-              <span>Simulate API errors <span className="block text-[11px] text-subtle">~35% of requests fail — demonstrates error and retry states</span></span>
-              <Switch checked={!!settings.simulateErrors} onCheckedChange={(v) => run(() => api.updateSettings({ simulateErrors: v }, `Simulated errors ${v ? 'on' : 'off'}`), v ? 'Simulated errors enabled' : 'Simulated errors disabled')} />
-            </label>
-            <div className="flex flex-wrap gap-2 border-t border-border pt-4">
-              <Button variant="destructive" onClick={() => setReset(true)}><RotateCcw /> Reset demo data</Button>
-              <Button variant="secondary" onClick={() => downloadText(`do-safe-demo-state-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ _note: 'DO SAFE demo state — simulated data', ...getDb() }, null, 2), 'application/json')}><Download /> Export demo state (JSON)</Button>
-            </div>
-            <KeyValue cols={2} items={[{ label: 'Dataset seeded', value: fmtDateTime(settings.seededAt) }, { label: 'Persistence', value: 'Browser localStorage' }]} />
-          </div>
-        </Section>
-        <Section title="Remediation SLA policy" description="Target days to remediate by severity — drives due dates and overdue status for new findings">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {(['critical', 'high', 'medium', 'low'] as const).map((s) => (
-              <label key={s} className="text-xs">
-                <span className="mb-1 block capitalize text-muted">{s}</span>
-                <Input type="number" min={1} value={sla[s]} onChange={(e) => setSla({ ...sla, [s]: Number(e.target.value) })} />
-              </label>
-            ))}
-          </div>
-          <div className="mt-3 flex justify-end">
-            <Button size="sm" disabled={JSON.stringify(sla) === JSON.stringify(settings.slaDays) || Object.values(sla).some((v) => !v || v < 1)} onClick={() => run(() => api.updateSettings({ slaDays: sla }, 'SLA policy updated'), 'SLA policy saved')}>Save SLA policy</Button>
-          </div>
-        </Section>
-        <Section title="Risk prioritization" description="Weights for the dynamic risk score">
-          <KeyValue cols={2} items={Object.entries(settings.weights).map(([k, v]) => ({ label: k.replace(/([A-Z])/g, ' $1'), value: v }))} />
-          <Button asChild size="sm" variant="secondary" className="mt-3"><Link to="/exposures/prioritization">Tune weights</Link></Button>
-        </Section>
-      </div>
-      <Callout tone="demo" icon={<FlaskConical />} title="About this prototype">
-        DO SAFE Unified frontend prototype by DataObserve. All organizations, people, assets, findings, vendors, AI systems and figures are fictional or simulated. Real CVE / CWE / ATT&CK / OWASP identifiers are summarized from public sources as a static snapshot. No scanning, exploitation, live integration or remediation is performed.
-      </Callout>
-      <ResetDialog open={reset} onOpenChange={setReset} />
     </div>
   )
 }

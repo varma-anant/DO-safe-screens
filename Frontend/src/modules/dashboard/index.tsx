@@ -1,26 +1,19 @@
 import * as React from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Scatter, ScatterChart, Tooltip as RTooltip, XAxis, YAxis, ZAxis, Line, LineChart } from 'recharts'
-import { Activity, AlertTriangle, ArrowRight, Bot, Briefcase, Building2, Calculator, Clock, Cpu, Gauge, ShieldAlert, Sparkles, Siren, Ticket, Scale, Wrench } from 'lucide-react'
-import { createColumnHelper } from '@tanstack/react-table'
+import { ArrowRight, Bot, Building2, Calculator, Clock, Cpu, Gauge, ShieldAlert, Sparkles, Siren, Ticket, Scale } from 'lucide-react'
 import { useCollections, useCurrentUser, useSettings } from '@/hooks/queries'
 import { usePage } from '@/hooks/usePage'
 import { Term } from '@/components/common/Term'
-import { Callout, EmptyState, ErrorState, KeyValue, KpiCard, LoadingState, NotFound, PageHeader, Section, Stat } from '@/components/common/layout'
+import { ErrorState, KpiCard, LoadingState, PageHeader, Section } from '@/components/common/layout'
 import { AXIS, BarList, ChartTooltip, GRID, Legend, CATEGORICAL } from '@/components/common/charts'
-import { Badge, CriticalityBadge, DemoTag, FindingStatusBadge, InfoHint, RiskScore, SeverityBadge, StatusBadge } from '@/components/common/badges'
-import { EntityLink, RelTime, UserName } from '@/components/common/entities'
-import { DataTable } from '@/components/common/DataTable'
+import { FindingStatusBadge, RiskScore, SeverityBadge } from '@/components/common/badges'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/misc'
-import { FindingsTable } from '@/modules/findings/FindingsTable'
-import { cn, fmtMoney, fmtPct, plural } from '@/utils/format'
-import { ASSET_TYPE_LABEL, AI_APPROVAL, INCIDENT_STATUS, isOpen, SEVERITY_COLOR, TICKET_STATUS, VENDOR_LIFECYCLE } from '@/utils/labels'
-import { aiRiskScore, computeScenario, isOverdue, postureScore, totalALE, vendorRiskBand } from '@/utils/risk'
+import { cn, fmtMoney, fmtPct } from '@/utils/format'
+import { isOpen, SEVERITY_COLOR, TICKET_STATUS } from '@/utils/labels'
+import { computeScenario, isOverdue, postureScore, totalALE, vendorRiskBand } from '@/utils/risk'
 import { mttrDays, openTrend, scoreFindings, slaCompliance } from '@/utils/derive'
-import type { Asset } from '@/types'
 
 const SEVS = ['critical', 'high', 'medium', 'low'] as const
 
@@ -405,215 +398,6 @@ export function RiskAnalytics() {
           </Section>
         </div>
       </div>
-    </div>
-  )
-}
-
-// ============================================================ Applications
-
-export function BusinessServices() {
-  usePage('Applications', [{ label: 'Overview' }, { label: 'Applications' }])
-  const settings = useSettings()
-  const { data, isLoading, error, retry } = useCollections(['services', 'assets', 'findings', 'scenarios', 'vendors', 'aiSystems', 'users'] as const)
-  if (error) return <ErrorState error={error} onRetry={retry} />
-  if (isLoading || !data) return <LoadingState rows={6} />
-  const { services, assets, findings, scenarios, vendors, aiSystems } = data
-  void settings
-  return (
-    <div className="space-y-5">
-      <PageHeader title="Applications" description="Security exposure and illustrative financial risk mapped to the services Northstar's business depends on (CRQ application mapping)." icon={<Briefcase />} />
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {services.map((svc) => {
-          const svcAssets = assets.filter((a) => a.businessServiceId === svc.id && !a.duplicateOfId)
-          const open = findings.filter((f) => f.businessServiceId === svc.id && isOpen(f.status))
-          const ale = scenarios.filter((s) => s.businessServiceId === svc.id).reduce((s, x) => s + computeScenario(x, findings).ale, 0)
-          return (
-            <Link key={svc.id} to={`/applications/${svc.id}`} className="card group p-4 transition-colors hover:border-border-strong">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="text-[15px] font-semibold group-hover:text-violet-700">{svc.name}</div>
-                  <div className="mt-0.5 line-clamp-2 text-xs text-muted">{svc.description}</div>
-                </div>
-                <CriticalityBadge value={svc.criticality} />
-              </div>
-              <div className="mt-4 grid grid-cols-3 gap-2">
-                <Stat label="Assets" value={svcAssets.length} />
-                <Stat label="Open findings" value={open.length} />
-                <Stat label="Illustrative ALE" value={fmtMoney(ale)} />
-              </div>
-              <div className="mt-3 flex h-2 overflow-hidden rounded-full bg-surface-3">
-                {SEVS.map((s) => {
-                  const n = open.filter((f) => f.severity === s).length
-                  return n ? <div key={s} style={{ width: `${(n / Math.max(1, open.length)) * 100}%`, background: SEVERITY_COLOR[s] }} className="border-r-2 border-surface last:border-0" title={`${n} ${s}`} /> : null
-                })}
-              </div>
-              <div className="mt-2 flex justify-between text-[11px] text-muted">
-                <span>{open.filter((f) => f.severity === 'critical').length} critical · {open.filter((f) => f.severity === 'high').length} high</span>
-                <span>
-                  {vendors.filter((v) => v.businessServiceIds.includes(svc.id)).length} vendors · {aiSystems.filter((a) => a.businessServiceId === svc.id).length} AI systems
-                </span>
-              </div>
-            </Link>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-const assetCol = createColumnHelper<Asset>()
-
-export function ServiceDetail() {
-  const { id } = useParams()
-  const settings = useSettings()
-  const navigate = useNavigate()
-  const { data, isLoading, error, retry } = useCollections(['services', 'assets', 'findings', 'scenarios', 'vendors', 'aiSystems', 'incidents', 'attackPaths'] as const, { ignoreProjectFilter: true })
-  const svc = data?.services.find((s) => s.id === id)
-  usePage(svc?.name ?? 'Application', [{ label: 'Overview' }, { label: 'Applications', to: '/applications' }, { label: svc?.name ?? id ?? '' }])
-  if (error) return <ErrorState error={error} onRetry={retry} />
-  if (isLoading || !data) return <LoadingState kpis={4} />
-  if (!svc) return <NotFound what="Application" back={{ to: '/applications', label: 'Back to Applications' }} />
-  const { assets, findings, scenarios, vendors, aiSystems, incidents, attackPaths, services } = data
-  const svcAssets = assets.filter((a) => a.businessServiceId === svc.id && !a.duplicateOfId)
-  const svcFindings = scoreFindings(findings.filter((f) => f.businessServiceId === svc.id), assets, services, settings.weights)
-  const open = svcFindings.filter((s) => isOpen(s.f.status))
-  const svcScenarios = scenarios.filter((s) => s.businessServiceId === svc.id)
-  const ale = svcScenarios.reduce((s, x) => s + computeScenario(x, findings).ale, 0)
-  const svcVendors = vendors.filter((v) => v.businessServiceIds.includes(svc.id))
-  const svcAI = aiSystems.filter((a) => a.businessServiceId === svc.id)
-  const svcIncidents = incidents.filter((i) => i.businessServiceIds.includes(svc.id))
-  const svcPaths = attackPaths.filter((p) => p.businessServiceId === svc.id)
-
-  const assetColumns = [
-    assetCol.accessor('name', { header: 'Asset', cell: (c) => <span className="font-medium">{c.getValue()}</span> }),
-    assetCol.accessor('type', { header: 'Type', cell: (c) => ASSET_TYPE_LABEL[c.getValue()] }),
-    assetCol.accessor('environment', { header: 'Environment', cell: (c) => <span className="capitalize text-muted">{c.getValue()}</span> }),
-    assetCol.accessor('criticality', { header: 'Criticality', cell: (c) => <CriticalityBadge value={c.getValue()} /> }),
-    assetCol.accessor((a) => (a.internetExposed ? 'Yes' : 'No'), { id: 'internet', header: 'Internet-facing', cell: (c) => <span className={c.getValue() === 'Yes' ? 'text-orange-700' : 'text-muted'}>{c.getValue()}</span> }),
-    assetCol.accessor((a) => findings.filter((f) => f.assetId === a.id && isOpen(f.status)).length, { id: 'open', header: 'Open findings' }),
-  ]
-
-  return (
-    <div className="space-y-5">
-      <PageHeader title={svc.name} back={{ to: '/applications', label: 'Applications' }} description={svc.description} badges={<CriticalityBadge value={svc.criticality} />} icon={<Briefcase />} actions={<Button variant="secondary" asChild><Link to={svcScenarios[0] ? `/crq/scenarios/${svcScenarios[0].id}` : '/crq/scenarios'}><Calculator /> Open risk scenario</Link></Button>} />
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <KpiCard label="Assets" value={svcAssets.length} sub={`${svcAssets.filter((a) => a.internetExposed).length} internet-facing`} />
-        <KpiCard label="Open exposures" value={open.length} tone={open.some((o) => o.f.severity === 'critical') ? 'red' : 'default'} sub={`${open.filter((o) => o.f.severity === 'critical').length} critical`} />
-        <KpiCard label="Illustrative ALE" value={fmtMoney(ale)} tone="violet" sub={`${plural(svcScenarios.length, 'scenario')}`} onClick={() => navigate('/crq/scenarios')} />
-        <KpiCard label="Third parties" value={svcVendors.length} sub={`${svcVendors.filter((v) => vendorRiskBand(v.residualRisk) === 'high' || vendorRiskBand(v.residualRisk) === 'critical').length} high risk`} />
-        <KpiCard label="Active attack paths" value={svcPaths.filter((p) => p.status === 'active').length} tone={svcPaths.some((p) => p.status === 'active') ? 'amber' : 'green'} />
-      </div>
-      <Card className="p-4">
-        <KeyValue cols={4} items={[{ label: 'Service owner', value: <UserName id={svc.ownerId} /> }, { label: 'Data classification', value: svc.dataClassification }, { label: 'Regulatory scope', value: svc.regulatoryScope.join(', ') }, { label: 'Recovery time objective', value: `${svc.rtoHours} hours` }, { label: 'Revenue dependency', value: svc.revenueDependency }]} />
-      </Card>
-      <Tabs defaultValue="exposures">
-        <TabsList>
-          <TabsTrigger value="exposures"><ShieldAlert /> Exposures ({open.length})</TabsTrigger>
-          <TabsTrigger value="assets"><Activity /> Assets ({svcAssets.length})</TabsTrigger>
-          <TabsTrigger value="scenarios"><Calculator /> Risk scenarios ({svcScenarios.length})</TabsTrigger>
-          <TabsTrigger value="vendors"><Building2 /> Vendors ({svcVendors.length})</TabsTrigger>
-          <TabsTrigger value="ai"><Bot /> AI systems ({svcAI.length})</TabsTrigger>
-          <TabsTrigger value="incidents"><Siren /> Incidents ({svcIncidents.length})</TabsTrigger>
-          <TabsTrigger value="paths"><Wrench /> Attack paths ({svcPaths.length})</TabsTrigger>
-        </TabsList>
-        <TabsContent value="exposures">
-          <FindingsTable tableId={`svc-${svc.id}`} rows={svcFindings} hideColumns={['service']} initialViewId="critical" showAI />
-        </TabsContent>
-        <TabsContent value="assets">
-          <DataTable tableId={`svc-assets-${svc.id}`} data={svcAssets} columns={assetColumns} getRowId={(a) => a.id} onRowClick={(a) => navigate(`/exposures/assets/${a.id}`)} selectable={false} exportName={`assets-${svc.id}`} />
-        </TabsContent>
-        <TabsContent value="scenarios">
-          <div className="grid gap-4 md:grid-cols-2">
-            {svcScenarios.map((s) => {
-              const r = computeScenario(s, findings)
-              return (
-                <Link key={s.id} to={`/crq/scenarios/${s.id}`} className="card p-4 hover:border-border-strong">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="font-medium">{s.name}</div>
-                    <Badge tone="violet">{s.threatType}</Badge>
-                  </div>
-                  <p className="mt-1 line-clamp-2 text-xs text-muted">{s.description}</p>
-                  <div className="mt-3 grid grid-cols-3 gap-2">
-                    <Stat label="Illustrative ALE" value={fmtMoney(r.ale)} />
-                    <Stat label="Event probability" value={fmtPct(r.aep, 1)} />
-                    <Stat label="Linked open findings" value={r.exposure.openHighCritical} />
-                  </div>
-                </Link>
-              )
-            })}
-            {!svcScenarios.length && <Card><EmptyState title="No risk scenarios" description="No scenarios are modelled for this service yet." /></Card>}
-          </div>
-        </TabsContent>
-        <TabsContent value="vendors">
-          <Card className="divide-y divide-border/60">
-            {svcVendors.map((v) => (
-              <div key={v.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <EntityLink type="vendor" id={v.id} />
-                  <div className="text-xs text-muted">{v.category} · {v.dataAccess.join(', ')}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <StatusBadge map={VENDOR_LIFECYCLE} value={v.lifecycle} />
-                  <SeverityBadge severity={vendorRiskBand(v.residualRisk)} />
-                </div>
-              </div>
-            ))}
-            {!svcVendors.length && <EmptyState title="No third parties mapped" />}
-          </Card>
-        </TabsContent>
-        <TabsContent value="ai">
-          <Card className="divide-y divide-border/60">
-            {svcAI.map((a) => (
-              <div key={a.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                <div className="min-w-0">
-                  <EntityLink type="aiSystem" id={a.id} />
-                  <div className="text-xs text-muted">{a.type} · {a.provider}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <StatusBadge map={AI_APPROVAL} value={a.approval} />
-                  <RiskScore score={aiRiskScore(a, findings)} />
-                </div>
-              </div>
-            ))}
-            {!svcAI.length && <EmptyState title="No AI systems mapped" />}
-          </Card>
-        </TabsContent>
-        <TabsContent value="incidents">
-          <Card className="divide-y divide-border/60">
-            {svcIncidents.map((i) => (
-              <div key={i.id} className="flex items-center justify-between gap-3 px-4 py-3">
-                <EntityLink type="incident" id={i.id} />
-                <div className="flex items-center gap-2">
-                  <SeverityBadge severity={i.severity} />
-                  <StatusBadge map={INCIDENT_STATUS} value={i.status} />
-                  <RelTime iso={i.createdAt} className="text-xs" />
-                </div>
-              </div>
-            ))}
-            {!svcIncidents.length && <EmptyState title="No incidents" description="No incidents have affected this service in the demo period." />}
-          </Card>
-        </TabsContent>
-        <TabsContent value="paths">
-          <Card className="divide-y divide-border/60">
-            {svcPaths.map((p) => (
-              <Link key={p.id} to={`/exposures/attack-paths/${p.id}`} className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-surface-2/50">
-                <div>
-                  <div className="text-[13px] font-medium">{p.name}</div>
-                  <div className="text-xs text-muted">{p.steps.length} steps · likelihood {p.likelihood}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <SeverityBadge severity={p.impact} />
-                  <Badge tone={p.status === 'active' ? 'red' : 'emerald'}>{p.status}</Badge>
-                </div>
-              </Link>
-            ))}
-            {!svcPaths.length && <EmptyState title="No attack paths identified" />}
-          </Card>
-        </TabsContent>
-      </Tabs>
-      <Callout tone="demo" icon={<AlertTriangle />}>
-        Service-to-asset mappings, owners and financial figures are simulated demo data. <DemoTag className="ml-1" /> <InfoHint text="In production, mappings would come from CMDB / cloud tags and be confirmed by the Asset Correlation Agent with human approval." />
-      </Callout>
     </div>
   )
 }
