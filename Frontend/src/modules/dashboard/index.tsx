@@ -76,6 +76,11 @@ export function ExecutiveDashboard() {
         actions={
           <>
             <Button variant="secondary" asChild>
+              <Link to="/operations/tickets" target="_blank" rel="noopener noreferrer">
+                <Ticket /> Ticket Management
+              </Link>
+            </Button>
+            <Button variant="secondary" asChild>
               <Link to="/crq/report">
                 <Calculator /> Board risk report
               </Link>

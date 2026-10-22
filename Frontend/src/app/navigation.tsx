@@ -37,7 +37,7 @@ export const NAV_ITEMS: Record<string, NavItem> = {
 }
 
 /** The full workspace navigation (platform administrators — mirrors the DO product family layout). */
-export const FULL_NAV = ['home', 'dashboard', 'projects', 'tickets', 'users', 'notifications']
+export const FULL_NAV = ['home', 'dashboard', 'projects', 'users', 'notifications']
 
 /** @deprecated kept for consumers that want the full list */
 export const MAIN_NAV: NavItem[] = FULL_NAV.map((k) => NAV_ITEMS[k])

@@ -546,6 +546,9 @@ export function TicketsTable({ tickets, tableId, initialFilters, views }: { tick
 export function TicketsPage() {
   const { id } = useParams()
   usePage('Ticket Management', [{ label: id ? 'Project workspace' : 'Workspace' }, { label: 'Ticket Management' }])
+  React.useEffect(() => {
+    if (!id) document.title = 'Ticket Management'
+  }, [id])
   const { data, isLoading, error, retry } = useCollections(['tickets'] as const, { ignoreProjectFilter: !id })
   if (error) return <ErrorState error={error} onRetry={retry} />
   if (isLoading || !data) return <LoadingState kpis={4} rows={12} />
