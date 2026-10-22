@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -145,7 +145,9 @@ export function VendorInventory() {
   usePage('Vendor Inventory', [{ label: 'Third-Party Risk' }, { label: 'Vendor Inventory' }])
   const navigate = useNavigate()
   const initialFilters = useUrlFilters(['risk', 'lifecycle', 'tier'])
-  const [onboard, setOnboard] = React.useState(() => new URLSearchParams(window.location.search).get('onboard') === '1')
+  // Read through the router so ?onboard=1 also works in the standalone (hash-routed) HTML build.
+  const [params] = useSearchParams()
+  const [onboard, setOnboard] = React.useState(() => params.get('onboard') === '1')
   const { data, isLoading, error, retry } = useCollections(['vendors', 'monitoringAlerts'] as const)
   if (error) return <ErrorState error={error} onRetry={retry} />
   if (isLoading || !data) return <LoadingState rows={12} />
