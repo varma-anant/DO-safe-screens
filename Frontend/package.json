@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:single": "tsc -b && vite build --config vite.singlefile.config.ts && node scripts/build-single-html.mjs",
     "typecheck": "tsc -b --noEmit",
     "preview": "vite preview",
     "validate:seed": "vite-node scripts/validate-seed.ts",

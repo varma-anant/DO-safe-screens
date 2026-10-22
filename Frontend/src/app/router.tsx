@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, useParams, useRouteError, Link } from 'react-router'
+import { createBrowserRouter, createHashRouter, Navigate, useParams, useRouteError, Link } from 'react-router'
 import { AppShell } from '@/layouts/AppShell'
 import { SecurityLayout } from '@/layouts/SecurityLayout'
 import { Button } from '@/components/ui/button'
@@ -44,7 +44,12 @@ const requests = () => import('@/modules/requests')
 const admin = () => import('@/modules/admin')
 const support = () => import('@/modules/support')
 
-export const router = createBrowserRouter([
+// A standalone single-HTML build is opened from file:// and therefore cannot rely on
+// a web server to resolve paths such as /applications/123. Hash routing preserves the
+// exact same route tree and behavior while making every screen portable in one file.
+const createAppRouter = window.location.protocol === 'file:' ? createHashRouter : createBrowserRouter
+
+export const router = createAppRouter([
   { path: '/login', ...page(auth, 'LoginPage'), errorElement: <RouteError />, hydrateFallbackElement: <AppLoading /> },
   {
     path: '/',
