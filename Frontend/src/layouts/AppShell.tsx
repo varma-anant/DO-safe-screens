@@ -1,7 +1,8 @@
+import { restrictForViewer } from '@/services/visibility'
 import * as React from 'react'
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { useShallow } from 'zustand/react/shallow'
-import { Bell, Check, ChevronDown, ChevronRight, ChevronsUpDown, FolderKanban, KeyRound, LogOut, Menu, PanelLeftClose, PanelLeftOpen, Plus, RotateCcw, Search, Sparkles, UserRound } from 'lucide-react'
+import { Bell, Check, ChevronsUpDown, KeyRound, LogOut, Menu, PanelLeftClose, PanelLeftOpen, RotateCcw, UserRound } from 'lucide-react'
 import { toast } from 'sonner'
 import { FOOTER_NAV, mainNavFor, type NavItem } from '@/app/navigation'
 import { useUiStore } from '@/stores/ui'
@@ -9,11 +10,11 @@ import { useDbStore } from '@/stores/db'
 import { cn, fmtRelative } from '@/utils/format'
 import { can, explain, JOB_INFO, jobOf, ROLE_INFO, VIEW_AREA, VIEW_CAPS, visibleProjectIds } from '@/utils/permissions'
 import { Button } from '@/components/ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Kbd, Popover, PopoverContent, PopoverTrigger, Tooltip } from '@/components/ui/misc'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, Popover, PopoverContent, PopoverTrigger, Tooltip } from '@/components/ui/misc'
 import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog'
 import * as api from '@/services/api'
 import { GlobalSearch } from './GlobalSearch'
-import { JOURNEY, stepFromStatus } from '@/modules/onboarding/journey'
+
 
 function useMe() {
   return useDbStore((s) => s.db.users.find((u) => u.id === s.db.settings.currentUserId))
@@ -28,7 +29,7 @@ function useBadges() {
       const visible = new Set(visibleProjectIds(s.db, s.db.settings.currentUserId))
       return {
         requests: pendingAccess + security,
-        notifications: s.db.notifications.filter((n) => !n.read).length,
+        notifications: restrictForViewer('notifications', s.db.notifications, s.db).filter((n) => !n.read).length,
         applications: s.db.services.filter((a) => a.status === 'active' && visible.has(a.projectId)).length,
       }
     }),
@@ -61,33 +62,10 @@ function NavRow({ item, collapsed, badge, onNavigate }: { item: NavItem; collaps
   )
 }
 
-/** Persistent "finish setup" card while an application is part-way through onboarding (or nothing is protected yet). */
-function SetupGuide({ onNavigate }: { onNavigate?: () => void }) {
-  const services = useDbStore((s) => s.db.services)
-  const location = useLocation()
-  const inProgress = services.find((s) => !['active', 'paused'].includes(s.status))
-  const anyProtected = services.some((s) => s.status === 'active' || s.status === 'paused')
-  if (location.pathname.startsWith('/onboarding') || (!inProgress && anyProtected)) return null
-  const step = inProgress ? stepFromStatus(inProgress) : 0
-  return (
-    <Link to={inProgress ? `/onboarding?app=${inProgress.id}` : '/onboarding?new=1'} onClick={onNavigate} className="block rounded-xl border border-primary/25 bg-surface p-3 shadow-sm hover:border-primary/50">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.07em] text-primary">{inProgress ? 'Finish setup' : 'Get started'}</div>
-      <div className="mt-0.5 truncate text-[13px] font-medium">{inProgress ? inProgress.name : 'Protect your first application'}</div>
-      <div className="mt-0.5 text-[12px] text-muted">Step {step + 1} of {JOURNEY.length}: {JOURNEY[step].label}</div>
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-3"><div className="h-full rounded-full bg-primary" style={{ width: `${(step / JOURNEY.length) * 100}%` }} /></div>
-    </Link>
-  )
-}
-
 function Sidebar({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: () => void }) {
   const me = useMe()
   const badges = useBadges()
-  const navigate = useNavigate()
-  const location = useLocation()
-  const projects = useDbStore(useShallow((s) => s.db.projects.filter((p) => visibleProjectIds(s.db, s.db.settings.currentUserId).includes(p.id))))
-  const currentProject = useDbStore((s) => s.db.settings.currentProjectId)
   const orgName = useDbStore((s) => s.db.settings.orgName)
-  const [projectsOpen, setProjectsOpen] = React.useState(true)
   const allowed = (i: NavItem) => !i.cap || can(me, i.cap)
   return (
     <div className="flex h-full flex-col">
@@ -103,7 +81,6 @@ function Sidebar({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: (
         </Link>
       </div>
       <nav className="flex-1 space-y-4 overflow-y-auto px-3 pb-3 pt-1" aria-label="Primary">
-        {!collapsed && can(me, 'onboard_applications') && <SetupGuide onNavigate={onNavigate} />}
         <div>
           {!collapsed && <div className="px-2.5 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-subtle">Workspace</div>}
           <ul className="space-y-0.5">
@@ -114,48 +91,7 @@ function Sidebar({ collapsed, onNavigate }: { collapsed: boolean; onNavigate?: (
             ))}
           </ul>
         </div>
-        {jobOf(me) !== 'employee' && <div>
-          {!collapsed && (
-            <div className="flex items-center justify-between px-2.5 pb-1.5">
-              <button onClick={() => setProjectsOpen((o) => !o)} className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-subtle hover:text-muted cursor-pointer" aria-expanded={projectsOpen}>
-                Projects {projectsOpen ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
-              </button>
-              {can(me, 'create_project') && (
-                <button onClick={() => { navigate('/onboarding?new=1'); onNavigate?.() }} className="rounded p-0.5 text-subtle hover:bg-surface hover:text-fg cursor-pointer" aria-label="New project">
-                  <Plus className="size-3.5" />
-                </button>
-              )}
-            </div>
-          )}
-          {(projectsOpen || collapsed) && (
-            <ul className="space-y-0.5">
-              {projects.map((p) => {
-                const active = location.pathname === `/projects/${p.id}` || (currentProject === p.id && !location.pathname.startsWith('/projects/'))
-                return (
-                  <li key={p.id}>
-                    <Tooltip content={collapsed ? p.name : undefined} side="right">
-                      <button
-                        onClick={() => { api.setCurrentProject(p.id); navigate(`/projects/${p.id}`); onNavigate?.() }}
-                        className={cn('flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-left text-[13.5px] cursor-pointer', collapsed && 'justify-center px-0', active ? 'bg-surface font-medium text-fg shadow-sm ring-1 ring-border' : 'text-muted hover:bg-surface/70 hover:text-fg')}
-                      >
-                        <FolderKanban className={cn('size-[17px] shrink-0', active && 'text-primary')} />
-                        {!collapsed && <span className="truncate">{p.name}</span>}
-                      </button>
-                    </Tooltip>
-                  </li>
-                )
-              })}
-              {!projects.length && !collapsed && <li className="px-2.5 py-1 text-xs text-subtle">No projects yet</li>}
-              {can(me, 'create_project') && !collapsed && (
-                <li>
-                  <button onClick={() => { navigate('/onboarding?new=1'); onNavigate?.() }} className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-[7px] text-[13.5px] text-primary hover:bg-surface/70 cursor-pointer">
-                    <Plus className="size-[17px]" /> New project
-                  </button>
-                </li>
-              )}
-            </ul>
-          )}
-        </div>}
+
       </nav>
       <div className="space-y-0.5 border-t border-border px-3 py-2">
         {FOOTER_NAV.filter(allowed).map((item) => (
@@ -212,7 +148,7 @@ function AccessScope() {
         </div>
         <div className="flex gap-2 border-t border-border px-4 py-3">
           <Button size="sm" variant="secondary" asChild><Link to="/platform/settings">My access</Link></Button>
-          <Button size="sm" variant="ghost" asChild><Link to="/requests?new=1">Ask for more access</Link></Button>
+          <Button size="sm" variant="ghost" asChild><Link to="/admin/requests?new=1">Ask for more access</Link></Button>
         </div>
       </PopoverContent>
     </Popover>
@@ -244,7 +180,7 @@ function UserCard({ collapsed }: { collapsed: boolean }) {
           <DropdownMenuItem onSelect={() => navigate('/platform/settings')}>
             <UserRound /> My profile & access
           </DropdownMenuItem>
-          <DropdownMenuItem onSelect={() => navigate('/requests?new=1')}>
+          <DropdownMenuItem onSelect={() => navigate('/admin/requests?new=1')}>
             <KeyRound /> Request access
           </DropdownMenuItem>
           <DropdownMenuSeparator />
@@ -294,36 +230,6 @@ export function ResetDialog({ open, onOpenChange }: { open: boolean; onOpenChang
   )
 }
 
-function ProjectSwitcher() {
-  const projects = useDbStore(useShallow((s) => s.db.projects.filter((p) => visibleProjectIds(s.db, s.db.settings.currentUserId).includes(p.id))))
-  const current = useDbStore((s) => s.db.settings.currentProjectId)
-  const name = projects.find((p) => p.id === current)?.name ?? 'All projects'
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button className="flex h-9 max-w-[240px] items-center gap-2 rounded-lg border border-border bg-surface px-3 text-[13px] hover:border-border-strong cursor-pointer" aria-label="Select project">
-          <FolderKanban className="size-4 shrink-0 text-primary" />
-          <span className="truncate">{name}</span>
-          <ChevronDown className="size-3.5 shrink-0 text-subtle" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-72">
-        <DropdownMenuLabel>Scope every screen to</DropdownMenuLabel>
-        <DropdownMenuItem onSelect={() => api.setCurrentProject(null)}>
-          <span className="flex-1">All projects</span>
-          {!current && <Check className="!text-primary" />}
-        </DropdownMenuItem>
-        {projects.map((p) => (
-          <DropdownMenuItem key={p.id} onSelect={() => api.setCurrentProject(p.id)}>
-            <span className="flex-1 truncate">{p.name}</span>
-            {current === p.id && <Check className="!text-primary" />}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
 function Breadcrumbs() {
   const { title, crumbs } = useUiStore()
   return (
@@ -349,7 +255,8 @@ function Breadcrumbs() {
 }
 
 function NotificationsPopover() {
-  const notifications = useDbStore((s) => s.db.notifications)
+  const db = useDbStore((s) => s.db)
+  const notifications = restrictForViewer('notifications', db.notifications, db)
   const navigate = useNavigate()
   const unread = notifications.filter((n) => !n.read).length
   return (
@@ -390,17 +297,6 @@ function NotificationsPopover() {
   )
 }
 
-function AskBox() {
-  const navigate = useNavigate()
-  const [q, setQ] = React.useState('')
-  return (
-    <form className="relative hidden xl:block" onSubmit={(e) => { e.preventDefault(); navigate(`/intelligence?q=${encodeURIComponent(q || 'Summarize the current security posture')}`); setQ('') }}>
-      <Sparkles className="pointer-events-none absolute left-2.5 top-2.5 size-4 text-primary" />
-      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Ask DO SAFE…" aria-label="Ask DO SAFE" className="h-9 w-52 rounded-lg border border-border bg-surface pl-8 pr-3 text-sm placeholder:text-subtle focus:border-primary/50 focus:outline-none" />
-    </form>
-  )
-}
-
 /** Redirects to the login page when there is no active session. */
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const ok = useDbStore((s) => s.db.settings.authenticated && !!s.db.users.find((u) => u.id === s.db.settings.currentUserId && u.status === 'active'))
@@ -416,6 +312,7 @@ export function AppShell() {
   const me = useMe()
   React.useEffect(() => {
     mainRef.current?.scrollTo({ top: 0 })
+    if (['/home','/dashboard','/projects','/operations/tickets'].includes(location.pathname)) api.setCurrentProject(null)
   }, [location.pathname])
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -455,23 +352,6 @@ export function AppShell() {
             <div className="min-w-0 flex-1">
               <Breadcrumbs />
             </div>
-            <div className="hidden md:block">
-              <ProjectSwitcher />
-            </div>
-            <button onClick={() => setSearchOpen(true)} className="hidden h-9 items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm text-subtle hover:border-border-strong lg:flex lg:w-52 cursor-pointer" aria-label="Search (Cmd+K)">
-              <Search className="size-4" />
-              <span className="flex-1 text-left">Search…</span>
-              <Kbd>⌘K</Kbd>
-            </button>
-            <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSearchOpen(true)} aria-label="Search">
-              <Search />
-            </Button>
-            <AskBox />
-            <Tooltip content="Interactive prototype: all records, scans, agent runs and estimates are simulated. Nothing is connected to real systems.">
-              <span tabIndex={0} className="hidden items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-[11.5px] text-muted 2xl:inline-flex">
-                <span className="size-1.5 rounded-full bg-primary" /> Interactive prototype
-              </span>
-            </Tooltip>
             <NotificationsPopover />
             {me && <AccessScope />}
           </header>

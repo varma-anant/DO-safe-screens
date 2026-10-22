@@ -1,4 +1,4 @@
-import { createBrowserRouter, createHashRouter, Navigate, useParams, useRouteError, Link } from 'react-router'
+import { createBrowserRouter, createHashRouter, Navigate, useLocation, useParams, useRouteError, Link } from 'react-router'
 import { AppShell } from '@/layouts/AppShell'
 import { SecurityLayout } from '@/layouts/SecurityLayout'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,10 @@ function RouteError({ forceNotFound }: { forceNotFound?: boolean }) {
   )
 }
 
+function RequestsRedirect() {
+  return <Navigate to={`/admin/requests${useLocation().search}`} replace />
+}
+
 function ServiceRedirect() {
   return <Navigate to={`/applications/${useParams().id}`} replace />
 }
@@ -37,7 +41,7 @@ const intel = () => import('@/modules/intelligence')
 const integ = () => import('@/modules/integrations')
 const platform = () => import('@/modules/platform')
 const auth = () => import('@/modules/auth')
-const home = () => import('@/modules/home')
+const home = () => import('@/modules/enterprise')
 const apps = () => import('@/modules/applications')
 const onboarding = () => import('@/modules/onboarding')
 const requests = () => import('@/modules/requests')
@@ -61,12 +65,20 @@ export const router = createAppRouter([
         { index: true, element: <Navigate to="/home" replace /> },
         { path: 'home', ...page(home, 'HomePage') },
         { element: <RequireCap cap="view_financial_risk" area="The executive dashboard" />, children: [{ path: 'dashboard', ...page(dash, 'ExecutiveDashboard') }] },
-        { path: 'requests', ...page(requests, 'RequestsPage') },
+        { path: 'requests', element: <RequestsRedirect /> },
+        { path: 'help', ...page(home, 'HelpPage') },
         { path: 'applications', ...page(apps, 'ApplicationsPage') },
         { path: 'applications/:id', ...page(apps, 'ApplicationDetail') },
         { path: 'mapping', ...page(apps, 'MappingPage') },
         { path: 'projects', ...page(apps, 'ProjectsPage') },
-        { path: 'projects/:id', ...page(apps, 'ProjectDetail') },
+        { path: 'projects/:id', ...page(home, 'ProjectWorkspace'), children: [
+          { index: true, ...page(apps, 'ProjectDetail') },
+          { path: 'mapping', ...page(apps, 'MappingPage') },
+          { path: 'applications', ...page(apps, 'ApplicationsPage') },
+          { path: 'applications/:appId', ...page(apps, 'ApplicationDetail') },
+          { path: 'tickets/:ticketId', ...page(ops, 'TicketDetail') },
+          { path: 'tickets', ...page(ops, 'TicketsPage') },
+        ] },
         { path: 'onboarding', ...page(onboarding, 'OnboardingPage') },
         { path: 'services', element: <Navigate to="/applications" replace /> },
         { path: 'services/:id', element: <ServiceRedirect /> },
@@ -76,7 +88,8 @@ export const router = createAppRouter([
           path: 'admin',
           ...page(admin, 'AdminLayout'),
           children: [
-            { index: true, ...page(admin, 'AdminOverview') },
+            { index: true, element: <Navigate to="people" replace /> },
+            { path: 'requests', ...page(requests, 'RequestsPage') },
             { path: 'people', ...page(admin, 'PeoplePage') },
             { path: 'invitations', ...page(admin, 'InvitationsPage') },
             { path: 'roles', ...page(admin, 'RolesPage') },
@@ -113,8 +126,7 @@ export const router = createAppRouter([
         { path: 'operations/incidents', ...page(ops, 'IncidentsPage') },
         { path: 'operations/incidents/:id', ...page(ops, 'IncidentDetail') },
         ] },
-        { path: 'operations/tickets', ...page(ops, 'TicketsPage') },
-        { path: 'operations/tickets/:id', ...page(ops, 'TicketDetail') },
+
         { path: 'operations/approvals', ...page(ops, 'ApprovalsPage') },
 
         { element: <RequireCap cap="view_vendor_risk" area="Vendor risk" />, children: [
@@ -173,9 +185,12 @@ export const router = createAppRouter([
 
         ] },
 
+        { path: 'operations/tickets', ...page(ops, 'TicketsPage') },
+        { path: 'operations/tickets/:id', ...page(ops, 'TicketDetail') },
         { path: 'platform/audit', ...page(platform, 'AuditPage') },
         { path: 'platform/notifications', ...page(platform, 'NotificationsPage') },
-        { path: 'platform/settings', ...page(platform, 'SettingsPage') },
+        { path: 'platform/settings', ...page(home, 'EnterpriseSettings') },
+        { path: 'platform/settings/:section', ...page(home, 'EnterpriseSettings') },
         { path: '*', element: <RouteError forceNotFound /> },
       ] },
     ],

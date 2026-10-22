@@ -15,7 +15,7 @@ import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, Progress } from '@/components/ui/misc'
 import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog'
-import { Field, NativeSelect } from '@/components/ui/input'
+import { Field, Input, NativeSelect } from '@/components/ui/input'
 import { FindingsTable } from '@/modules/findings/FindingsTable'
 import * as api from '@/services/api'
 import { useDbStore } from '@/stores/db'
@@ -68,6 +68,7 @@ function OnboardingProgress({ app }: { app: BusinessService }) {
 const col = createColumnHelper<BusinessService & { projectName: string; open: number[]; assets: number; risk: number; lastRun?: string }>()
 
 export function ApplicationsPage() {
+  const { id: projectId } = useParams()
   usePage('SAFE applications', [{ label: 'Workspace' }, { label: 'SAFE applications' }])
   const navigate = useNavigate()
   const settings = useSettings()
@@ -156,7 +157,7 @@ export function ApplicationsPage() {
         </Section>
       )}
       {safe.length ? (
-        <DataTable tableId="safe-apps" data={safe} columns={columns} getRowId={(r) => r.id} onRowClick={(r) => navigate(`/applications/${r.id}`)} facets={[{ columnId: 'project', label: 'Project' }, { columnId: 'criticality', label: 'Criticality' }]} searchPlaceholder="Search applications…" selectable={false} exportName="do-safe-applications" />
+        <DataTable tableId="safe-apps" data={safe} columns={columns} getRowId={(r) => r.id} onRowClick={(r) => navigate(projectId ? `/projects/${projectId}/applications/${r.id}` : `/applications/${r.id}`)} facets={[{ columnId: 'project', label: 'Project' }, { columnId: 'criticality', label: 'Criticality' }]} searchPlaceholder="Search applications…" selectable={false} exportName="do-safe-applications" />
       ) : (
         <Card>
           <EmptyState icon={<Rocket />} title="No SAFE applications yet" description="Onboard your first application: declare its assets, map them, connect your tools, run a test and then a full assessment." action={canOnboard && <Button onClick={() => navigate('/onboarding?new=1')}><Plus /> Onboard application</Button>} />
@@ -169,22 +170,23 @@ export function ApplicationsPage() {
 // ============================================================ Application detail
 
 export function ApplicationDetail() {
-  const { id } = useParams()
+  const params = useParams()
+  const id = params.appId || params.id
   const navigate = useNavigate()
   const settings = useSettings()
   const canRun = useCan('run_scans')
   const canOnboard = useCan('onboard_applications')
   const { run, pending } = useAction()
-  const { data, isLoading, error, retry } = useCollections(['services', 'projects', 'assets', 'findings', 'scenarios', 'vendors', 'aiSystems', 'incidents', 'attackPaths', 'integrations'] as const, { ignoreProjectFilter: true })
+  const { data, isLoading, error, retry } = useCollections(['services', 'projects', 'assets', 'findings', 'scenarios', 'vendors', 'aiSystems', 'incidents', 'attackPaths', 'integrations'] as const, { ignoreProjectFilter: !params.appId })
   const app = data?.services.find((s) => s.id === id)
-  usePage(app?.name ?? 'Application', [{ label: 'SAFE applications', to: '/applications' }, { label: app?.name ?? id ?? '' }])
+  usePage(app?.name ?? 'Application', [{ label: 'SAFE applications', to: params.appId ? `/projects/${params.id}/applications` : '/applications' }, { label: app?.name ?? id ?? '' }])
   React.useEffect(() => {
     if (app) api.recordRecent('service', app.id, app.name)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [app?.id])
   if (error) return <ErrorState error={error} onRetry={retry} />
   if (isLoading || !data) return <LoadingState kpis={5} rows={8} />
-  if (!app) return <NotFound what="Application" back={{ to: '/applications', label: 'Back to SAFE applications' }} />
+  if (!app) return <NotFound what="Application" back={{ to: params.appId ? `/projects/${params.id}/applications` : '/applications', label: 'Back to SAFE applications' }} />
   const project = data.projects.find((p) => p.id === app.projectId)
   const assets = data.assets.filter((a) => a.businessServiceId === app.id && !a.duplicateOfId && !a.possibleDuplicateOfId)
   const fs = scoreFindings(data.findings.filter((f) => f.businessServiceId === app.id), data.assets, data.services, settings.weights)
@@ -202,7 +204,7 @@ export function ApplicationDetail() {
   return (
     <div className="space-y-5">
       <PageHeader
-        back={{ to: '/applications', label: 'SAFE applications' }}
+        back={{ to: params.appId ? `/projects/${params.id}/applications` : '/applications', label: 'SAFE applications' }}
         title={app.name}
         icon={<AppWindow />}
         description={app.description}
@@ -428,6 +430,10 @@ export function MappingPage() {
 // ============================================================ Projects
 
 export function ProjectsPage() {
+  const [query, setQuery] = React.useState('')
+  const [sort, setSort] = React.useState('name')
+  const me = useCurrentUser()
+  const [ownership,setOwnership] = React.useState('all')
   usePage('Projects', [{ label: 'Projects' }])
   const navigate = useNavigate()
   const canCreate = useCan('create_project')
@@ -437,9 +443,11 @@ export function ProjectsPage() {
   return (
     <div className="space-y-5">
       <PageHeader title="Projects" icon={<FolderKanban />} description="What your organization is securing. Each project groups applications and controls who can see and act on their findings." actions={canCreate && <Button onClick={() => navigate('/onboarding?new=1')}><Plus /> New project</Button>} />
+      <div className="flex flex-wrap gap-3"><Input aria-label="Search projects" placeholder="Search projects…" value={query} onChange={e=>setQuery(e.target.value)} className="max-w-sm" /><NativeSelect aria-label="Project ownership" value={ownership} onChange={e=>setOwnership(e.target.value)} className="w-44"><option value="all">All projects</option><option value="mine">Owned by me</option></NativeSelect><NativeSelect aria-label="Sort projects" value={sort} onChange={e=>setSort(e.target.value)} className="w-44"><option value="name">Name: A–Z</option><option value="recent">Newest first</option></NativeSelect></div>
+      {data.projects.length > 0 && !data.projects.some(p => (ownership === 'all' || p.ownerId === me.id) && (p.name+' '+p.description).toLowerCase().includes(query.toLowerCase())) && <EmptyState title="No matching projects" description="Try another search or reset the ownership filter." action={<Button variant="secondary" onClick={()=>{setQuery('');setOwnership('all')}}>Reset filters</Button>} />}
       {data.projects.length ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {data.projects.map((p) => {
+          {data.projects.filter(p => (ownership === 'all' || p.ownerId === me.id) && (p.name+' '+p.description).toLowerCase().includes(query.toLowerCase())).sort((a,b)=>sort==='recent'? b.createdAt.localeCompare(a.createdAt):a.name.localeCompare(b.name)).map((p) => {
             const apps = data.services.filter((s) => s.projectId === p.id)
             const open = data.findings.filter((f) => apps.some((a) => a.id === f.businessServiceId) && isOpen(f.status))
             return (
@@ -512,13 +520,13 @@ export function ProjectDetail() {
         }
       />
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-        <KpiCard label="Applications" value={apps.length} sub={`${apps.filter((a) => a.status === 'active').length} protected`} onClick={() => navigate('/applications')} />
+        <KpiCard label="Applications" value={apps.length} sub={`${apps.filter((a) => a.status === 'active').length} protected`} onClick={() => navigate(`/projects/${project.id}/applications`)} />
         <KpiCard label="Open findings" value={open.length} onClick={() => navigate('/operations/findings')} />
         <KpiCard label="Critical" value={open.filter((x) => x.f.severity === 'critical').length} tone="red" onClick={() => navigate('/operations/findings?severity=critical&status=new,triaged,in_validation,validated,in_remediation,pending_verification')} />
-        <KpiCard label="Open tickets" value={data.tickets.filter((t) => t.findingId && fs.some((x) => x.f.id === t.findingId) && !['done', 'cancelled'].includes(t.status)).length} onClick={() => navigate('/operations/tickets')} />
+        <KpiCard label="Open tickets" value={data.tickets.filter((t) => t.findingId && fs.some((x) => x.f.id === t.findingId) && !['done', 'cancelled'].includes(t.status)).length} onClick={() => navigate(`/projects/${project.id}/tickets`)} />
         <KpiCard label="Members" value={members.length} />
       </div>
-      <Callout tone="info" icon={<FolderKanban />}>Every security screen is now scoped to <strong>{project.name}</strong>. Use the project switcher in the top bar to change scope.</Callout>
+      <Callout tone="info" icon={<FolderKanban />}>Project workspace: <strong>{project.name}</strong>. Use the tabs above to open this project’s assets, tickets and applications.</Callout>
       <div className="grid gap-5 xl:grid-cols-3">
         <Section className="xl:col-span-2" title="Applications" description="Onboarding status and exposure per application">
           <div className="divide-y divide-border">
@@ -527,7 +535,7 @@ export function ProjectDetail() {
               return (
                 <div key={a.id} className="flex flex-wrap items-center gap-4 py-3">
                   <div className="min-w-0 flex-1">
-                    <Link to={`/applications/${a.id}`} className="text-[14px] font-medium hover:text-primary">{a.name}</Link>
+                    <Link to={`/projects/${project.id}/applications/${a.id}`} className="text-[14px] font-medium hover:text-primary">{a.name}</Link>
                     <div className="text-xs text-muted">{a.appType} · {a.environment} · {data.assets.filter((x) => x.businessServiceId === a.id && !x.duplicateOfId && !x.possibleDuplicateOfId).length} assets</div>
                   </div>
                   <StatusBadge map={APP_STATUS} value={a.status} />
@@ -613,4 +621,3 @@ export function ProjectDetail() {
     </div>
   )
 }
-

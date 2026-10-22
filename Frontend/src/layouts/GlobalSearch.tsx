@@ -1,3 +1,4 @@
+import { can } from '@/utils/permissions'
 import * as React from 'react'
 import * as D from '@radix-ui/react-dialog'
 import { useNavigate } from 'react-router'
@@ -17,6 +18,7 @@ interface Result {
   title: string
   sub: string
   domain?: string
+  to?: string
 }
 
 const TYPE_LABEL: Record<SearchEntityType, string> = { asset: 'Assets', finding: 'Findings', vendor: 'Vendors', aiSystem: 'AI systems', incident: 'Incidents', ticket: 'Tickets', knowledge: 'Knowledge records', service: 'Applications', scenario: 'Risk scenarios', project: 'Projects' }
@@ -37,22 +39,24 @@ export function GlobalSearch() {
     const see = <K extends CollectionKey>(k: K) => scopeCollection(k, restrictForViewer(k, db[k], db), db, scope.visibleApps)
     const out: Result[] = []
     const push = (arr: Result[], limit = 6) => out.push(...arr.slice(0, limit))
+    push(see('projects').filter(p => m(p.id, p.name, p.description)).map(p => ({type: 'project', id:p.id, title:p.name, sub:'Project workspace'})))
     push(see('findings').filter((f) => m(f.id, f.title, f.cveId, f.category, ...f.cweIds, ...f.attackIds)).map((f) => ({ type: 'finding', id: f.id, title: f.title, sub: `${f.severity.toUpperCase()} · ${f.status.replace(/_/g, ' ')}${f.cveId ? ` · ${f.cveId}` : ''}`, domain: f.domain })), 8)
     push(see('assets').filter((a) => !a.duplicateOfId && m(a.id, a.name, a.fqdn, a.ipAddress, a.type)).map((a) => ({ type: 'asset', id: a.id, title: a.name, sub: `${a.type} · ${a.environment}${a.ipAddress ? ` · ${a.ipAddress}` : ''}` })))
     push(see('vendors').filter((v) => m(v.id, v.name, v.category)).map((v) => ({ type: 'vendor', id: v.id, title: v.name, sub: `${v.category} · ${v.tier}` })))
     push(see('aiSystems').filter((a) => m(a.id, a.name, a.provider, a.type)).map((a) => ({ type: 'aiSystem', id: a.id, title: a.name, sub: `${a.type} · ${a.approval}` })))
     push(see('incidents').filter((i) => m(i.id, i.title, i.category)).map((i) => ({ type: 'incident', id: i.id, title: i.title, sub: `${i.severity} · ${i.status}` })))
     push(see('tickets').filter((t) => m(t.id, t.title, t.externalRef)).map((t) => ({ type: 'ticket', id: t.id, title: t.title, sub: `${t.priority} · ${t.status.replace(/_/g, ' ')}${t.externalRef ? ` · ${t.externalRef}` : ''}` })))
-    push(db.knowledge.filter((k) => m(k.externalId, k.name, k.summary)).map((k) => ({ type: 'knowledge', id: k.id, title: `${k.externalId} — ${k.name}`, sub: k.source })))
+    if (can(db.users.find(u=>u.id===db.settings.currentUserId), 'view_findings')) push(db.knowledge.filter((k) => m(k.externalId, k.name, k.summary)).map((k) => ({ type: 'knowledge', id: k.id, title: `${k.externalId} — ${k.name}`, sub: k.source })))
     push(see('services').filter((s) => m(s.id, s.name)).map((s) => ({ type: 'service', id: s.id, title: s.name, sub: `Application · ${s.criticality}` })), 3)
     push(see('scenarios').filter((s) => m(s.id, s.name, s.threatType)).map((s) => ({ type: 'scenario', id: s.id, title: s.name, sub: `Risk scenario · ${s.threatType}` })), 3)
+    push([['access','Manage access'],['support','Raise a support request'],['map','Asset mapping'],['onboard','Application setup']].filter(([,title])=>m(title)).map(([id,title])=>({type:'knowledge',id,title,sub:'Knowledge Base guide',to:`/knowledge?guide=${id}`})))
     return out
   }, [q, db])
 
   React.useEffect(() => setActive(0), [q])
 
   const go = (r: Result) => {
-    navigate(entityPath(r.type, r.id, r.domain))
+    navigate(r.to || entityPath(r.type, r.id, r.domain))
     setSearchOpen(false)
     setQ('')
   }

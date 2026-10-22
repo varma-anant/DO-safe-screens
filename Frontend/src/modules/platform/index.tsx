@@ -48,19 +48,21 @@ export function NotificationsPage() {
   usePage('Notifications', [{ label: 'Platform' }, { label: 'Notifications' }])
   const navigate = useNavigate()
   const { data, isLoading, error, retry } = useCollections(['notifications'] as const)
-  const [filter, setFilter] = React.useState<'all' | 'unread'>('all')
+  const [filter, setFilter] = React.useState<'all' | 'unread' | 'assignments' | 'approvals' | 'alerts'>('all')
   if (error) return <ErrorState error={error} onRetry={retry} />
   if (isLoading || !data) return <LoadingState rows={10} />
-  const list = data.notifications.filter((n) => filter === 'all' || !n.read)
+  const matches = (n: typeof data.notifications[number]) => filter === 'all' || (filter === 'unread' ? !n.read : filter === 'assignments' ? /assign/i.test(n.title) : filter === 'approvals' ? /approv|request|declin/i.test(n.title) : !/assign|approv|request|declin/i.test(n.title))
+  const list = data.notifications.filter(matches)
   const dot: Record<Severity | 'info', string> = { critical: 'bg-red-500', high: 'bg-orange-500', medium: 'bg-amber-500', low: 'bg-emerald-500', informational: 'bg-slate-400', info: 'bg-violet-500' }
   return (
     <div className="space-y-5">
-      <PageHeader title="Notification Hub" icon={<Bell />} description="Assignments, approvals, alerts and status changes relevant to you." actions={<Button variant="secondary" onClick={() => api.markNotificationRead('all')}><CheckCheck /> Mark all read</Button>} />
-      <div className="flex gap-1.5">
-        {(['all', 'unread'] as const).map((f) => (
-          <button key={f} onClick={() => setFilter(f)} className={cn('rounded-full border px-3 py-1 text-xs capitalize cursor-pointer', filter === f ? 'border-violet-500/50 bg-violet-500/15 text-violet-700' : 'border-border text-muted')}>{f} ({f === 'all' ? data.notifications.length : data.notifications.filter((n) => !n.read).length})</button>
+      <PageHeader title="Notifications" icon={<Bell />} description="Assignments, approvals, alerts and status changes relevant to you." actions={<Button variant="secondary" onClick={() => api.markNotificationRead('all')}><CheckCheck /> Mark all read</Button>} />
+      <div className="flex flex-wrap gap-1.5">
+        {(['all', 'unread', 'assignments', 'approvals', 'alerts'] as const).map((f) => (
+          <button key={f} onClick={() => setFilter(f)} className={cn('rounded-full border px-3 py-1 text-xs capitalize cursor-pointer', filter === f ? 'border-violet-500/50 bg-violet-500/15 text-violet-700' : 'border-border text-muted')}>{f}</button>
         ))}
       </div>
+      <Link to="/platform/settings/preferences" className="inline-block text-xs text-primary">Notification preferences</Link>
       <Card className="divide-y divide-border/60">
         {list.map((n) => (
           <button key={n.id} onClick={() => { api.markNotificationRead(n.id); if (n.link) navigate(n.link) }} className={cn('flex w-full gap-3 px-4 py-3 text-left hover:bg-surface-2/50 cursor-pointer', !n.read && 'bg-violet-500/5')}>

@@ -30,7 +30,7 @@ const STATUS_LABEL: Record<SupportTicket['status'], string> = { submitted: 'Subm
 const CATEGORIES: SupportTicket['category'][] = ['Onboarding & assets', 'Connectors & scans', 'Access & permissions', 'Findings & tickets', 'Billing & account', 'Other']
 
 export function SupportPage() {
-  usePage('Help & Support', [{ label: 'Help & Support' }])
+  usePage('Support', [{ label: 'Support' }])
   const [params, setParams] = useSearchParams()
   const me = useCurrentUser()
   const [scope, setScope] = React.useState<'mine' | 'all' | 'open'>('mine')
@@ -46,7 +46,7 @@ export function SupportPage() {
   const degraded = connected.filter((i) => i.status === 'error' || i.health < 80)
   return (
     <div className="space-y-5">
-      <PageHeader title="Help & Support" icon={<LifeBuoy />} description="Raise a support request, follow its progress, and check service status." actions={<Button onClick={() => setCreating(true)}><Plus /> New support request</Button>} />
+      <PageHeader title="Support" icon={<LifeBuoy />} description="Raise a support request, follow its progress, and check service status." actions={<Button onClick={() => setCreating(true)}><Plus /> New support request</Button>} />
       <Tabs defaultValue="tickets">
         <TabsList>
           <TabsTrigger value="tickets">My support tickets</TabsTrigger>
@@ -219,7 +219,7 @@ function NewSupportDialog({ open, onOpenChange, onCreated }: { open: boolean; on
   )
 }
 
-// ---------------------------------------------------------------- Knowledge base
+// ---------------------------------------------------------------- Knowledge Base
 
 interface Guide {
   id: string
@@ -233,17 +233,17 @@ interface Guide {
 
 const GUIDES: Guide[] = [
   { id: 'onboard', title: 'Protect your first application', category: 'Getting started', icon: <PlayCircle />, summary: 'Seven short steps, about 10 minutes. Nothing in your systems changes.', steps: ['Pick a project — a folder that keeps related applications together.', 'Describe your app: what it is, who is responsible, how important it is and what kind of data it handles.', 'List its parts. We suggest the typical parts (website, database, code…); untick what you don’t have and add anything missing.', 'Connect the parts. We draw a suggested map of how they talk to each other — adjust it if needed.', 'Connect your tools. For each tool you see exactly what DO SAFE can read (and that it can change nothing) before you allow read-only access.', 'Test run: a one-minute safe check that every part is reachable. If something isn’t ready, it tells you exactly what to fix.', 'Turn on protection: the full run checks everything, then DO SAFE keeps checking every day. You get a clear “Protection is on” summary and a list of what to fix first.'], next: [{ label: 'Start setup', to: '/onboarding?new=1' }, { label: 'Protected applications', to: '/applications' }] },
-  { id: 'map', title: 'Show how the parts connect', category: 'Getting started', icon: <Network />, summary: 'Why the map matters and how to adjust it.', steps: ['Open Asset mapping and pick an application.', 'Click “Suggest connections” — DO SAFE draws the usual connections for the kinds of parts you have.', 'To add one, drag from the dot on the right of a part to another part, and pick what the connection means (for example “reads from”).', 'Click a connection to relabel or remove it.', 'Save. DO SAFE uses the map to tell whether a problem could reach important data.'], next: [{ label: 'Open Asset mapping', to: '/mapping' }] },
+  { id: 'map', title: 'Show how the parts connect', category: 'Getting started', icon: <Network />, summary: 'Why the map matters and how to adjust it.', steps: ['Open Projects, select a project, then open Asset Mapping and choose an application.', 'Click “Suggest connections” — DO SAFE draws the usual connections for the kinds of parts you have.', 'To add one, drag from the dot on the right of a part to another part, and pick what the connection means (for example “reads from”).', 'Click a connection to relabel or remove it.', 'Save. DO SAFE uses the map to tell whether a problem could reach important data.'], next: [{ label: 'Open Projects', to: '/projects' }] },
   { id: 'runs', title: 'Test run vs turning on protection', category: 'Getting started', icon: <GitBranch />, summary: 'Why there is a quick safe check before the real one.', steps: ['The test run is a dry run. It checks that DO SAFE can reach every part and that each connected tool’s access works.', 'It changes nothing and reports no problems — it only answers “are we ready?”.', 'If a part isn’t ready, the result says why in plain words (for example “Wiz isn’t connected yet”) with a button to fix it.', '“Turn on protection” starts the full run: every part is checked properly, problems are explained and ranked, and daily checks begin.', 'You can pause protection from the application page at any time.'], next: [{ label: 'Protected applications', to: '/applications' }] },
   { id: 'triage', title: 'Triage a finding', category: 'Daily work', icon: <FileSearch />, summary: 'Confirm, assign and ticket the findings that matter first.', steps: ['Start at Prioritization — it ranks findings by exploitability, exposure, asset criticality and business impact.', 'Open a finding to see evidence, the affected asset and the attack path it belongs to.', 'Confirm it, or mark it as a false positive with a reason (that goes to review).', 'Assign an owner and create a remediation ticket with an SLA.', 'Verification re-tests the fix before the finding closes.'], next: [{ label: 'Prioritization', to: '/exposures/prioritization' }, { label: 'Ticket management', to: '/operations/tickets' }] },
-  { id: 'fp', title: 'Review a false-positive claim', category: 'Daily work', icon: <ShieldCheck />, summary: 'How false-positive and risk-acceptance decisions are approved.', steps: ['Claims appear in Requests → Security approvals.', 'Read the evidence and the analyst reasoning.', 'Approve to close the finding as false positive, or reject with a note to send it back.', 'Every decision is written to the audit log.'], next: [{ label: 'Security approvals', to: '/requests?tab=approvals' }] },
+  { id: 'fp', title: 'Review a false-positive claim', category: 'Daily work', icon: <ShieldCheck />, summary: 'How false-positive and risk-acceptance decisions are approved.', steps: ['Claims appear in User Management → Requests → Security Approvals.', 'Read the evidence and the analyst reasoning.', 'Approve to close the finding as false positive, or reject with a note to send it back.', 'Every decision is written to the audit log.'], next: [{ label: 'Security approvals', to: '/admin/requests?tab=approvals' }] },
   { id: 'vendor', title: 'Assess a vendor', category: 'Daily work', icon: <Building2 />, summary: 'Send a questionnaire, score responses and track remediation.', steps: ['Open Third-party risk inside a project.', 'Start an assessment for the vendor and choose a questionnaire.', 'Score responses and attach evidence.', 'Raise remediation items for gaps and track them to closure.'], next: [{ label: 'Third-party risk', to: '/tprm' }] },
-  { id: 'access', title: 'Manage access', category: 'Administration', icon: <UserCog />, summary: 'Organization roles decide what someone can do; project membership decides where.', steps: ['Invite people from User management → People.', 'Give them an organization role: Administrator, Security analyst, Project owner or Viewer.', 'Add them to projects with a project role (Owner, Contributor, Viewer).', 'People without access can raise a request from Requests; project owners and admins decide.', 'Use the permission inspector to see why someone can or cannot do something.'], next: [{ label: 'User management', to: '/admin' }, { label: 'Requests', to: '/requests' }] },
-  { id: 'support', title: 'Raise a support request', category: 'Administration', icon: <LifeBuoy />, summary: 'Get help from the DO SAFE support team.', steps: ['Open Help & Support and choose "New support request".', 'Pick a category and priority and link the project if relevant.', 'Describe what happened and the business impact.', 'Follow progress: Submitted → Triage → Investigating → Resolved.'], next: [{ label: 'Help & Support', to: '/support?new=1' }] },
+  { id: 'access', title: 'Manage access', category: 'Administration', icon: <UserCog />, summary: 'Organization roles decide what someone can do; project membership decides where.', steps: ['Invite people from User Management → Users.', 'Give them an organization role: Administrator, Security analyst, Project owner or Viewer.', 'Add them to projects with a project role (Owner, Contributor, Viewer).', 'People without access can raise a request from User Management → Requests; project owners and admins decide.', 'Review Roles & Permissions to understand the available capabilities.'], next: [{ label: 'User management', to: '/admin' }, { label: 'Requests', to: '/admin/requests' }] },
+  { id: 'support', title: 'Raise a support request', category: 'Administration', icon: <LifeBuoy />, summary: 'Get help from the DO SAFE support team.', steps: ['Open Support and choose "New support request".', 'Pick a category and priority and link the project if relevant.', 'Describe what happened and the business impact.', 'Follow progress: Submitted → Triage → Investigating → Resolved.'], next: [{ label: 'Support', to: '/support?new=1' }] },
 ]
 
 export function KnowledgePage() {
-  usePage('Knowledge base', [{ label: 'Knowledge base' }])
+  usePage('Knowledge Base', [{ label: 'Knowledge Base' }])
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
   const [q, setQ] = React.useState('')
@@ -254,7 +254,7 @@ export function KnowledgePage() {
   const list = GUIDES.filter((g) => (cat === 'All' || g.category === cat) && (!q || `${g.title} ${g.summary} ${g.steps.join(' ')}`.toLowerCase().includes(q.toLowerCase())))
   return (
     <div className="space-y-5">
-      <PageHeader title="Knowledge base" icon={<BookOpen />} description="Task guides for working in DO SAFE, plus the security knowledge library." actions={<Button variant="secondary" asChild><Link to="/support?new=1"><CircleHelp /> Contact support</Link></Button>} />
+      <PageHeader title="Knowledge Base" icon={<BookOpen />} description="Task guides for working in DO SAFE, plus the security knowledge library." actions={<Button variant="secondary" asChild><Link to="/support?new=1"><CircleHelp /> Contact support</Link></Button>} />
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-[260px] flex-1">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-subtle" />

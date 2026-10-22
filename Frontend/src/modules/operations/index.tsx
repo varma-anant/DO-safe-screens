@@ -1,3 +1,4 @@
+import { TicketDashboard } from '@/modules/enterprise/TicketDashboard'
 import * as React from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 import { createColumnHelper } from '@tanstack/react-table'
@@ -7,7 +8,7 @@ import { z } from 'zod'
 import { AlarmClock, BadgeCheck, Bot, Check, CheckCheck, ClipboardCheck, FileWarning, Hammer, MessageSquare, Plus, Scale, Siren, Ticket as TicketIcon, Users, X, Zap, ArrowRight, Building2, ShieldCheck } from 'lucide-react'
 import { Bar, BarChart, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis, CartesianGrid } from 'recharts'
 import type { Incident, IncidentStatus, SecurityEvent, Ticket, TicketStatus } from '@/types'
-import { useAction, useCollections, useSettings, useUsers } from '@/hooks/queries'
+import { useCan, useAction, useCollections, useSettings, useUsers } from '@/hooks/queries'
 import { usePage, useUrlFilters } from '@/hooks/usePage'
 import { Callout, EmptyState, ErrorState, KeyValue, KpiCard, LoadingState, NotFound, PageHeader, Section } from '@/components/common/layout'
 import { Badge, DemoTag, FindingStatusBadge, ProvenanceBadge, SeverityBadge, StatusBadge } from '@/components/common/badges'
@@ -509,6 +510,7 @@ const tCol = createColumnHelper<Ticket>()
 
 export function TicketsTable({ tickets, tableId, initialFilters, views }: { tickets: Ticket[]; tableId: string; initialFilters?: ReturnType<typeof useUrlFilters>; views?: { id: string; label: string; filters: { id: string; value: unknown }[] }[] }) {
   const navigate = useNavigate()
+  const { id: projectId } = useParams()
   const users = useUsers()
   const columns = [
     tCol.accessor('id', { header: 'ID', cell: (c) => <span className="font-mono text-[11px] text-muted">{c.getValue()}</span> }),
@@ -528,9 +530,9 @@ export function TicketsTable({ tickets, tableId, initialFilters, views }: { tick
       data={tickets}
       columns={columns}
       getRowId={(t) => t.id}
-      onRowClick={(t) => navigate(`/operations/tickets/${t.id}`)}
+      onRowClick={(t) => navigate(projectId ? `/projects/${projectId}/tickets/${t.id}` : `/operations/tickets/${t.id}`)}
       initialFilters={initialFilters}
-      initialSorting={[{ id: 'sla', desc: false }]}
+      initialSorting={[{ id: tableId.startsWith('enterprise') ? 'updatedAt' : 'sla', desc: tableId.startsWith('enterprise') }]}
       facets={[{ columnId: 'status', label: 'Status', options: Object.entries(TICKET_STATUS).map(([value, v]) => ({ value, label: v.label })) }, { columnId: 'priority', label: 'Priority' }, { columnId: 'type', label: 'Type' }, { columnId: 'assignee', label: 'Assignee' }]}
       views={(views as never) ?? [{ id: 'open', label: 'Active', filters: [{ id: 'status', value: ['open', 'in_progress', 'blocked', 'pending_verification'] }] }, { id: 'overdue', label: 'Overdue remediation', filters: [{ id: 'sla', value: ['Overdue'] }] }, { id: 'blocked', label: 'Blocked', filters: [{ id: 'status', value: ['blocked'] }] }, { id: 'verify', label: 'Pending verification', filters: [{ id: 'status', value: ['pending_verification'] }] }, { id: 'all', label: 'All tickets', filters: [] }]}
       initialViewId="open"
@@ -542,25 +544,12 @@ export function TicketsTable({ tickets, tableId, initialFilters, views }: { tick
 }
 
 export function TicketsPage() {
-  usePage('Tickets', [{ label: 'Security Operations' }, { label: 'Tickets' }])
-  const initialFilters = useUrlFilters(['status', 'priority', 'type', 'sla'])
-  const { data, isLoading, error, retry } = useCollections(['tickets'] as const)
+  const { id } = useParams()
+  usePage('Ticket Management', [{ label: id ? 'Project workspace' : 'Workspace' }, { label: 'Ticket Management' }])
+  const { data, isLoading, error, retry } = useCollections(['tickets'] as const, { ignoreProjectFilter: !id })
   if (error) return <ErrorState error={error} onRetry={retry} />
   if (isLoading || !data) return <LoadingState kpis={4} rows={12} />
-  const { tickets } = data
-  const active = tickets.filter((t) => !['done', 'cancelled'].includes(t.status))
-  return (
-    <div className="space-y-5">
-      <PageHeader title="Ticket Management" icon={<TicketIcon />} description="Remediation tickets across vulnerabilities, configurations, vendors, AI governance and incident response — assigned, tracked and verified. Jira sync is simulated." />
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard label="Active tickets" value={active.length} />
-        <KpiCard label="Overdue" value={tickets.filter(ticketOverdue).length} tone="red" />
-        <KpiCard label="Blocked" value={tickets.filter((t) => t.status === 'blocked').length} tone="amber" />
-        <KpiCard label="Completed & verified" value={tickets.filter((t) => t.status === 'done').length} tone="green" />
-      </div>
-      <TicketsTable key={JSON.stringify(initialFilters)} tickets={tickets} tableId="tickets" initialFilters={initialFilters} />
-    </div>
-  )
+  return <div className="space-y-5"><PageHeader title="Ticket Management" icon={<TicketIcon />} description={id ? 'Tickets in this project.' : 'Tickets across all projects you are authorized to access.'} /><TicketDashboard tickets={data.tickets} /></div>
 }
 
 // ---------------------------------------------------------------- verification dialog
@@ -616,11 +605,13 @@ export function VerifyDialog({ ticket, open, onOpenChange }: { ticket: Ticket; o
 }
 
 export function TicketDetail() {
-  const { id } = useParams()
+  const params = useParams()
+  const id = params.ticketId || params.id
+  const canEdit = useCan('manage_tickets')
   const users = useUsers()
-  const { data, isLoading, error, retry } = useCollections(['tickets', 'findings', 'vendors'] as const, { ignoreProjectFilter: true })
+  const { data, isLoading, error, retry } = useCollections(['tickets', 'findings', 'vendors'] as const, { ignoreProjectFilter: !params.ticketId })
   const t = data?.tickets.find((x) => x.id === id)
-  usePage(t?.id ?? 'Ticket', [{ label: 'Security Operations' }, { label: 'Tickets', to: '/operations/tickets' }, { label: id ?? '' }])
+  usePage(t?.id ?? 'Ticket', [{ label: 'Security Operations' }, { label: 'Tickets', to: params.ticketId ? `/projects/${params.id}/tickets` : '/operations/tickets' }, { label: id ?? '' }])
   const { run, pending } = useAction()
   const [progress, setProgress] = React.useState<number | null>(null)
   const [comment, setComment] = React.useState('')
@@ -632,7 +623,7 @@ export function TicketDetail() {
   }, [t?.id])
   if (error) return <ErrorState error={error} onRetry={retry} />
   if (isLoading || !data) return <LoadingState kpis={3} />
-  if (!t) return <NotFound what="Ticket" back={{ to: '/operations/tickets', label: 'Back to Tickets' }} />
+  if (!t) return <NotFound what="Ticket" back={{ to: params.ticketId ? `/projects/${params.id}/tickets` : '/operations/tickets', label: 'Back to Tickets' }} />
   const f = data.findings.find((x) => x.id === t.findingId)
   const closed = ['done', 'cancelled'].includes(t.status)
   const p = progress ?? t.progress
@@ -640,13 +631,13 @@ export function TicketDetail() {
   return (
     <div className="space-y-5">
       <PageHeader
-        back={{ to: '/operations/tickets', label: 'Tickets' }}
+        back={{ to: params.ticketId ? `/projects/${params.id}/tickets` : '/operations/tickets', label: 'Tickets' }}
         title={t.title}
         icon={<TicketIcon />}
         badges={<><Badge tone={t.priority === 'P1' ? 'red' : t.priority === 'P2' ? 'orange' : 'amber'}>{t.priority}</Badge><StatusBadge map={TICKET_STATUS} value={t.status} />{ticketOverdue(t) && <Badge tone="red" icon={<AlarmClock />}>Overdue</Badge>}</>}
         description={`${t.id}${t.externalRef ? ` · ${t.externalRef} (simulated Jira sync)` : ''} · created ${fmtDateTime(t.createdAt)}`}
         actions={
-          !closed && (
+          !closed && canEdit && (
             <>
               {t.status === 'open' && <Button variant="secondary" loading={pending} onClick={() => setStatus('in_progress')}>Start work</Button>}
               {t.status === 'in_progress' && <Button variant="secondary" loading={pending} onClick={() => setStatus('blocked')}>Mark blocked</Button>}
@@ -664,7 +655,7 @@ export function TicketDetail() {
           <Section title="Description">
             <p className="whitespace-pre-line text-[13px] text-muted">{t.description}</p>
           </Section>
-          {!closed && (
+          {!closed && canEdit && (
             <Section title="Remediation progress" description="Update progress as work proceeds — it is reflected on the linked finding and in the Remediation Center">
               <div className="flex items-center gap-4">
                 <Slider value={[p]} min={0} max={100} step={5} onValueChange={([v]) => setProgress(v)} aria-label="Progress" />
@@ -690,7 +681,7 @@ export function TicketDetail() {
                   “{t.vendorResponse.message}” <span className="text-[11px] text-subtle">— {fmtDateTime(t.vendorResponse.respondedAt)}</span>
                 </p>
               )}
-              {!closed && (
+              {!closed && canEdit && (
                 <div className="grid gap-3 sm:grid-cols-[180px_1fr_auto]">
                   <NativeSelect value={vr.status} onChange={(e) => setVr({ ...vr, status: e.target.value })} aria-label="Vendor response status">
                     <option value="acknowledged">Acknowledged</option>
@@ -718,8 +709,8 @@ export function TicketDetail() {
               ))}
             </div>
             <div className="mt-3 flex gap-2">
-              <Input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add a comment…" aria-label="Comment" />
-              <Button variant="secondary" disabled={comment.trim().length < 2} loading={pending} onClick={async () => { await run(() => api.addTicketComment(t.id, comment.trim()), 'Comment added'); setComment('') }}>
+              <Input disabled={!canEdit} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add a comment…" aria-label="Comment" />
+              <Button variant="secondary" disabled={!canEdit || comment.trim().length < 2} loading={pending} onClick={async () => { await run(() => api.addTicketComment(t.id, comment.trim()), 'Comment added'); setComment('') }}>
                 Comment
               </Button>
             </div>
@@ -735,7 +726,7 @@ export function TicketDetail() {
               items={[
                 {
                   label: 'Assignee',
-                  value: closed ? <UserName id={t.assigneeId} /> : (
+                  value: closed || !canEdit ? <UserName id={t.assigneeId} /> : (
                     <NativeSelect value={t.assigneeId ?? ''} onChange={(e) => run(() => api.updateTicket(t.id, { assigneeId: e.target.value }, `Reassigned to ${users.find((u) => u.id === e.target.value)?.name}`), 'Ticket reassigned')} className="h-8 text-xs" aria-label="Assignee">
                       <option value="">Unassigned</option>
                       {users.map((u) => (
@@ -748,7 +739,7 @@ export function TicketDetail() {
                 },
                 {
                   label: 'Due date',
-                  value: closed ? fmtDate(t.dueDate) : (
+                  value: closed || !canEdit ? fmtDate(t.dueDate) : (
                     <Input type="date" defaultValue={t.dueDate.slice(0, 10)} className="h-8 text-xs" aria-label="Due date" onBlur={(e) => e.target.value && e.target.value !== t.dueDate.slice(0, 10) && run(() => api.updateTicket(t.id, { dueDate: new Date(`${e.target.value}T17:00:00`).toISOString() }, `Due date → ${e.target.value}`), 'Due date updated')} />
                   ),
                   hint: `${daysUntil(t.dueDate) >= 0 ? `${daysUntil(t.dueDate)} days remaining` : `${-daysUntil(t.dueDate)} days overdue`}`,

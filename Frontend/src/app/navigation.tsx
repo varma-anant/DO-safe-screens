@@ -1,5 +1,5 @@
 import {
-  Home, LayoutDashboard, Inbox, ShieldCheck, Waypoints, Ticket, ListOrdered, Bell, Users, Plug, BookOpen, LifeBuoy, Settings,
+  Home, LayoutDashboard, Inbox, ShieldCheck, Waypoints, Ticket, ListOrdered, Bell, Users, BookOpen, LifeBuoy, Settings,
   Radar, Server, Bug, Route, BadgeCheck, FileWarning, Zap, Siren, Hammer, Workflow, Building2, ClipboardList, FileSearch, Activity, FileSignature, Wrench, LogOut,
   Bot, Boxes, EyeOff, Settings2, ClipboardCheck, Scale, Calculator, Layers, DollarSign, Gauge, PiggyBank, FileText, Sparkles, Globe, Microscope, Cpu, LineChart, FolderKanban, AppWindow,
 } from 'lucide-react'
@@ -20,32 +20,33 @@ export interface NavItem {
 
 /** Every main-sidebar destination. Which ones a person sees, and in what order, depends on their job. */
 export const NAV_ITEMS: Record<string, NavItem> = {
+  projects: { label: "Projects", to: "/projects", icon: <FolderKanban />, hint: "Project workspaces and membership" },
   home: { label: 'Home', to: '/home', icon: <Home />, hint: 'Am I protected, is anything urgent, and what to do next' },
-  dashboard: { label: 'Dashboard', to: '/dashboard', icon: <LayoutDashboard />, cap: 'view_financial_risk', hint: 'Business exposure, trends and money at risk' },
+  dashboard: { label: 'Dashboards', to: '/dashboard', icon: <LayoutDashboard />, cap: 'view_financial_risk', hint: 'Business exposure, trends and money at risk' },
   requests: { label: 'Requests', to: '/requests', icon: <Inbox />, badge: 'requests', hint: 'Access requests and approvals waiting for a decision' },
   applications: { label: 'SAFE applications', to: '/applications', icon: <ShieldCheck />, badge: 'applications', hint: 'Applications DO SAFE protects, and ones being set up' },
   mapping: { label: 'Asset mapping', to: '/mapping', icon: <Waypoints />, hint: 'How the parts of each application connect' },
-  tickets: { label: 'Ticket management', to: '/operations/tickets', icon: <Ticket />, hint: 'Fix-it tasks, who owns them and when they’re due' },
+  tickets: { label: 'Ticket Management', to: '/operations/tickets', icon: <Ticket />, hint: 'Fix-it tasks, who owns them and when they’re due' },
   prioritization: { label: 'Prioritization', to: '/exposures/prioritization', icon: <ListOrdered />, cap: 'view_findings', hint: 'Every problem in the order you should fix it' },
   incidents: { label: 'Incidents', to: '/operations/incidents', icon: <Siren />, cap: 'view_incidents', hint: 'Active incidents and what’s affected' },
   vendors: { label: 'Vendor risk', to: '/tprm', icon: <Building2 />, cap: 'view_vendor_risk', hint: 'Suppliers, assessments and contracts' },
   ai: { label: 'AI security', to: '/ai-security', icon: <Bot />, cap: 'view_ai_governance', hint: 'AI systems, unapproved AI and governance reviews' },
   risk: { label: 'Business risk', to: '/crq', icon: <Calculator />, cap: 'view_financial_risk', hint: 'Loss scenarios, controls and investments' },
   notifications: { label: 'Notifications', to: '/platform/notifications', icon: <Bell />, badge: 'notifications', hint: 'Alerts and updates for you' },
-  users: { label: 'User management', to: '/admin', icon: <Users />, cap: 'manage_users', hint: 'People, roles and who can see which projects' },
+  users: { label: 'User Management', to: '/admin', icon: <Users />, hint: 'People, roles and who can see which projects' },
 }
 
 /** The full workspace navigation (platform administrators — mirrors the DO product family layout). */
-export const FULL_NAV = ['home', 'dashboard', 'requests', 'applications', 'mapping', 'tickets', 'prioritization', 'notifications', 'users']
+export const FULL_NAV = ['home', 'dashboard', 'projects', 'tickets', 'users', 'notifications']
 
 /** @deprecated kept for consumers that want the full list */
 export const MAIN_NAV: NavItem[] = FULL_NAV.map((k) => NAV_ITEMS[k])
 
 export const FOOTER_NAV: NavItem[] = [
-  { label: 'Integrations', to: '/integrations', icon: <Plug />, cap: 'manage_integrations', hint: 'Security tools connected to DO SAFE' },
-  { label: 'Knowledge base', to: '/knowledge', icon: <BookOpen />, hint: 'Step-by-step guides and a jargon-free glossary' },
-  { label: 'Help & Support', to: '/support', icon: <LifeBuoy />, hint: 'Ask a person for help' },
-  { label: 'Settings', to: '/platform/settings', icon: <Settings />, hint: 'Your profile, access and preferences' },
+  { label: 'Settings', to: '/platform/settings', icon: <Settings /> },
+  { label: 'Support', to: '/support', icon: <LifeBuoy /> },
+  { label: 'Knowledge Base', to: '/knowledge', icon: <BookOpen /> },
+  { label: 'Help', to: '/help', icon: <BookOpen /> },
 ]
 
 export interface NavGroup {
@@ -115,9 +116,7 @@ export const SECURITY_NAV: NavGroup[] = [
 
 /** Main navigation for a person: their job's destinations, filtered to what they may open. */
 export function mainNavFor(user: User | undefined): NavItem[] {
-  const keys = JOB_INFO[jobOf(user)].nav ?? FULL_NAV
-  const withAdmin = can(user, 'manage_users') && !keys.includes('users') ? [...keys, 'users'] : keys
-  return withAdmin.map((k) => NAV_ITEMS[k]).filter((i) => !i.cap || can(user, i.cap))
+  return FULL_NAV.map((k) => NAV_ITEMS[k]).filter((i) => !i.cap || can(user, i.cap))
 }
 
 /** Security-workspace groups for a person: job-focused groups first, other permitted groups under "More tools". */

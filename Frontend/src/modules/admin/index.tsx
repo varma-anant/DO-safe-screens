@@ -1,7 +1,7 @@
 import * as React from 'react'
-import { Link, NavLink, Outlet, useLocation } from 'react-router'
+import { Link, NavLink, Outlet, useLocation, Navigate } from 'react-router'
 import { createColumnHelper } from '@tanstack/react-table'
-import { Check, ClipboardCheck, FileSearch, Fingerprint, Inbox, LayoutGrid, Mail, ScrollText, ShieldCheck, ShieldHalf, UserPlus, Users, X, FolderKanban } from 'lucide-react'
+import { Check, ClipboardCheck, Inbox, ShieldCheck, ShieldHalf, UserPlus, Users, X } from 'lucide-react'
 import type { JobRole, OrgRole, ProjectRole, User } from '@/types'
 import { useAction, useCan, useCollections, useCurrentUser, useSettings } from '@/hooks/queries'
 import { usePage } from '@/hooks/usePage'
@@ -20,20 +20,10 @@ import { cn, fmtDateTime } from '@/utils/format'
 import { can, CAPABILITY_LABEL, explain, JOB_INFO, projectRoleOf, ROLE_INFO, VIEW_AREA, VIEW_CAPS, visibleProjectIds, type ActionCap, type Capability } from '@/utils/permissions'
 
 const ADMIN_NAV = [
-  { group: 'Workspace', items: [
-    { label: 'Overview', to: '/admin', icon: <LayoutGrid />, end: true },
-    { label: 'People', to: '/admin/people', icon: <Users /> },
-    { label: 'Invitations', to: '/admin/invitations', icon: <Mail /> },
-  ] },
-  { group: 'Permission governance', items: [
-    { label: 'Roles & permissions', to: '/admin/roles', icon: <ShieldHalf /> },
-    { label: 'Project access', to: '/admin/project-access', icon: <FolderKanban /> },
-    { label: 'Access requests', to: '/requests', icon: <Inbox /> },
-    { label: 'Permission inspector', to: '/admin/inspector', icon: <FileSearch /> },
-  ] },
-  { group: 'Security & audit', items: [
-    { label: 'Audit log', to: '/admin/audit', icon: <ScrollText /> },
-    { label: 'Identity & security', to: '/admin/identity', icon: <Fingerprint /> },
+  { group: 'User Management', items: [
+    { label: 'Users', to: '/admin/people', icon: <Users />, end: true },
+    { label: 'Roles & Permissions', to: '/admin/roles', icon: <ShieldHalf /> },
+    { label: 'Requests', to: '/admin/requests', icon: <Inbox /> },
   ] },
 ]
 
@@ -42,19 +32,20 @@ export function AdminLayout() {
   const pending = useDbStore((s) => s.db.accessRequests.filter((r) => r.status === 'pending').length)
   const people = useDbStore((s) => s.db.users.length)
   const allowed = useCan('manage_users')
-  if (!allowed) {
+  if (!allowed && location.pathname !== '/admin/requests') {
+    if (location.pathname === '/admin') return <Navigate to="/admin/requests" replace />
     return (
       <div className="mx-auto max-w-lg py-16 text-center">
         <ShieldHalf className="mx-auto size-10 text-subtle" />
         <h1 className="mt-3 text-lg font-semibold">User management is restricted</h1>
         <p className="mt-1 text-[13px] text-muted">Only administrators can manage people, roles and project access. Raise an access request if you need it.</p>
-        <Button className="mt-5" asChild><Link to="/requests?new=1">Request access</Link></Button>
+        <Button className="mt-5" asChild><Link to="/admin/requests?new=1">Request access</Link></Button>
       </div>
     )
   }
   return (
     <div className="space-y-5">
-      <PageHeader title="User management" icon={<Users />} description="People, project membership, roles and access decisions — one connected enterprise workspace." actions={<span className="rounded-full border border-border bg-surface px-3 py-1 text-[11.5px] text-muted">Interactive prototype · local data</span>} />
+      <PageHeader title="User management" icon={<Users />} description="People, project membership, roles and access decisions — one connected enterprise workspace."  />
       <div className="flex flex-col gap-5 lg:flex-row">
         <aside className="lg:w-[230px] lg:shrink-0">
           <Card className="p-3">
@@ -62,13 +53,13 @@ export function AdminLayout() {
               <div key={g.group} className="mb-2">
                 <div className="px-2.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.07em] text-subtle">{g.group}</div>
                 <ul className="space-y-0.5">
-                  {g.items.map((i) => (
+                  {g.items.filter(i => allowed || i.to === '/admin/requests').map((i) => (
                     <li key={i.to}>
                       <NavLink to={i.to} end={i.end} className={({ isActive }) => cn('flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] [&_svg]:size-4', isActive && !(i.to === '/admin' && location.pathname !== '/admin') ? 'bg-primary-soft font-medium text-primary' : 'text-muted hover:bg-surface-2 hover:text-fg')}>
                         {i.icon}
                         <span className="flex-1">{i.label}</span>
-                        {i.label === 'People' && <span className="text-[11px] text-subtle">{people}</span>}
-                        {i.label === 'Access requests' && pending > 0 && <span className="rounded-full bg-primary-soft px-1.5 text-[11px] font-semibold text-primary">{pending}</span>}
+                        {i.label === 'Users' && <span className="text-[11px] text-subtle">{people}</span>}
+                        {i.label === 'Requests' && pending > 0 && <span className="rounded-full bg-primary-soft px-1.5 text-[11px] font-semibold text-primary">{pending}</span>}
                       </NavLink>
                     </li>
                   ))}
@@ -541,7 +532,7 @@ export function IdentityPage() {
           <div className="space-y-4">
             <Field label="Identity provider">
               <NativeSelect value={idn.provider} onChange={(e) => setIdn({ ...idn, provider: e.target.value })}>
-                {['Corporate SSO (Okta, simulated)', 'Microsoft Entra ID (simulated)', 'Google Workspace (simulated)', 'Email + password (not recommended)'].map((p) => <option key={p}>{p}</option>)}
+                {['Corporate SSO (Okta, simulated)', 'Microsoft Entra ID (simulated)', 'Google Workspace (simulated)'].map((p) => <option key={p}>{p}</option>)}
               </NativeSelect>
             </Field>
             <div className="grid grid-cols-2 gap-4">

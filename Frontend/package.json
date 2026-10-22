@@ -10,6 +10,7 @@
     "typecheck": "tsc -b --noEmit",
     "preview": "vite preview",
     "validate:seed": "vite-node scripts/validate-seed.ts",
+    "test:enterprise": "node tests/e2e/enterprise.mjs",
     "test:routes": "node tests/e2e/routes.mjs",
     "test:e2e": "node tests/e2e/journey.mjs && node tests/e2e/roles.mjs && node tests/e2e/workflows.mjs && node tests/e2e/interactions.mjs && node tests/e2e/modules.mjs"
   },

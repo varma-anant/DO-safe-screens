@@ -23,13 +23,13 @@ const ROLE_BY_LABEL: Record<string, OrgRole> = { Administrator: 'admin', 'Securi
 const PROJECT_ROLE_CAPS: Record<string, number> = { Viewer: 0, Contributor: 3, Owner: 5 }
 
 export function RequestsPage() {
-  usePage('Requests', [{ label: 'Workspace' }, { label: 'Requests' }])
+  usePage('Requests', [{ label: 'User Management', to: '/admin' }, { label: 'Requests' }])
   const [params, setParams] = useSearchParams()
   const me = useCurrentUser()
   const canApprove = useCan('approve_high_impact')
   const db = useDbStore((s) => s.db)
   const { data, isLoading, error, retry } = useCollections(['accessRequests', 'projects', 'users'] as const, { ignoreProjectFilter: true })
-  const [filter, setFilter] = React.useState<'pending' | 'mine' | 'approved' | 'declined' | 'all'>('pending')
+  const [filter, setFilter] = React.useState<'pending' | 'mine' | 'approved' | 'declined' | 'all'>(me.orgRole === 'admin' || me.orgRole === 'project_owner' ? 'pending' : 'mine')
   const [sel, setSel] = React.useState<string | null>(null)
   const [note, setNote] = React.useState('')
   const [newOpen, setNewOpen] = React.useState(params.get('new') === '1')

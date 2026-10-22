@@ -29,10 +29,10 @@ export function scopeCollection<K extends CollectionKey>(key: K, data: Collectio
   const assetOk = (id?: string) => { const a = db.assets.find((x) => x.id === id); return !!a && inApp(a.businessServiceId) }
   const filters: Partial<Record<CollectionKey, (x: never) => boolean>> = {
     services: (x: Database['services'][number]) => inApp(x.id),
-    projects: (x: Database['projects'][number]) => db.services.some((s) => s.projectId === x.id && apps.has(s.id)) || !db.services.some((s) => s.projectId === x.id),
+    projects: (x: Database['projects'][number]) => visibleProjectIds(db, db.settings.currentUserId).includes(x.id),
     assets: (x: Database['assets'][number]) => inApp(x.businessServiceId),
     findings: (x: Database['findings'][number]) => inApp(x.businessServiceId),
-    tickets: (x: Database['tickets'][number]) => (x.findingId ? findingOk(x.findingId) : x.vendorId ? vendorOk(x.vendorId) : x.aiSystemId ? aiOk(x.aiSystemId) : false),
+    tickets: (x: Database['tickets'][number]) => (x.findingId ? findingOk(x.findingId) : x.vendorId ? vendorOk(x.vendorId) : x.aiSystemId ? aiOk(x.aiSystemId) : x.incidentId ? db.incidents.some(i => i.id === x.incidentId && i.businessServiceIds.some(inApp)) : false),
     vendors: (x: Database['vendors'][number]) => x.businessServiceIds.some(inApp),
     assessments: (x: Database['assessments'][number]) => vendorOk(x.vendorId),
     monitoringAlerts: (x: Database['monitoringAlerts'][number]) => vendorOk(x.vendorId),
